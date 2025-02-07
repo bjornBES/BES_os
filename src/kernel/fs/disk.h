@@ -1,0 +1,16 @@
+#pragma once
+
+#include <stdint.h>
+
+typedef struct {
+    uint16_t cylinders;      // Number of cylinders (CHS mode)
+    uint16_t heads;          // Number of heads (CHS mode)
+    uint16_t sectors_per_track; // Sectors per track (CHS mode)
+
+    uint32_t total_sectors_28;  // Total number of sectors (LBA28 mode)
+    uint64_t total_sectors_48;  // Total number of sectors (LBA48 mode, for large disks)
+    uint64_t disk_size_bytes;   // Disk size in bytes (computed)
+} DISK;
+
+void DISK_LBA2CHS(DISK* disk, uint32_t lba, uint16_t* cylinderOut, uint16_t* sectorOut, uint16_t* headOut);
+void DISK_CHS2LBA(DISK* disk, uint16_t* cylinder, uint16_t sector, uint16_t head, uint32_t* lbaOut);

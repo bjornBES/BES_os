@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "name": "GCC",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/src/kernel",
+                "/usr/local/i686-elf/include"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/local/bin/i686-elf-gcc",
+            "cStandard": "c99",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "gcc-x86",
+            "compilerArgs": [
+                "-std=c99",
+                "-ffreestanding",
+                "-nostdlib"
+            ],
+            "configurationProvider": "ms-vscode.makefile-tools"
+        }
+    ],
+    "version": 4
+}

@@ -2,13 +2,12 @@
 
 #include "stdio.h"
 #include "string.h"
-#include "hal/vfs.h"
 #include "hal/hal.h"
-#include "device.h"
 #include "memory.h"
 #include "malloc.h"
 #include "proc.h"
-
+#include "drivers/pci/pci.h"
+/*
 #define UNUSED __attribute__((unused))
 
 uint8_t procfs_read(char *fn, char *buffer, device_t *dev UNUSED, void* priv UNUSED)
@@ -55,22 +54,22 @@ uint8_t procfs_exist(char *fn, device_t *dev UNUSED, void *priv UNUSED)
 {
 	if(strcmp(fn, "/") == 0)
 		return 1;
-	if(strcmp(fn, "/os/") == 0)
+		if(strcmp(fn, "/os/") == 0)
 		return 1;
-	if(strcmp(fn, "/os/full") == 0)
+		if(strcmp(fn, "/os/full") == 0)
 		return 1;
-	if(strcmp(fn, "/os/arch") == 0)
+		if(strcmp(fn, "/os/arch") == 0)
 		return 1;
-	if(strcmp(fn, "/system/") == 0)
+		if(strcmp(fn, "/system/") == 0)
 		return 1;
-	if(strcmp(fn, "/system/pci") == 0)
+		if(strcmp(fn, "/system/pci") == 0)
 		return 1;
-	return 0;
-}
-
-uint8_t procfs_mount(device_t *dev, void *priv UNUSED)
-{
-	if(dev->unique_id == 13)
+		return 0;
+	}
+	
+	uint8_t procfs_mount(device_t *dev, void *priv UNUSED)
+	{
+		if(dev->unique_id == 13)
 		return 1;
 	return 0;
 }
@@ -78,7 +77,7 @@ uint8_t procfs_mount(device_t *dev, void *priv UNUSED)
 uint8_t procfs_probe(device_t *dev)
 {
 	if(dev->unique_id == 13)
-		return 1;
+	return 1;
 	return 0;
 }
 
@@ -103,3 +102,4 @@ void proc_init()
 	proc_dev = device_get_by_id(13);
 	device_try_to_mount(proc_dev, "/proc/");
 }
+*/

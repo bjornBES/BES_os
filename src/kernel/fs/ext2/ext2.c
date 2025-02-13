@@ -6,7 +6,6 @@
 #include "string.h"
 #include "hal/vfs.h"
 #include "hal/hal.h"
-#include "device.h"
 #include "memory.h"
 #include "malloc.h"
 
@@ -18,30 +17,30 @@ static inode_t *inode = 0;
 static uint8_t *root_buf = 0;
 static uint8_t *block_buf = 0;
 
-void ext2_read_block(uint8_t *buf, uint32_t block, device_t *dev, ext2_priv_data *priv)
+void ext2_read_block(uint8_t *buf, uint32_t block, ext2_priv_data *priv)
 {
 	uint32_t sectors_per_block = priv->sectors_per_block;
 	if(!sectors_per_block) sectors_per_block = 1;
 	/*printf("we want to read block %d which is sectors [%d; %d]\n",
 		block, block*sectors_per_block , block*sectors_per_block + sectors_per_block);*/
 	//printf("  %d", block);
-	dev->read(buf, block*sectors_per_block, sectors_per_block, dev);
+	// dev->read(buf, block*sectors_per_block, sectors_per_block, dev);
 
 }
 
-void ext2_write_block(uint8_t *buf, uint32_t block, device_t *dev, ext2_priv_data *priv)
+void ext2_write_block(uint8_t *buf, uint32_t block, ext2_priv_data *priv)
 {
 	uint32_t sectors_per_block = priv->sectors_per_block;
 	if(!sectors_per_block) sectors_per_block = 1;
-	dev->write(buf, block*sectors_per_block, sectors_per_block, dev);
+	// dev->write(buf, block*sectors_per_block, sectors_per_block, dev);
 }
-void ext2_read_inode(inode_t *inode_buf, uint32_t inode, device_t *dev, ext2_priv_data *priv)
+void ext2_read_inode(inode_t *inode_buf, uint32_t inode,  ext2_priv_data *priv)
 {
 	uint32_t bg = (inode - 1) / priv->sb.inodes_in_blockgroup;
 	uint32_t i = 0;
 	/* Now we have which BG the inode is in, load that desc */
 	if(!block_buf) block_buf = (uint8_t *)malloc(priv->blocksize);
-	ext2_read_block(block_buf, priv->first_bgd, dev, priv);
+	ext2_read_block(block_buf, priv->first_bgd, priv);
 	block_group_desc_t *bgd = (block_group_desc_t*)block_buf;
 	printf("We seek BG %d\n", bg);
 	/* Seek to the BG's desc */
@@ -52,7 +51,7 @@ void ext2_read_inode(inode_t *inode_buf, uint32_t inode, device_t *dev, ext2_pri
 	printf("Index of our inode is %d\n", index);
 	uint32_t block = (index * sizeof(inode_t))/ priv->blocksize;
 	printf("Relative: %d, Absolute: %d\n", block, bgd->block_of_inode_table + block);
-	ext2_read_block(block_buf, bgd->block_of_inode_table + block, dev, priv);
+	ext2_read_block(block_buf, bgd->block_of_inode_table + block, priv);
 	inode_t* _inode = (inode_t *)block_buf;
 	index = index % priv->inodes_per_block;
 	for(i = 0; i < index; i++)
@@ -61,13 +60,13 @@ void ext2_read_inode(inode_t *inode_buf, uint32_t inode, device_t *dev, ext2_pri
 	memcpy(inode_buf, _inode, sizeof(inode_t));
 }
 
-void ext2_write_inode(inode_t *inode_buf, uint32_t ii, device_t *dev, ext2_priv_data *priv)
+void ext2_write_inode(inode_t *inode_buf, uint32_t ii,  ext2_priv_data *priv)
 {
 	uint32_t bg = (ii - 1) / priv->sb.inodes_in_blockgroup;
 	uint32_t i = 0;
 	/* Now we have which BG the inode is in, load that desc */
 	if(!block_buf) block_buf = (uint8_t *)malloc(priv->blocksize);
-	ext2_read_block(block_buf, priv->first_bgd, dev, priv);
+	ext2_read_block(block_buf, priv->first_bgd, priv);
 	block_group_desc_t *bgd = (block_group_desc_t*)block_buf;
 	printf("We seek BG %d\n", bg);
 	/* Seek to the BG's desc */
@@ -79,23 +78,23 @@ void ext2_write_inode(inode_t *inode_buf, uint32_t ii, device_t *dev, ext2_priv_
 	uint32_t block = (index * sizeof(inode_t))/ priv->blocksize;
 	printf("Relative: %d, Absolute: %d\n", block, bgd->block_of_inode_table + block);
 	uint32_t final = bgd->block_of_inode_table + block;
-	ext2_read_block(block_buf, final, dev, priv);
+	ext2_read_block(block_buf, final, priv);
 	inode_t* _inode = (inode_t *)block_buf;
 	index = index % priv->inodes_per_block;
 	for(i = 0; i < index; i++)
 		_inode++;
 	/* We have found the inode! */
 	memcpy(_inode, inode_buf, sizeof(inode_t));
-	ext2_write_block(block_buf, final, dev, priv);
+	ext2_write_block(block_buf, final, priv);
 }
 
-uint32_t ext2_get_inode_block(uint32_t inode, uint32_t *b, uint32_t *ioff, device_t *dev, ext2_priv_data *priv)
+uint32_t ext2_get_inode_block(uint32_t inode, uint32_t *b, uint32_t *ioff,  ext2_priv_data *priv)
 {
 	uint32_t bg = (inode - 1) / priv->sb.inodes_in_blockgroup;
 	uint32_t i = 0;
 	/* Now we have which BG the inode is in, load that desc */
-	if(!block_buf) block_buf = (uint8_t *)malloc(priv->blocksize);
-	ext2_read_block(block_buf, priv->first_bgd, dev, priv);
+	if(!block_buf) block_buf = (uint8_t *)malloc((priv->blocksize));
+	ext2_read_block(block_buf, priv->first_bgd, priv);
 	block_group_desc_t *bgd = (block_group_desc_t*)block_buf;
 	printf("We seek BG %d\n", bg);
 	/* Seek to the BG's desc */
@@ -110,7 +109,7 @@ uint32_t ext2_get_inode_block(uint32_t inode, uint32_t *b, uint32_t *ioff, devic
 	return 1;
 }
 
-uint32_t ext2_read_directory(char *filename, ext2_dir *dir, device_t *dev, ext2_priv_data *priv)
+uint32_t ext2_read_directory(char *filename, ext2_dir *dir,  ext2_priv_data *priv)
 {
 	while(dir->inode != 0) {
 		char *name = (char *)malloc(dir->namelength + 1);
@@ -120,7 +119,7 @@ uint32_t ext2_read_directory(char *filename, ext2_dir *dir, device_t *dev, ext2_
 		if(filename && strcmp(filename, name) == 0)
 		{
 			/* If we are looking for a file, we had found it */
-			ext2_read_inode(inode, dir->inode, dev, priv);
+			ext2_read_inode(inode, dir->inode, priv);
 			printf("Found inode %s! %d\n", filename, dir->inode);
 			free(name);
 			return dir->inode;
@@ -135,12 +134,12 @@ uint32_t ext2_read_directory(char *filename, ext2_dir *dir, device_t *dev, ext2_
 	return 0;
 }
 
-uint8_t ext2_read_root_directory(char *filename, device_t *dev, ext2_priv_data *priv)
+uint8_t ext2_read_root_directory(char *filename,  ext2_priv_data *priv)
 {
 	/* The root directory is always inode#2, so find BG and read the block. */
 	if(!inode) inode = (inode_t *)malloc(sizeof(inode_t));
 	if(!root_buf) root_buf = (uint8_t *)malloc(priv->blocksize);
-	ext2_read_inode(inode, 2, dev, priv);
+	ext2_read_inode(inode, 2, priv);
 	if((inode->type & 0xF000) != INODE_TYPE_DIRECTORY)
 	{
 		printf("FATAL: Root directory is not a directory!\n");
@@ -153,17 +152,17 @@ uint8_t ext2_read_root_directory(char *filename, device_t *dev, ext2_priv_data *
 	{
 		uint32_t b = inode->dbp[i];
 		if(b == 0) break;
-		ext2_read_block(root_buf, b, dev, priv);
+		ext2_read_block(root_buf, b, priv);
 		/* Now loop through the entries of the directory */
-		if(ext2_read_directory(filename, (ext2_dir*)root_buf, dev, priv)) return 1;
+		if(ext2_read_directory(filename, (ext2_dir*)root_buf, priv)) return 1;
 	}
 	if(filename && (uint32_t)filename != 1) return 0;
 	return 1;
 }
 
-uint8_t ext2_find_file_inode(char *ff, inode_t *inode_buf, device_t *dev, ext2_priv_data *priv)
+uint8_t ext2_find_file_inode(char *ff, inode_t *inode_buf,  ext2_priv_data *priv)
 {
-	char *filename = malloc(strlen(ff) + 1);
+	char *filename = (char*)malloc((strlen(ff) + 1));
 	memcpy(filename, ff, strlen(ff) +1);
 	size_t n = strsplit(filename, '/');
 	filename ++; // skip the first crap
@@ -171,7 +170,7 @@ uint8_t ext2_find_file_inode(char *ff, inode_t *inode_buf, device_t *dev, ext2_p
 	if(n > 1)
 	{ 
 		/* Read inode#2 (Root dir) into inode */
-		ext2_read_inode(inode, 2, dev, priv);
+		ext2_read_inode(inode, 2, priv);
 		/* Now, loop through the DPB's and see if it contains this filename */
 		n--;
 		while(n--)
@@ -181,8 +180,8 @@ uint8_t ext2_find_file_inode(char *ff, inode_t *inode_buf, device_t *dev, ext2_p
 			{
 				uint32_t b = inode->dbp[i];
 				if(!b) break;
-				ext2_read_block(root_buf, b, dev, priv);
-				uint32_t rc = ext2_read_directory(filename, (ext2_dir *)root_buf, dev, priv);
+				ext2_read_block(root_buf, b, priv);
+				uint32_t rc = ext2_read_directory(filename, (ext2_dir *)root_buf, priv);
 				if(!rc)
 				{
 					if(strcmp(filename, "") == 0)
@@ -208,28 +207,28 @@ uint8_t ext2_find_file_inode(char *ff, inode_t *inode_buf, device_t *dev, ext2_p
 		memcpy(inode_buf, inode, sizeof(inode_t));
 	} else {
 		/* This means the file is in the root directory */
-		ext2_read_root_directory(filename, dev, priv);
+		ext2_read_root_directory(filename, priv);
 		memcpy(inode_buf, inode, sizeof(inode_t));
 	}
 	free(filename);
 	return retnode;
 }
 
-void ext2_list_directory(char *dd, char *buffer, device_t *dev, ext2_priv_data *priv)
+void ext2_list_directory(char *dd, char *buffer,  ext2_priv_data *priv)
 {
 	char *dir = dd;
-	int rc = ext2_find_file_inode(dir, (inode_t *)buffer, dev, priv);
+	int rc = ext2_find_file_inode(dir, (inode_t *)buffer, priv);
 	if(!rc) return;
 	for(int i = 0;i < 12; i++)
 	{
 		uint32_t b = inode->dbp[i];
 		if(!b) break;
-		ext2_read_block(root_buf, b, dev, priv);
-		ext2_read_directory(0, (ext2_dir *)root_buf, dev, priv);
+		ext2_read_block(root_buf, b, priv);
+		ext2_read_directory(0, (ext2_dir *)root_buf, priv);
 	}
 }
 #define SIZE_OF_SINGLY (priv->blocksize * priv->blocksize / 4)
-uint8_t ext2_read_singly_linked(uint32_t blockid, uint8_t *buf, device_t *dev, ext2_priv_data *priv)
+uint8_t ext2_read_singly_linked(uint32_t blockid, uint8_t *buf,  ext2_priv_data *priv)
 {
 	uint32_t blockadded = 0;
 	uint32_t maxblocks = ((priv->blocksize) / (sizeof(uint32_t)));
@@ -237,7 +236,7 @@ uint8_t ext2_read_singly_linked(uint32_t blockid, uint8_t *buf, device_t *dev, e
 	 * uint32_t's storing the block's id which points to data
 	 */
 	 /* Read the block into root_buf */
-	 ext2_read_block(root_buf, blockid, dev, priv);
+	 ext2_read_block(root_buf, blockid, priv);
 	 /* Loop through the block id's reading them into the appropriate buffer */
 	 uint32_t *block = (uint32_t *)root_buf;
 	 for(int i =0;i < maxblocks; i++)
@@ -245,12 +244,12 @@ uint8_t ext2_read_singly_linked(uint32_t blockid, uint8_t *buf, device_t *dev, e
 	 	/* If it is zero, we have finished loading. */
 	 	if(block[i] == 0) break;
 	 	/* Else, read the block into the buffer */
-	 	ext2_read_block(buf + i * priv->blocksize, block[i], dev, priv);
+	 	ext2_read_block(buf + i * priv->blocksize, block[i], priv);
 	 }
 	 return 1;
 }
 
-uint8_t ext2_read_doubly_linked(uint32_t blockid, uint8_t *buf, device_t *dev, ext2_priv_data *priv)
+uint8_t ext2_read_doubly_linked(uint32_t blockid, uint8_t *buf,  ext2_priv_data *priv)
 {
 	uint32_t blockadded = 0;
 	uint32_t maxblocks = ((priv->blocksize) / (sizeof(uint32_t)));
@@ -258,7 +257,7 @@ uint8_t ext2_read_doubly_linked(uint32_t blockid, uint8_t *buf, device_t *dev, e
 	 * uint32_t's storing the block's id which points to data
 	 */
 	 /* Read the block into root_buf */
-	 ext2_read_block(block_buf, blockid, dev, priv);
+	 ext2_read_block(block_buf, blockid, priv);
 	 /* Loop through the block id's reading them into the appropriate buffer */
 	 uint32_t *block = (uint32_t *)block_buf;
 	 uint32_t s = SIZE_OF_SINGLY;
@@ -267,18 +266,18 @@ uint8_t ext2_read_doubly_linked(uint32_t blockid, uint8_t *buf, device_t *dev, e
 	 	/* If it is zero, we have finished loading. */
 	 	if(block[i] == 0) break;
 	 	/* Else, read the block into the buffer */
-	 	ext2_read_singly_linked(block[i], buf + i * s , dev, priv);
+	 	ext2_read_singly_linked(block[i], buf + i * s , priv);
 	 }
 	 return 1;
 }
 
 static inode_t *minode = 0;
-uint8_t ext2_read_file(char *fn, char *buffer, device_t *dev, ext2_priv_data *priv)
+uint8_t ext2_read_file(char *fn, char *buffer, ext2_priv_data *priv)
 {
 	/* Put the file's inode to the buffer */
 	if(!minode) minode = (inode_t *)malloc(sizeof(inode_t));
 	char *filename = fn;
-	if(!ext2_find_file_inode(filename, minode, dev, priv))
+	if(!ext2_find_file_inode(filename, minode, priv))
 	{
 		printf("File inode not found.\n");
 		return 0;
@@ -294,32 +293,32 @@ uint8_t ext2_read_file(char *fn, char *buffer, device_t *dev, ext2_priv_data *pr
         }
 		printf("Reading block: %d\n", b);
 
-		ext2_read_block(root_buf, b, dev, priv);
+		ext2_read_block(root_buf, b, priv);
 		//printf("Copying to: 0x%x size: %d bytes\n", buffer + i*(priv->blocksize), priv->blocksize);
 		memcpy(buffer + i*(priv->blocksize), root_buf, priv->blocksize);
 		//printf("%c%c%c\n", *(uint8_t*)(buffer + 1),*(uint8_t*)(buffer + 2), *(uint8_t*)(buffer + 3));
 	}
 	if(minode->singly_block) {
 		//printf("Block of singly: %d\n", minode->singly_block);
-		ext2_read_singly_linked(minode->singly_block, buffer + 12*(priv->blocksize), dev, priv);
+		ext2_read_singly_linked(minode->singly_block, buffer + 12*(priv->blocksize), priv);
 	}
 	if(minode->doubly_block) {
 		uint32_t s = SIZE_OF_SINGLY + 12*priv->blocksize;
 		//printf("s is 0x%x (%d)\n", s, s);
-		ext2_read_doubly_linked(minode->doubly_block, buffer + s, dev, priv);
+		ext2_read_doubly_linked(minode->doubly_block, buffer + s, priv);
 	}
 	//printf("Read all 12 DBP(s)! *BUG*\n");
 	return 1;
 }
 
-void ext2_find_new_inode_id(uint32_t *id, device_t *dev, ext2_priv_data *priv)
+void ext2_find_new_inode_id(uint32_t *id,  ext2_priv_data *priv)
 {
 	/* Algorithm: Loop through the block group descriptors,
 	 * and find the number of unalloc inodes
 	 */
 
 	/* Loop through the block groups */
-	ext2_read_block(root_buf, priv->first_bgd, dev, priv);
+	ext2_read_block(root_buf, priv->first_bgd, priv);
 	block_group_desc_t *bg = (block_group_desc_t *)root_buf;
 	for(int i = 0; i < priv->number_of_bgs; i++)
 	{
@@ -334,25 +333,25 @@ void ext2_find_new_inode_id(uint32_t *id, device_t *dev, ext2_priv_data *priv)
 			 */
 			 *id = ((i + 1) * priv->sb.inodes_in_blockgroup) - bg->num_of_unalloc_inode + 1;
 			 bg->num_of_unalloc_inode --;
-			 ext2_write_block(root_buf, priv->first_bgd + i, dev, priv);
+			 ext2_write_block(root_buf, priv->first_bgd + i, priv);
 			 /* Now, update the superblock as well */
-			 ext2_read_block(root_buf, priv->sb.superblock_id, dev, priv);
+			 ext2_read_block(root_buf, priv->sb.superblock_id, priv);
 			 superblock_t *sb = (superblock_t *)root_buf;
 			 sb->unallocatedinodes --;
-			 ext2_write_block(root_buf, priv->sb.superblock_id, dev, priv);
+			 ext2_write_block(root_buf, priv->sb.superblock_id, priv);
 			 return;
 		}
 		bg++;
 	}
 }
 
-void ext2_alloc_block(uint32_t *out, device_t *dev, ext2_priv_data *priv)
+void ext2_alloc_block(uint32_t *out,  ext2_priv_data *priv)
 {
 	/* Algorithm: Loop through block group descriptors,
 	 * find which bg has a free block
 	 * and set that.
 	 */
-	 ext2_read_block(root_buf, priv->first_bgd, dev, priv);
+	 ext2_read_block(root_buf, priv->first_bgd, priv);
 	 block_group_desc_t *bg = (block_group_desc_t *)root_buf;
 	 for(int i = 0; i < priv->number_of_bgs; i++)
 	 {
@@ -360,24 +359,22 @@ void ext2_alloc_block(uint32_t *out, device_t *dev, ext2_priv_data *priv)
 	 	{
 	 		*out = priv->sb.blocks - bg->num_of_unalloc_block + 1;
 	 		bg->num_of_unalloc_block --;
-	 		ext2_write_block(root_buf, priv->first_bgd + i, dev, priv);
+	 		ext2_write_block(root_buf, priv->first_bgd + i, priv);
 
 	 		printf("Allocated block %d\n",*out);
 
-	 		ext2_read_block(root_buf, priv->sb.superblock_id, dev, priv);
+	 		ext2_read_block(root_buf, priv->sb.superblock_id, priv);
 			superblock_t *sb = (superblock_t *)root_buf;
 			sb->unallocatedblocks --;
-			ext2_write_block(root_buf, priv->sb.superblock_id, dev, priv);
+			ext2_write_block(root_buf, priv->sb.superblock_id, priv);
 			return;
 	 	}
 	 	bg++;
 	 }
 }
 
-uint8_t ext2_touch(char *file, device_t *dev UNUSED, ext2_priv_data *priv UNUSED)
+uint8_t ext2_touch(char *file, ext2_priv_data *priv UNUSED)
 {
-	if(!dev->write)
-		return 0;
 	/* file = "/levex.txt"; */
 	/* First create the inode */
 	char *fil = (char *)malloc(strlen(file) + 1);
@@ -407,26 +404,26 @@ uint8_t ext2_touch(char *file, device_t *dev UNUSED, ext2_priv_data *priv UNUSED
 	 * don't forget to update the superblock as well.
 	 */
 	uint32_t id = 0;
-	ext2_find_new_inode_id(&id, dev, priv);
+	ext2_find_new_inode_id(&id, priv);
 	//printf("Inode id = %d\n", id);
 	entry->inode = id;
-	//ext2_read_directory(0, entry, dev, priv);
+	//ext2_read_directory(0, entry, priv);
 	/* Find where the previous inode is 
 	 * and put this inode after this
 	 */
 	uint32_t block = 0; /* The block where this inode should be written */
 	uint32_t ioff = 0; /* Offset into the block function to sizeof(inode_t) */
-	ext2_get_inode_block(id, &block, &ioff, dev, priv);
+	ext2_get_inode_block(id, &block, &ioff, priv);
 	//printf("This inode is located on block %d with ioff %d\n", block, ioff);
 	/* First, read the block in */
-	ext2_read_block(root_buf, block, dev, priv);
+	ext2_read_block(root_buf, block, priv);
 	inode_t *winode = (inode_t *)root_buf;
 	for(int i = 0;i < ioff; i++)
 		winode++;
 	memcpy(winode, fi, sizeof(inode_t));
-	ext2_write_block(root_buf, block, dev, priv);
+	ext2_write_block(root_buf, block, priv);
 	/* Now, we have added the inode, write the superblock as well. */
-	//ext2_write_block(&priv->sb, priv->sb.superblock_id, dev, priv);
+	//ext2_write_block(&priv->sb, priv->sb.superblock_id, priv);
 	/* Now, add the directory entry,
 	 * for this we have to locate the directory that holds us,
 	 * and find his inode. 
@@ -439,7 +436,7 @@ uint8_t ext2_touch(char *file, device_t *dev UNUSED, ext2_priv_data *priv UNUSED
 	//printf("LF: %s\n", f);
 	if(!inode) inode = (inode_t *)malloc(sizeof(inode_t));
 	if(!block_buf) block_buf = (uint8_t *)malloc(priv->blocksize);
-	uint32_t t = ext2_find_file_inode(f, inode, dev, priv);
+	uint32_t t = ext2_find_file_inode(f, inode, priv);
 	t++;
 	//printf("Parent is inode %d\n", t);
 	uint8_t found = 0;
@@ -453,12 +450,12 @@ uint8_t ext2_touch(char *file, device_t *dev UNUSED, ext2_priv_data *priv UNUSED
 			 * Allocate a new block for this inode and place it there.
 			 */
 			uint32_t theblock = 0;
-			ext2_alloc_block(&theblock, dev, priv);
+			ext2_alloc_block(&theblock, priv);
 			inode->dbp[i] = theblock;
-			ext2_write_inode(inode, t, dev, priv);
+			ext2_write_inode(inode, t, priv);
  		}
 		/* This DBP points to an array of directory entries */
-		ext2_read_block(block_buf, inode->dbp[i], dev, priv);
+		ext2_read_block(block_buf, inode->dbp[i], priv);
 		/* Loop throught the directory entries */
 		ext2_dir *d = (ext2_dir *)block_buf;
 		uint32_t passed = 0;
@@ -504,7 +501,7 @@ uint8_t ext2_touch(char *file, device_t *dev UNUSED, ext2_priv_data *priv UNUSED
 		//d = (ext2_dir *)((uint32_t)d + d->size);
 	dir_write:
 		memcpy(d, entry, entry->size);
-		ext2_write_block(block_buf, inode->dbp[i], dev, priv);
+		ext2_write_block(block_buf, inode->dbp[i], priv);
 		//printf("Wrote to %d\n", inode->dbp[i]);
 		return 1;
 	}
@@ -512,7 +509,7 @@ uint8_t ext2_touch(char *file, device_t *dev UNUSED, ext2_priv_data *priv UNUSED
 	return 0;
 }
 
-uint8_t ext2_writefile(char *fn, char *buf, uint32_t len, device_t *dev, ext2_priv_data *priv)
+uint8_t ext2_writefile(char *fn, char *buf, uint32_t len,  ext2_priv_data *priv)
 {
 	/* Steps to write to a file:
 	 * - Locate and load the inode
@@ -537,12 +534,12 @@ uint8_t ext2_writefile(char *fn, char *buf, uint32_t len, device_t *dev, ext2_pr
 	 */
 
 	/* Locate and load the inode */
-	uint32_t inode_id = ext2_find_file_inode(fn, inode, dev, priv);
+	uint32_t inode_id = ext2_find_file_inode(fn, inode, priv);
 	inode_id ++;
 	if(inode_id == 1) return 0;
 	printf("%s's inode is %d\n", fn, inode_id);
 	if(!inode) inode = (inode_t *)malloc(sizeof(inode_t));
-	ext2_read_inode(inode, inode_id, dev, priv);
+	ext2_read_inode(inode, inode_id, priv);
 	/* Check if it is of type INODE_TYPE_FILE */
 	/*if(! (inode->type & INODE_TYPE_FILE))
 	{
@@ -565,26 +562,26 @@ uint8_t ext2_writefile(char *fn, char *buf, uint32_t len, device_t *dev, ext2_pr
 		for(int i = 0; i < blocks_to_alloc; i++)
 		{
 			uint32_t bid = 0;
-			ext2_alloc_block(&bid, dev, priv);
+			ext2_alloc_block(&bid, priv);
 			inode->dbp[i] = bid;
 			//printf("Set dbp[%d] to %d\n", i, inode->dbp[i]);
 		}
 		printf("Allocated %d blocks!\n", blocks_to_alloc);
 		inode->size += len; // UPDATE the size
 		/* Commit the inode to the disk */
-		ext2_write_inode(inode, inode_id - 1, dev, priv);
+		ext2_write_inode(inode, inode_id - 1, priv);
 		/* Write the buf to the blocks. */
 		for(int i = 0; i < blocks_to_alloc; i++)
 		{
 			/* We loop through the blocks and write. */
-			ext2_read_block(root_buf, inode->dbp[i], dev, priv);
+			ext2_read_block(root_buf, inode->dbp[i], priv);
 			if(i + 1 < blocks_to_alloc) { // If not last block
 				memcpy(root_buf, buf + i*priv->blocksize, priv->blocksize);
 			} else {// If last block
 				printf("Last block write %d => %d!\n", i, inode->dbp[i]);
 				memcpy(root_buf, buf + i*priv->blocksize, len);
 			}
-			ext2_write_block(root_buf, inode->dbp[i], dev, priv);
+			ext2_write_block(root_buf, inode->dbp[i], priv);
 		}
 		printf("Wrote the data to fresh blocks!\n");
 		return 1;
@@ -595,7 +592,7 @@ uint8_t ext2_writefile(char *fn, char *buf, uint32_t len, device_t *dev, ext2_pr
 	uint32_t last_data_block = inode->size / priv->blocksize;
 	uint32_t last_data_offset = (inode->size) % priv->blocksize;
 	/* Load that block. */
-	ext2_read_block(root_buf, last_data_block, dev, priv);
+	ext2_read_block(root_buf, last_data_block, priv);
 	/* If len < priv->blocksize - (inode->size)%priv->blocksize
 	 */
 	if(len < priv->blocksize - last_data_offset)
@@ -603,7 +600,7 @@ uint8_t ext2_writefile(char *fn, char *buf, uint32_t len, device_t *dev, ext2_pr
 		/*    which means that the buf can fill the block. */
 		/* Write and return noerror.*/
 		memcpy(root_buf + last_data_offset, buf, len);
-		ext2_write_block(root_buf, last_data_block, dev, priv);
+		ext2_write_block(root_buf, last_data_block, priv);
 		return 1;
 	}
 	/*Else,
@@ -618,15 +615,16 @@ uint8_t ext2_writefile(char *fn, char *buf, uint32_t len, device_t *dev, ext2_pr
  	return 0;
 }
 
-uint8_t ext2_exist(char *file, device_t *dev, ext2_priv_data *priv)
+uint8_t ext2_exist(char *file,  ext2_priv_data *priv)
 {
-	return ext2_read_file(file, 0, dev, priv);
+	return ext2_read_file(file, 0, priv);
 }
 
-uint8_t ext2_probe(device_t *dev)
+uint8_t ext2_probe()
 {
-	printf("Probing device %d\n", dev->unique_id);
+	// printf("Probing device %d\n", dev->unique_id);
 	/* Read in supposed superblock location and check sig */
+	/*
 	if(!dev->read)
 	{
 		printf("Device has no read, skipped.\n");
@@ -644,23 +642,22 @@ uint8_t ext2_probe(device_t *dev)
 	filesystem_t *fs = (filesystem_t *)malloc(sizeof(filesystem_t));
 	ext2_priv_data *priv = (ext2_priv_data *)malloc(sizeof(ext2_priv_data));
 	memcpy(&priv->sb, sb, sizeof(superblock_t));
-	/* Calculate volume length */
+	// Calculate volume length
 	uint32_t blocksize = 1024 << sb->blocksize_hint;
 	printf("Size of a block: %d bytes\n", blocksize);
 	priv->blocksize = blocksize;
 	priv->inodes_per_block = blocksize / sizeof(inode_t);
 	priv->sectors_per_block = blocksize / 512;
 	printf("Size of volume: %d bytes\n", blocksize*(sb->blocks));
-	/* Calculate the number of block groups */
+	// Calculate the number of block groups
 	uint32_t number_of_bgs0 = sb->blocks / sb->blocks_in_blockgroup;
 	if(!number_of_bgs0) number_of_bgs0 = 1;
 	printf("There are %d block group(s).\n", number_of_bgs0);
 	priv->number_of_bgs = number_of_bgs0;
-	/* Now, we have the size of a block,
-	 * calculate the location of the Block Group Descriptor
-	 * The BGDT is located directly after the SB, so obtain the
-	 * block of the SB first. This is located in the SB.
-	 */
+	//Now, we have the size of a block,
+	// calculate the location of the Block Group Descriptor
+	// The BGDT is located directly after the SB, so obtain the
+	// block of the SB first. This is located in the SB.
 	uint32_t block_bgdt = sb->superblock_id + (sizeof(superblock_t) / blocksize);
 	priv->first_bgd = block_bgdt;
 	fs->name = "EXT2";
@@ -675,14 +672,14 @@ uint8_t ext2_probe(device_t *dev)
 	dev->fs = fs;
 	printf("Device %s (%d) is with EXT2 filesystem. Probe successful.\n", dev->name, dev->unique_id);
 	free(buf);
+	*/
 	//free(buffer);
 	return 1;
 }
-uint8_t ext2_mount(device_t *dev, void *privd)
+uint8_t ext2_mount( void *privd)
 {
-	printf("Mounting ext2 on device %s (%d)\n", dev->name, dev->unique_id);
 	ext2_priv_data *priv = privd;
-	if(ext2_read_root_directory((char *)1, dev, priv))
+	if(ext2_read_root_directory((char *)1, priv))
 		return 1;
 	return 0;
 }

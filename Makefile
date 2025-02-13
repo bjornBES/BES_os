@@ -6,7 +6,7 @@ all: floppy_image tools_fat
 
 include build_tools/toolchain.mk
 
-MountDir = /mnt/disk
+MOUNTPOINT = /cavosmnt
 
 #
 # Floppy image
@@ -14,19 +14,24 @@ MountDir = /mnt/disk
 floppy_image: $(BUILD_DIR)/main_floppy.img
 
 $(BUILD_DIR)/main_floppy.img: bootloader kernel
-	@dd if=/dev/zero of=$@ bs=512 count=2880
-#	@mformat -i $(floppyOutput) -f 1440 ::
-	@mkfs.fat -F 12 -n "BESOS" -v $(floppyOutput) 
+	@bash ./build_tools/make_disk.sh $(TARGET_DIR) $(imageFS)
 
-	@mcopy -i $(floppyOutput) $(BUILD_DIR)/stage2.bin ::
-	@mmd -i $(floppyOutput) boot
-	@mcopy -i $(floppyOutput) $(BUILD_DIR)/kernel.bin ::boot/kernel.elf
-	@mcopy -i $(floppyOutput) ./test.txt ::
+#	@dd if=/dev/zero of=$@ bs=512 count=2880
+#	@mkfs.fat -F 32 -n "BESOS" -v $(floppyOutput) 
 
-	@mmd -i $(floppyOutput) mydir
-	@mcopy -i $(floppyOutput) ./test.txt ::mydir/
 
 	@dd if=$(BUILD_DIR)/stage1.bin of=$@ conv=notrunc
+	
+	@mcopy -i $(floppyOutput) $(TARGET_DIR)/bin/stage2.bin ::
+
+	@mmd -i $(floppyOutput) boot
+	@mcopy -i $(floppyOutput) $(TARGET_DIR)/bin/kernel.bin ::boot/kernel.elf
+
+	@mcopy -i $(floppyOutput) $(TARGET_DIR)/test.txt ::
+
+	@mmd -i $(floppyOutput) mydir
+	@mcopy -i $(floppyOutput) $(TARGET_DIR)/test.txt ::mydir/
+
 	@echo "--> Created: " $(floppyOutput)
 
 #
@@ -60,11 +65,16 @@ $(BUILD_DIR)/tools/fat: always tools/fat/fat.c
 	@mkdir -p $(BUILD_DIR)/tools
 	@$(MAKE) -C tools/fat BUILD_DIR=$(abspath $(BUILD_DIR))
 
+run: $(BUILD_DIR)/main_floppy.img
+	bash run disk $(BUILD_DIR)/main_floppy.img
+
+
 #
 # Always
 #
 always:
-	@mkdir -p $(BUILD_DIR)
+#	@echo "mkdir -p $(BUILD_DIR)" 
+#	@mkdir -p $(BUILD_DIR)
 
 #
 # Clean

@@ -31,7 +31,7 @@ GCC_BUILD = toolchain/gcc-build-$(GCC_VERSION)
 
 toolchain_gcc: $(TOOLCHAIN_PREFIX)/bin/i686-elf-gcc
 
-$(TOOLCHAIN_PREFIX)/bin/i686-elf-gcc: $(TOOLCHAIN_PREFIX)/bin/i686-elf-ld $(GCC_SRC).tar.xz
+$(TOOLCHAIN_PREFIX)/bin/i686-elf-gcc: $(GCC_SRC).tar.xz $(TOOLCHAIN_PREFIX)/bin/i686-elf-ld
 	cd toolchain && tar -xf gcc-$(GCC_VERSION).tar.xz
 	mkdir $(GCC_BUILD)
 	cd $(GCC_BUILD) && CFLAGS= ASMFLAGS= CC= CXX= LD= ASM= LINKFLAGS= LIBS= ../gcc-$(GCC_VERSION)/configure \

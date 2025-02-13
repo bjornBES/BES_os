@@ -1,95 +1,79 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "memory.h"
 #include "stdio.h"
+#include "debug.h"
+#include "malloc.h"
+#include "memory_allocator.h"
 
-#define _4KB 1024 * 4
-#define MaxAllocs 16
+#define MODULE "MALLOC"
 
-typedef struct
+void printStatus()
 {
-    uint8_t status;
-    uint32_t size;
-} alloc_t;
-
-extern uint8_t *__end;
-
-bool initMalloc;
-uint32_t heap_begin;
-uint32_t memory_used = 0;
-uint32_t heap_end;
-uint32_t last_alloc;
-
-void mm_init()
-{
-    heap_begin = __end;
-    last_alloc = heap_begin;
-    heap_end = heap_begin + (MaxAllocs * _4KB);
-    initMalloc = true;
+    dump_memory_status();
 }
 
-void free(void* mem)
-{
-    alloc_t *alloc = (mem - sizeof(alloc_t));
-    memory_used -= alloc->size + sizeof(alloc_t);
-    alloc->status = 0;
+// Function to allocate memory (with basic error checking)
+void *malloc(size_t size) {
+    if (size == 0) {
+        return NULL;  // Return NULL for zero-size allocation
+    }
+
+    // Find a free page for allocation
+    void *page = allocate_page();
+    if (page != NULL) {
+        // Initialize the page's linked list
+        init_page((Page *)page);
+
+        // Allocate memory inside the page
+        return page_alloc((Page *)page, size);
+    }
+
+    log_crit(MODULE, "OUT OF MEMORY");
+    return NULL;  // No pages left
 }
 
-void *malloc(uint32_t size)
-{
-    if (!size)
-    {
-        return 0;
+// Function to free memory (assumes the block belongs to a page)
+void free(void *ptr) {
+    if (!ptr) return;
+
+    // Find the page the block belongs to (aligned to page boundary)
+    uint32_t u8ptr = (uint32_t)ptr & (~(PAGE_SIZE - 1));
+    uint8_t* pu8ptr = (uint8_t*)pu8ptr;
+    Page *page = (Page *)(pu8ptr);
+
+    // Free the block inside the page
+    page_free(page, ptr);
+}
+
+// Function to allocate memory and zero it (calloc)
+void *calloc(size_t num, size_t size) {
+    size_t total_size = num * size;
+    void *ptr = malloc(total_size);
+    if (ptr) {
+        // Zero the allocated memory
+        for (size_t i = 0; i < total_size; i++) {
+            ((uint8_t *)ptr)[i] = 0;
+        }
+    }
+    return ptr;
+}
+
+// Function to resize allocated memory (realloc)
+void *realloc(void *ptr, size_t size) {
+    if (!ptr) {
+        return malloc(size);  // If ptr is NULL, realloc behaves like malloc
     }
 
-    uint8_t *mem = (uint8_t *)heap_begin;
-    while ((uint32_t)mem < last_alloc)
-    {
-        alloc_t *a = (alloc_t *)mem;
-
-        if (!a->size)
-        {
-            break;
-        }
-
-        if (a->status)
-        {
-            mem += a->size;
-            mem += sizeof(alloc_t);
-            mem += 4;
-            continue;
-        }
-
-        if (a->size >= size)
-        {
-            a->status = 1;
-            memset(mem + sizeof(alloc_t), 0, size);
-            memory_used += size + sizeof(alloc_t);
-            return (void *)(mem + sizeof(alloc_t));
-        }
-
-        mem += a->size;
-        mem += sizeof(alloc_t);
-        mem += 4;
+    if (size == 0) {
+        free(ptr);  // If size is 0, realloc behaves like free
+        return NULL;
     }
 
-    if (last_alloc+size+sizeof(alloc_t) >= heap_end)
-    {
-        printf("Cannot allocate %d bytes! Out of memory.\r\n", size);
-        panic();
-    }
-
-	alloc_t *alloc = (alloc_t *)last_alloc;
-	alloc->status = 1;
-	alloc->size = size;
-
-	last_alloc += size;
-	last_alloc += sizeof(alloc_t);
-	last_alloc += 4;
-	printf("Allocated %d bytes from 0x%x to 0x%x\n", size, (uint32_t)alloc + sizeof(alloc_t), last_alloc);
-	memory_used += size + 4 + sizeof(alloc_t);
-	memset((char *)((uint32_t)alloc + sizeof(alloc_t)), 0, size);
-	return (char *)((uint32_t)alloc + sizeof(alloc_t));
+    // Since we are not handling memory copying in this simple version,
+    // this part would require more advanced management for full support.
+    return malloc(size);  // For now, just treat realloc as malloc.
 }

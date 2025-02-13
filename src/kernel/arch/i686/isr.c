@@ -58,6 +58,7 @@ void i686_ISR_Initialize()
 
 void __attribute__((cdecl)) i686_ISR_Handler(Registers* regs)
 {
+    // log_debug("ISR", "interrupt here %d", regs->interrupt);
     if (g_ISRHandlers[regs->interrupt] != NULL)
         g_ISRHandlers[regs->interrupt](regs);
 
@@ -67,7 +68,7 @@ void __attribute__((cdecl)) i686_ISR_Handler(Registers* regs)
     else 
     {
         log_crit(MODULE, "Unhandled exception %d %s", regs->interrupt, g_Exceptions[regs->interrupt]);
-        
+
         log_crit(MODULE, "  eax=%x  ebx=%x  ecx=%x  edx=%x  esi=%x  edi=%x",
                regs->eax, regs->ebx, regs->ecx, regs->edx, regs->esi, regs->edi);
 
@@ -77,7 +78,7 @@ void __attribute__((cdecl)) i686_ISR_Handler(Registers* regs)
         log_crit(MODULE, "  interrupt=%x  errorcode=%x", regs->interrupt, regs->error);
 
         log_crit(MODULE, "KERNEL PANIC!");
-        printf("KERNEL PANIC!");
+        printf("KERNEL PANIC!\n");
 
         i686_Panic();
     }

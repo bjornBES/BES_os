@@ -7,16 +7,17 @@
 #include "stdio.h"
 #include <debug.h>
 
-#define PIC_REMAP_OFFSET        0x20
-#define MODULE                  "PIC"
+#define PIC_REMAP_OFFSET 0x20
+#define MODULE "PIC"
 
 IRQHandler g_IRQHandlers[16];
-static const PICDriver* g_Driver = NULL;
+static const PICDriver *g_Driver = NULL;
 
-void i686_IRQ_Handler(Registers* regs)
+void i686_IRQ_Handler(Registers *regs)
 {
+    // log_debug("IRQ", "interrupt here %d", regs->interrupt);
     int irq = regs->interrupt - PIC_REMAP_OFFSET;
-    
+
     if (g_IRQHandlers[irq] != NULL)
     {
         // handle IRQ
@@ -33,17 +34,20 @@ void i686_IRQ_Handler(Registers* regs)
 
 void i686_IRQ_Initialize()
 {
-    const PICDriver* drivers[] = {
+    const PICDriver *drivers[] = {
         i8259_GetDriver(),
     };
 
-    for (int i = 0; i < SIZE(drivers); i++) {
-        if (drivers[i]->Probe()) {
+    for (int i = 0; i < SIZE(drivers); i++)
+    {
+        if (drivers[i]->Probe())
+        {
             g_Driver = drivers[i];
         }
     }
 
-    if (g_Driver == NULL) {
+    if (g_Driver == NULL)
+    {
         log_warn(MODULE, "No PIC found!");
         return;
     }
@@ -64,5 +68,19 @@ void i686_IRQ_Initialize()
 
 void i686_IRQ_RegisterHandler(int irq, IRQHandler handler)
 {
+    // refuse invalid irq number
+    if (irq > 15)
+    {
+        return;
+    }
     g_IRQHandlers[irq] = handler;
+    // unmask interrupt
+    if (irq < 8)
+    {
+        i686_outb(0x21, (i686_inb(0x21) & ~(1 << irq)));
+    }
+    else
+    {
+        i686_outb(0xA1, (i686_inb(0xA1) & ~(1 << (irq - 8))));
+    }
 }

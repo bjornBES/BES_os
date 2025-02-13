@@ -2,6 +2,8 @@ bits 16
 
 section .entry
 
+%define ENDL 0x0D, 0x0A
+
 extern __bss_start
 extern __end
 extern _init
@@ -12,10 +14,14 @@ global entry
 entry:
     cli
 
+    mov si, message
+    call puts
+    
     ; save boot drive
     mov [g_BootDrive], dl
     mov [g_BootPartitionOff], si
     mov [g_BootPartitionSeg], di
+
 
     ; setup stack
     mov ax, ds
@@ -69,6 +75,35 @@ entry:
     cli
     hlt
 
+message: db "Hello world", ENDL, 0
+
+;
+; Prints a string to the screen
+; Params:
+;   - ds:si points to string
+;
+puts:
+    ; save registers we will modify
+    push si
+    push ax
+    push bx
+
+.loop:
+    lodsb               ; loads next character in al
+    or al, al           ; verify if next character is null?
+    jz .done
+
+    mov ah, 0x0E        ; call bios interrupt
+    mov bh, 0           ; set page number to 0
+    int 0x10
+
+    jmp .loop
+
+.done:
+    pop bx
+    pop ax
+    pop si    
+    ret
 
 EnableA20:
     [bits 16]

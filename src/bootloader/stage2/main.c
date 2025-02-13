@@ -22,7 +22,6 @@ typedef void (*KernelStart)(BootParams* bootParams);
 void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
 {
     clrscr();
-
     DISK disk;
     if (!DISK_Initialize(&disk, bootDrive))
     {
@@ -42,7 +41,7 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
     // prepare boot params
     g_BootParams.BootDevice = bootDrive;
     Memory_Detect(&g_BootParams.Memory);
-
+    
     // load kernel
     KernelStart kernelEntry;
     if (!ELF_Read(&part, "/boot/kernel.elf", (void**)&kernelEntry))
@@ -50,7 +49,7 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
         printf("ELF read failed, booting halted!");
         goto end;
     }
-
+    
     // execute kernel
     kernelEntry(&g_BootParams);
 

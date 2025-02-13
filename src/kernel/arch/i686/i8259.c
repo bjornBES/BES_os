@@ -143,6 +143,12 @@ uint16_t i8259_ReadInServiceRegister()
     return ((uint16_t)i686_inb(PIC2_COMMAND_PORT)) | (((uint16_t)i686_inb(PIC2_COMMAND_PORT)) << 8);
 }
 
+void sys_sleep(unsigned long seconds)
+{
+    i8259_Mask(1);
+    
+}
+
 bool i8259_Probe()
 {
     i8259_Disable();

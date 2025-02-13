@@ -34,6 +34,7 @@ int VFS_Write(fd_t file, uint8_t* data, size_t size)
     }
 }
 
+/*
 uint8_t __init_vfs = 0;
 
 mount_info_t **mount_points = 0;
@@ -109,54 +110,54 @@ uint8_t device_try_to_mount(device_t *dev, char *loc)
 
 uint8_t __find_mount(char *filename, int *adjust)
 {
-	 char *orig = (char *)malloc(strlen(filename) + 1);
-	 memset(orig, 0, strlen(filename) + 1);
-	 memcpy(orig, filename, strlen(filename) + 1);
-	 if(orig[strlen(orig)] == '/') str_backspace(orig, '/');
-	 while(1)
-	 {
-	 	for(int i = 0;i<MAX_MOUNTS; i++)
-	 	{
-	 		if(!mount_points[i]) break;
+	char *orig = (char *)malloc(strlen(filename) + 1);
+	memset(orig, 0, strlen(filename) + 1);
+	memcpy(orig, filename, strlen(filename) + 1);
+	if(orig[strlen(orig)] == '/') str_backspace(orig, '/');
+	while(1)
+	{
+		for(int i = 0;i<MAX_MOUNTS; i++)
+		{
+			if(!mount_points[i]) break;
 	 		if(strcmp(mount_points[i]->loc, orig) == 0)
 	 		{
-	 			/* Adjust the orig to make it relative to fs/dev */
-	 			*adjust = (strlen(orig) - 1);
-	 			/*kprintf("returning %s (%d) i=%d orig=%s adjust=%d\n", mount_points[i]->dev->name, 
-	 				mount_points[i]->dev->unique_id, i, orig, *adjust);*/
+				// Adjust the orig to make it relative to fs/dev
+				*adjust = (strlen(orig) - 1);
+				// kprintf("returning %s (%d) i=%d orig=%s adjust=%d\n", mount_points[i]->dev->name, 
+				// mount_points[i]->dev->unique_id, i, orig, *adjust);
 	 			free(orig);
-				return i;
-	 		}
-	 	}
-	 	if(strcmp(orig, "/") == 0)
+				 return i;
+				}
+			}
+			if(strcmp(orig, "/") == 0)
 			break;
-	 	str_backspace(orig, '/');
-	 }
+			str_backspace(orig, '/');
+		}
 	 return 0;
-}
-
-uint8_t VFS_read(char *filename, char *buffer)
-{
-	/* Correct algorithm to resolve mounts:
-	 * In a loop remove until '/' and then look for match
-	 * if no match, continue until last '/' and then we know
-	 * it is on the root_device
-	 */
-	 int adjust = 0;
-	 int i = __find_mount(filename, &adjust);
-	 filename += adjust;
-	 //kprintf("Passing with adjust %d: %s\n", adjust, filename);
-	 int rc = mount_points[i]->dev->fs->read(filename, buffer,
-				mount_points[i]->dev, mount_points[i]->dev->fs->priv_data);
-	 return rc;
-}
-
-uint32_t VFS_ls(char *dir, char* buffer)
-{
-	/* Algorithm:
-	 * For each mount, backspace one, compare with 'dir'
-	 * if yes, print out its dir name!
-	 */
+	}
+	
+	uint8_t VFS_read(char *filename, char *buffer)
+	{
+		// Correct algorithm to resolve mounts:
+		// In a loop remove until '/' and then look for match
+		// if no match, continue until last '/' and then we know
+		// it is on the root_device
+	
+		int adjust = 0;
+		int i = __find_mount(filename, &adjust);
+		filename += adjust;
+		//kprintf("Passing with adjust %d: %s\n", adjust, filename);
+		int rc = mount_points[i]->dev->fs->read(filename, buffer,
+		mount_points[i]->dev, mount_points[i]->dev->fs->priv_data);
+		return rc;
+	}
+	
+	uint32_t VFS_ls(char *dir, char* buffer)
+	{
+	// Algorithm:
+	// For each mount, backspace one, compare with 'dir'
+	// if yes, print out its dir name!
+	
 	char *orig = (char *)malloc(strlen(dir) + 1);
 	memset(orig, 0, strlen(dir) + 1);
 	memcpy(orig, dir, strlen(dir) + 1);
@@ -165,16 +166,15 @@ uint32_t VFS_ls(char *dir, char* buffer)
 		for(int i = 0; i < MAX_MOUNTS; i++)
 		{
 			if(!mount_points[i]) break;
-			/* Backspace one, check if it equals dir, if so print DIR name */
-			/* If the mount's location equals the backspaced location...*/
-			if(strcmp(mount_points[i]->loc, orig) == 0)
-			{
-				/* Then adjust and send. */
-				mount_points[i]->dev->fs->read_dir(dir + strlen(mount_points[i]->loc) - 1,
-					buffer, mount_points[i]->dev, mount_points[i]->dev->fs->priv_data);
-				/* Now, we have found who hosts this directory, look
-				 * for those that are mounted to this directory's host.
-				 */
+			// Backspace one, check if it equals dir, if so print DIR name 
+		// If the mount's location equals the backspaced location...
+		if(strcmp(mount_points[i]->loc, orig) == 0)
+		{
+			// Then adjust and send.
+			mount_points[i]->dev->fs->read_dir(dir + strlen(mount_points[i]->loc) - 1,
+			buffer, mount_points[i]->dev, mount_points[i]->dev->fs->priv_data);
+			// Now, we have found who hosts this directory, look
+				// for those that are mounted to this directory's host.
 				for(int k = 0; k < MAX_MOUNTS; k++)
 				{
 					if(!mount_points[k]) break;
@@ -206,11 +206,10 @@ uint8_t VFS_exist_in_dir(char *wd, char *fn)
 	memcpy(filename, wd, strlen(wd));
 	memcpy(filename+strlen(wd), fn, strlen(fn));
 	memset(filename+strlen(wd)+strlen(fn) + 1, '\0', 1);
-	/* Algorithm:
-	 * For each mount, check if it is mounted to wd
-	 * If it is, return 1
-	 */
-	 /* @TODO: fix */
+	// Algorithm:
+	// For each mount, check if it is mounted to wd
+	// If it is, return 1
+	// @TODO: fix
 
 	if(filename[strlen(filename)] != '/') 
 	{
@@ -222,12 +221,12 @@ uint8_t VFS_exist_in_dir(char *wd, char *fn)
 	char *o = (char *)malloc(strlen(filename) + 2);
 	memset(o, 0, strlen(filename) + 2);
 	memcpy(o, filename, strlen(filename) + 1);
-	/*if(o[strlen(o)] != '/') 
-	{
-		uint32_t index = strlen(o);
-		o[index] = '/';
-		o[index+1] = 0;
-	}*/
+	// if(o[strlen(o)] != '/') 
+	// {
+		// 	uint32_t index = strlen(o);
+	// 	o[index] = '/';
+	// 	o[index+1] = 0;
+	// }
 
 	while(1)
 	{
@@ -240,17 +239,17 @@ uint8_t VFS_exist_in_dir(char *wd, char *fn)
 				//kprintf("filename:%s\n", filename);
 				//kprintf("strlen: %d str:%s\n",strlen(mount_points[i]->loc), mount_points[i]->loc );
 				filename += strlen(mount_points[i]->loc) - 1;
-				/*kprintf("Passing: %s fn:%s, wd:%s to %s (%d)\n", filename, fn, wd,
-					mount_points[i]->dev->name, mount_points[i]->dev->unique_id);*/
+				//kprintf("Passing: %s fn:%s, wd:%s to %s (%d)\n", filename, fn, wd,
+				//	mount_points[i]->dev->name, mount_points[i]->dev->unique_id);
 				rc = mount_points[i]->dev->fs->exist(filename,
-					mount_points[i]->dev, mount_points[i]->dev->fs->priv_data);
+				mount_points[i]->dev, mount_points[i]->dev->fs->priv_data);
 				free(o);
 				free(filename);
 				return rc;
 			}
 		}
 		if(strcmp(o, "/") == 0)
-			break;
+		break;
 		str_backspace(o, '/');
 	}
 	free(o);
@@ -264,3 +263,4 @@ void VFS_init()
 	mount_points = (mount_info_t **)malloc(sizeof(uint32_t) * MAX_MOUNTS);
 	__init_vfs = 1;
 }
+*/

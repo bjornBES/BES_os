@@ -1,6 +1,6 @@
 #!/bin/bash
 
-QEMU_ARGS='-debugcon stdio -m 32'
+QEMU_ARGS="-debugcon stdio -m 8g -d guest_errors -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0"
 
 if [ "$#" -le 1 ]; then
     echo "Usage: ./run.sh <image_type> <image>"
@@ -16,4 +16,22 @@ case "$1" in
                 exit 2
 esac
 
+if ["$#" -ge 3 ]; then
+
+    if [ "$3" -eq "debug" ] then
+        QEMU_ARGS="${QEMU_ARGS} -fda $2"
+    fi
+
+fi
+
 qemu-system-i386 $QEMU_ARGS
+
+#qemu:
+#qemu-system-x86_64 -drive file=$(TARGET_IMG),format=raw,id=disk,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -m 1g -netdev user,id=mynet0 -net nic,model=rtl8139,netdev=mynet0
+
+#qemu_dbg:
+#qemu-system-x86_64 -drive file=$(TARGET_IMG),format=raw,id=disk,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -m 8g -netdev user,id=mynet0,hostfwd=udp::5555-:69,hostfwd=tcp::5555-:69 -net nic,model=rtl8139,netdev=mynet0 -object filter-dump,id=id,netdev=mynet0,file=../../netdmp.pcapng -s -smp 4 -no-shutdown -no-reboot
+
+#qemu_iso:
+#qemu-system-x86_64 -drive file=$(TARGET_ISO),format=raw -m 1g -netdev user,id=mynet0 -net nic,model=rtl8139,netdev=mynet0
+

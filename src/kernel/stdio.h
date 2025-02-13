@@ -19,4 +19,7 @@ void debugs(const char* str);
 void debugf(const char* fmt, ...);
 void debug_buffer(const char* msg, const void* buffer, uint32_t count);
 
+#define kprintf(...) { printf(__VA_ARGS__);}
+#define mprint(...) { printf(__VA_ARGS__);}
+
 #define panic() { printf("***KERNEL PANIC*** in %s at line %d\r\n", __FILE__, __LINE__); for (;;);}

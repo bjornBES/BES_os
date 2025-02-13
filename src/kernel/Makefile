@@ -1,7 +1,10 @@
 TARGET_ASMFLAGS += -f elf
-TARGET_CFLAGS += -ffreestanding -nostdlib -I. -I $(SOURCE_DIR)/src/libs 
+TARGET_CFLAGS += -ffreestanding -nostdlib -I. -I $(SOURCE_DIR)/src/libs -I $(INCLUDE_DIR) -I $(TOOLCHAIN_DIR)/gcc-build-11.2.0/gcc/include
 TARGET_LIBS += -lgcc
 TARGET_LINKFLAGS += -T linker.ld -nostdlib
+
+BUILD_DIRC = $(BUILD_DIR)/kernel/c
+BUILD_DIRASM = $(BUILD_DIR)/kernel/asm
 
 HEADERS_C = $(wildcard *.h) \
 			$(wildcard */*.h) \
@@ -34,10 +37,10 @@ OBJECTS_ASM = $(patsubst %.asm, $(BUILD_DIR)/kernel/asm/%.obj, $(SOURCES_ASM))
 
 all: kernel
 
-kernel: $(BUILD_DIR)/kernel.bin
+kernel: $(TARGET_DIR)/bin/kernel.bin
 
-$(BUILD_DIR)/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C)
-	@$(TARGET_LD) $(TARGET_LINKFLAGS) -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS)
+$(TARGET_DIR)/bin/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C)
+	@$(TARGET_LD) $(TARGET_LINKFLAGS) -D DEBUG=1 -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS)
 	@echo "--> Created:  kernel.bin"
 
 $(BUILD_DIR)/kernel/c/%.obj: %.c $(HEADERS_C)
@@ -50,8 +53,12 @@ $(BUILD_DIR)/kernel/asm/%.obj: %.asm $(HEADERS_ASM)
 	@$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
 	@echo "--> Compiled: " $<
 
+always:
+	@if not exist $(BUILD_DIRASM) mkdir $(BUILD_DIRASM)
+	@if not exist $(BUILD_DIRC) mkdir $(BUILD_DIRC)
+
 # arch/i686/isrs_gen.c arch/i686/isrs_gen.inc:
 # @$(SOURCE_DIR)/build_tools/generate_isrs.sh $@
 
 clean:
-	rm -f $(BUILD_DIR)/kernel.bin
+	rm -f $(TARGET_DIR)/bin/kernel.bin

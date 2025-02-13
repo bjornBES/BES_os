@@ -3,7 +3,6 @@
 #pragma once
 
 #include <stdint.h>
-#include "device.h"
 
 #define EXT2_SIGNATURE 0xEF53
 
@@ -107,5 +106,5 @@ typedef struct __ext2_priv_data {
 	uint32_t inodes_per_block;
 } __attribute__((packed)) ext2_priv_data;
 
-uint8_t ext2_probe(device_t* dev);
-uint8_t ext2_mount(device_t *dev, void *priv);
+uint8_t ext2_probe();
+uint8_t ext2_mount(void *priv);

@@ -61,12 +61,22 @@ global i686_DisableInterrupts
 i686_DisableInterrupts:
     cli
     ret
+    
+global i686_HLT
+i686_HLT:
+    hlt
+    ret
+
+global i686_int2
+i686_int2:
+    int 0x2
+    ret
 
 global crash_me
 crash_me:
     ; div by 0
-    ; mov ecx, 0x1337
-    ; mov eax, 0
-    ; div eax
+    mov ecx, 0x1337
+    mov eax, 0
+    div eax
     int 0x80
     ret

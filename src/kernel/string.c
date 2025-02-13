@@ -42,7 +42,7 @@ char* strcpy(char* dst, const char* src)
     return origDst;
 }
 
-unsigned strlen(const char* str)
+uint32_t strlen(const char* str)
 {
     unsigned len = 0;
     while (*str)
@@ -81,9 +81,9 @@ void atoi(char *str, int* a)
 	*a = k;
 }
 
-size_t strcrl(string str, const char what, const char with)
+uint32_t strcrl(string str, const char what, const char with)
 {
-	size_t i = 0;
+	uint32_t i = 0;
 	while(str[i] != 0)
 	{
 		if(str[i] == what) str[i] = with;
@@ -92,17 +92,17 @@ size_t strcrl(string str, const char what, const char with)
 	return i;
 }
 
-size_t strcount(string str, char c)
+uint32_t strcount(string str, char c)
 {
-	size_t i = 0;
+	uint32_t i = 0;
 	while(*str--)
 		if(*str == c) i++;
 	return i;
 }
 
-size_t str_backspace(string str, char c)
+uint32_t str_backspace(string str, char c)
 {
-	size_t i = strlen(str);
+	uint32_t i = strlen(str);
 	i--;
 	while(i)
 	{
@@ -116,9 +116,9 @@ size_t str_backspace(string str, char c)
 	return 0;
 }
 
-size_t strsplit(string str, char delim)
+uint32_t strsplit(string str, char delim)
 {
-	size_t n = 0;
+	uint32_t n = 0;
 	uint32_t i = 0;
 	while(str[i])
 	{
@@ -133,11 +133,11 @@ size_t strsplit(string str, char delim)
 	return n;
 }
 
-size_t str_begins_with(const string str, const string with)
+uint32_t str_begins_with(string str, string with)
 {
-	size_t j = strlen(with);
-	size_t i = 0;
-	size_t ret = 1;
+	uint32_t j = strlen(with);
+	uint32_t i = 0;
+	uint32_t ret = 1;
 	while(with[j] != 0)
 	{
 		if(str[i] != with[i]) { ret = 0; break; }

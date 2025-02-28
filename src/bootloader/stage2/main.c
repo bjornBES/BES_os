@@ -10,6 +10,7 @@
 #include "string.h"
 #include "elf.h"
 #include "memdetect.h"
+#include "vesa.h"
 #include <boot/bootparams.h>
 
 uint8_t* KernelLoadBuffer = (uint8_t*)MEMORY_LOAD_KERNEL;
@@ -41,6 +42,8 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
     // prepare boot params
     g_BootParams.BootDevice = bootDrive;
     Memory_Detect(&g_BootParams.Memory);
+
+    Detect_VESA(&g_BootParams.VESA);
     
     // load kernel
     KernelStart kernelEntry;

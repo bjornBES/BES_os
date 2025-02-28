@@ -239,7 +239,7 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
 
     int j, i, k, count = 0;
 
-    ide_buf = (uint8_t *)malloc(0x1000);
+    ide_buf = (uint8_t *)malloc(0x200);
 
     // 1- Detect I/O Ports which interface IDE Controller:
     channels[ATA_PRIMARY].base = (BAR0 & 0xFFFFFFFC) + 0x1F0 * (!BAR0);
@@ -364,6 +364,7 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
             // log_debug(MODULE, "Some other inits %s", ide_devices[count].Model);
         }
     }
+    free(ide_buf);
 
     // log_debug(MODULE, "Print Summary");
     // 4- Print Summary:

@@ -1,54 +1,42 @@
 TARGET_ASMFLAGS += -f elf
-TARGET_CFLAGS += -ffreestanding -nostdlib -I. -I $(SOURCE_DIR)/src/libs -I $(INCLUDE_DIR) -I $(TOOLCHAIN_DIR)/gcc-build-11.2.0/gcc/include
+TARGET_CFLAGS += -ffreestanding -nostdlib -I. -I $(SOURCE_DIR)/src/libs -I $(INCLUDE_DIR)
 TARGET_LIBS += -lgcc
 TARGET_LINKFLAGS += -T linker.ld -nostdlib
 
-BUILD_DIRC = $(BUILD_DIR)/kernel/c
-BUILD_DIRASM = $(BUILD_DIR)/kernel/asm
+BUILD_DIRKERNEL = $(BUILD_DIR)/kernel
+BUILD_DIRC = $(BUILD_DIRKERNEL)/c
+BUILD_DIRASM = $(BUILD_DIRKERNEL)/asm
 
-HEADERS_C = $(wildcard *.h) \
-			$(wildcard */*.h) \
-			$(wildcard */*/*.h) \
-			$(wildcard */*/*/*.h)
+HEADERS_C = $(shell find . -type f -name "*.h")
 
-SOURCES_C = $(wildcard *.c) \
-			$(wildcard */*.c) \
-			$(wildcard */*/*.c) \
-			$(wildcard */*/*/*.c) \
-			arch/i686/isrs_gen.c
+SOURCES_C = $(shell find . -type f -name "*.c")
+# $(BUILD_DIR)/libcore.o
 
-OBJECTS_C = $(patsubst %.c, $(BUILD_DIR)/kernel/c/%.obj, $(SOURCES_C))
+OBJECTS_C = $(patsubst %.c, $(BUILD_DIRC)/%.obj, $(SOURCES_C))
 
-HEADERS_ASM = $(wildcard *.inc) \
-			  $(wildcard */*.inc) \
-			  $(wildcard */*/*.inc) \
-			  $(wildcard */*/*/*.inc) \
-			  arch/i686/isrs_gen.inc
+HEADERS_ASM = $(shell find . -type f -name "*.inc") \
 
-SOURCES_ASM = $(wildcard *.asm) \
-			  $(wildcard */*.asm) \
-			  $(wildcard */*/*.asm) \
-			  $(wildcard */*/*/*.asm)
+SOURCES_ASM = $(shell find . -type f -name "*.asm")
 
 
-OBJECTS_ASM = $(patsubst %.asm, $(BUILD_DIR)/kernel/asm/%.obj, $(SOURCES_ASM))
+OBJECTS_ASM = $(patsubst %.asm, $(BUILD_DIRASM)/%.obj, $(SOURCES_ASM))
 
 .PHONY: all kernel clean always
 
 all: kernel
 
-kernel: $(TARGET_DIR)/bin/kernel.bin
+kernel: $(BUILD_DIRKERNEL)/kernel.elf
 
-$(TARGET_DIR)/bin/kernel.bin: $(OBJECTS_ASM) $(OBJECTS_C)
-	@$(TARGET_LD) $(TARGET_LINKFLAGS) -D DEBUG=1 -Wl,-Map=$(BUILD_DIR)/kernel.map -o $@ $^ $(TARGET_LIBS)
-	@echo "--> Created:  kernel.bin"
+$(BUILD_DIRKERNEL)/kernel.elf: $(OBJECTS_ASM) $(OBJECTS_C)
+	@$(TARGET_LD) $(TARGET_LINKFLAGS) -D DEBUG=1 -Wl,-Map=$(BUILD_DIRKERNEL)/kernel.map -o $@ $^ $(TARGET_LIBS)
+	@echo "--> Created:  kernel.elf"
 
-$(BUILD_DIR)/kernel/c/%.obj: %.c $(HEADERS_C)
+$(BUILD_DIRC)/%.obj: %.c $(HEADERS_C)
 	@mkdir -p $(@D)
 	@$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
 	@echo "--> Compiled: " $<
 
-$(BUILD_DIR)/kernel/asm/%.obj: %.asm $(HEADERS_ASM)
+$(BUILD_DIRASM)/%.obj: %.asm $(HEADERS_ASM)
 	@mkdir -p $(@D)
 	@$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
 	@echo "--> Compiled: " $<
@@ -61,4 +49,4 @@ always:
 # @$(SOURCE_DIR)/build_tools/generate_isrs.sh $@
 
 clean:
-	rm -f $(TARGET_DIR)/bin/kernel.bin
+	rm -f $(BUILD_DIRKERNEL)/kernel.elf

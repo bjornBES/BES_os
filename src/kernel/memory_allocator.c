@@ -1,34 +1,75 @@
 #include "memory_allocator.h"
-#include <stdint.h>
-#include <stddef.h> // For size_t
-
 #include "debug.h"
+#include "memory.h"
+
+#include <string.h>
 
 #define MODULE "ALLOC"
 
+extern void *__end;
+uint8_t *heap_start; // Start of heap memory
+
 // Bitmap structure to manage page allocation
-static PageBitmap *bitmap = NULL;
+size_t total_size;
 uint8_t *memory_Start = NULL; // Start of memory
 uint8_t *memory_End = NULL;   // End of memory
 uint32_t memoryAllocated;
 uint32_t pagesAllocated;
 
+PageBitmap *bitmap;
+Page *pages;
+size_t num_pages;
+
+#define MAX_VALUE (256 * 4096)  // 1MB
+#define THRESHOLD_PERCENTAGE 50 // Define a threshold percentage (e.g., 50%)
+
+bool check_length(size_t baseValue, size_t value2)
+{
+    size_t threshold = (MAX_VALUE * THRESHOLD_PERCENTAGE) / 100; // 50% of max value
+    return (baseValue > value2) || (baseValue >= threshold);
+}
+
 // Function to initialize the bitmap and linked list system
-void mm_init(MemoryRegion memRegion)
+void mm_init(MemoryInfo *memInfo)
 {
     pagesAllocated = 0;
     memoryAllocated = 0;
 
-    memory_Start = (uint8_t *)((uint32_t)memRegion.Begin);
-    if (memory_Start == 0)
+    MemoryRegion memRegion;
+    int32_t biggestIndex = -1;
+    for (size_t i = 0; i < memInfo->RegionCount; i++)
     {
-        memory_Start = (uint8_t *)PAGE_SIZE;
+        if (memInfo->Regions[i].Type == MEMORY_AVAILABLE)
+        {
+            if (biggestIndex == -1)
+            {
+                biggestIndex = i;
+                memRegion = memInfo->Regions[i];
+            }
+            else
+            {
+                if (check_length(memInfo->Regions[biggestIndex].Length, memInfo->Regions[i].Length))
+                {
+                    continue;
+                }
+                else
+                {
+                    biggestIndex = i;
+                    memRegion = memInfo->Regions[i];
+                }
+            }
+        }
     }
+    log_debug(MODULE, "%u: MEM: start=0x%llx length=0x%llx type=%x\n", biggestIndex, memRegion.Begin, memRegion.Length, memRegion.Type);
+    printf("%u: MEM: start=0x%llx length=0x%llx type=%x\n", biggestIndex, memRegion.Begin, memRegion.Length, memRegion.Type);
+    heap_start = (uint8_t*)&__end;
+    memInfo->Regions[biggestIndex].Type = MEMORY_RESERVED;
+
+    memory_Start = (uint8_t *)((uint32_t)memRegion.Begin);
     memory_End = memory_Start + memRegion.Length;
 
-    size_t total_size = (size_t)(memory_End - memory_Start);
-    size_t num_pages = total_size / PAGE_SIZE; // Calculate number of pages
-
+    total_size = (size_t)(memory_End - memory_Start);
+    num_pages = total_size / PAGE_SIZE; // Calculate number of pages
     // Allocate memory for the bitmap struct
     bitmap = (PageBitmap *)memory_Start; // Point bitmap to the start of the memory region
 
@@ -36,44 +77,112 @@ void mm_init(MemoryRegion memRegion)
     bitmap->size = num_pages;
     bitmap->bitmap = (uint32_t *)(memory_Start + sizeof(PageBitmap)); // The bitmap starts after the struct
 
-    // Initialize all bits to 0 (indicating all pages are free)
-    for (size_t i = 0; i < num_pages / 32; i++)
-    {
-        bitmap->bitmap[i] = 0;
-    }
+    // Initialize all bits to 0 (free)
+    memset(bitmap->bitmap, 0, (num_pages / 32) + 1);
 
-    // If the number of pages isn't a multiple of 32, clear the remaining bits
-    if (num_pages % 32)
+    // Initialize the pages
+    log_debug(MODULE, "total_size %p", heap_start);
+    log_debug(MODULE, "total_size %X", total_size);
+    log_debug(MODULE, "(num_pages / 32) %u", (num_pages / 32));
+    log_debug(MODULE, "size of PageBitmap %u", sizeof(PageBitmap));
+    log_debug(MODULE, "size of Page %u", sizeof(Page));
+    log_debug(MODULE, "size of HeapBlock %u", sizeof(HeapBlock));
+    log_debug(MODULE, "num page %u", num_pages);
+    pages = (Page *)((uint8_t *)memory_Start + sizeof(PageBitmap) + (num_pages / 32) + 1);
+    log_debug(MODULE, "addr pages %p", pages);
+    for (size_t i = 0; i < num_pages; i++)
     {
-        bitmap->bitmap[num_pages / 32] = 0;
+        pages[i].heapBlock = NULL;
+        pages[i].allocatedBlocks = 0;
     }
 }
 
+void mm_test()
+{
+    Page *page = allocate_page();
+    uint8_t *d1 = (uint8_t *)heap_alloc(page, 8);
+    uint8_t *array1 = (uint8_t *)heap_alloc(page, 0x100);
+    uint8_t *array2 = (uint8_t *)heap_alloc(page, 0x100);
+    uint8_t *array3 = (uint8_t *)heap_alloc(page, 0x100);
+    uint8_t *array4 = (uint8_t *)heap_alloc(page, 0x300);
+
+    heap_free(page, array4);
+    heap_free(page, d1);
+    heap_free(page, array3);
+    heap_free(page, array2);
+    heap_free(page, array1);
+}
+
+// Set a bit in the bitmap
+void set_bit(size_t index)
+{
+    bitmap->bitmap[index / 32] |= (1U << (index % 32));
+}
+
+// Clear a bit in the bitmap
+void clear_bit(size_t index)
+{
+    bitmap->bitmap[index / 32] &= ~(1U << (index % 32));
+}
+
+// Check if a bit is set (page allocated)
+bool is_bit_set(size_t index)
+{
+    return bitmap->bitmap[index / 32] & (1U << (index % 32));
+}
+
+// Allocate a page from the bitmap
+Page *allocate_page()
+{
+    size_t num_pages = bitmap->size;
+
+    for (size_t i = 0; i < num_pages; i++)
+    {
+        if (!is_bit_set(i))
+        {
+            set_bit(i);
+            pagesAllocated++;
+
+            Page *page = &pages[i]; // Use the pages array to allocate the page
+            page->heapBlock = NULL;
+            page->allocatedBlocks = 0;
+            return page;
+        }
+    }
+    return NULL; // No free pages available
+}
+
+// Function to free a page and reset its heap
+void free_page(Page *page)
+{
+    // First, free all blocks inside the heap
+    size_t pageIndex = (page - pages); // Get the index of the page in the pages array
+    clear_bit(pageIndex);
+    pagesAllocated--;
+    memoryAllocated -= PAGE_SIZE; // Decrement the total memory allocated
+}
+
+// Dump the memory status
 void dump_memory_status()
 {
-	size_t num_pages = bitmap->size;
+    size_t num_pages = bitmap->size;
     size_t allocated_pages = 0;
     size_t used_bytes = 0;
 
-    // Count allocated pages
-    for (size_t i = 0; i < num_pages; i++) {
-        size_t bit_index = i % 32;
-        size_t word_index = i / 32;
-
-        if (bitmap->bitmap[word_index] & (1 << bit_index)) {
+    for (size_t i = 0; i < num_pages; i++)
+    {
+        if (is_bit_set(i))
+        {
             allocated_pages++;
 
-            // Check the page's internal allocation
-            Page *page = (Page *)(memory_Start + (i * PAGE_SIZE));
-            Block *block = page->free_list;
-
-            // Calculate used memory inside this allocated page
-            size_t free_memory = 0;
-            while (block) {
-                free_memory += block->size + sizeof(Block);
-                block = block->next;
+            // Calculate the used bytes for this page
+            Page *page = &pages[i];
+            HeapBlock *current_block = page->heapBlock;
+            while (current_block != NULL)
+            {
+                used_bytes += current_block->size;
+                current_block = current_block->nextBlock;
             }
-            used_bytes += (PAGE_SIZE - free_memory);
         }
     }
 
@@ -85,109 +194,69 @@ void dump_memory_status()
     printf("[MEMORY DUMP] Used bytes in allocated pages: %u\n", used_bytes);
 }
 
-// Allocate a page using the bitmap
-void *allocate_page(void)
+// Function to allocate a block of memory from a page's heap
+void *heap_alloc(Page *page, size_t size)
 {
-    size_t num_pages = bitmap->size;
+    if (!page)
+        return NULL;
 
-    // Loop over each bit in the bitmap to find the first free page
-    for (size_t i = 0; i < num_pages; i++)
+    // Allocate metadata inside the page
+    HeapBlock *new_block = (HeapBlock *)((uint8_t *)page + sizeof(Page) + page->allocatedBlocks * sizeof(HeapBlock));
+
+    new_block->size = size;
+    new_block->nextBlock = NULL;
+
+    // Allocate the actual data at `heap_start` (outside the page)
+    new_block->data = heap_start;
+
+    // Move heap_start forward to prevent overlap
+    heap_start += size;
+
+    // Link the new block into the page’s heap block list
+    if (!page->heapBlock)
     {
-        size_t bit_index = i % 32;  // Find the bit position within the 32-bit word
-        size_t word_index = i / 32; // Which 32-bit word to look in
-
-        if (!(bitmap->bitmap[word_index] & (1 << bit_index)))
-        {
-            memoryAllocated += PAGE_SIZE;
-            // log_debug(MODULE, "got bit nr %u", bit_index);
-            // Mark the page as allocated
-            bitmap->bitmap[word_index] |= (1 << bit_index);
-
-            // Return the address of the allocated page
-            return memory_Start + (i * PAGE_SIZE);
-        }
+        page->heapBlock = new_block;
     }
-    log_crit(MODULE, "Didnt find page");
-    return NULL; // No free pages left
-}
-
-// Free a page by marking the bitmap entry as free
-void free_page(void *page_address)
-{
-    size_t page_index = ((uint8_t *)page_address - memory_Start) / PAGE_SIZE;
-
-    size_t bit_index = page_index % 32;
-    size_t word_index = page_index / 32;
-
-    // log_debug(MODULE, "got bit nr %u", bit_index);
-    memoryAllocated -= PAGE_SIZE;
-    // Mark the page as free
-    bitmap->bitmap[word_index] &= ~(1 << bit_index);
-}
-
-// Initialize the linked list inside a page
-void init_page(Page *page)
-{
-    // log_debug(MODULE, "init page %p", page);
-    // Create a single large free block that covers the entire page
-    page->free_list = (Block *)page->data;
-    page->free_list->size = PAGE_SIZE - sizeof(Block); // Leave space for the Block structure itself
-    page->free_list->next = NULL;                      // No other free blocks yet
-}
-
-// Allocate a block inside a page
-void *page_alloc(Page *page, size_t size)
-{
-    Block *prev = NULL;
-    Block *curr = page->free_list;
-
-    // Traverse the free list to find a large enough block
-    while (curr)
+    else
     {
-        if (curr->size >= size)
+        HeapBlock *current = page->heapBlock;
+        while (current->nextBlock)
         {
-            // If the block is larger than needed, split it
-            if (curr->size > size + sizeof(Block))
-            {
-                // Split the block
-                Block *new_block = (Block *)((uint8_t *)curr + size + sizeof(Block));
-                new_block->size = curr->size - size - sizeof(Block);
-                new_block->next = curr->next;
+            current = current->nextBlock;
+        }
+        current->nextBlock = new_block;
+    }
 
-                curr->size = size;
-                curr->next = new_block;
-            }
+    page->allocatedBlocks++;
+    return new_block->data; // Return pointer to allocated memory
+}
 
-            // Remove the block from the free list
-            if (prev)
+// Free a block from a page's heap
+void heap_free(Page *page, void *ptr)
+{
+    if (!page || !ptr) return;
+
+    HeapBlock *prev = NULL;
+    HeapBlock *current = page->heapBlock;
+
+    while (current != NULL)
+    {
+        if (current->data == ptr)
+        {
+            if (prev != NULL)
             {
-                prev->next = curr->next;
+                prev->nextBlock = current->nextBlock;
             }
             else
             {
-                page->free_list = curr->next;
+                page->heapBlock = current->nextBlock;
             }
 
-            // log_debug(MODULE, "got addr page %p", (uint8_t *)curr + sizeof(Block));
-            return (void *)((uint8_t *)curr + sizeof(Block)); // Return memory after the Block header
+            page->allocatedBlocks--;
+            return;
         }
 
-        prev = curr;
-        curr = curr->next;
+        prev = current;
+        current = current->nextBlock;
     }
-
-    return NULL; // No free block large enough
-}
-
-// Free a block inside a page
-void page_free(Page *page, void *ptr)
-{
-    // Get the Block structure that corresponds to the given pointer
-    Block *block = (Block *)((uint8_t *)ptr - sizeof(Block));
-
-    // log_debug(MODULE, "freeing block %p", block);
-
-    // Add the block back to the free list
-    block->next = page->free_list;
-    page->free_list = block;
 }

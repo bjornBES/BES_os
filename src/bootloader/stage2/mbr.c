@@ -26,7 +26,7 @@ typedef struct {
 
 void MBR_DetectPartition(Partition* part, DISK* disk, void* partition)
 {
-    printf("disk id = %u", disk->id);
+    printf("disk id = %x\n", disk->id);
     part->disk = disk;
     if (disk->id < 0x80) {
         part->partitionOffset = 0;

@@ -164,7 +164,7 @@ uint8_t ext2_find_file_inode(char *ff, inode_t *inode_buf,  ext2_priv_data *priv
 {
 	char *filename = (char*)malloc((strlen(ff) + 1));
 	memcpy(filename, ff, strlen(ff) +1);
-	size_t n = strsplit(filename, '/');
+	size_t n = 0;//strtok(filename, "/");
 	filename ++; // skip the first crap
 	uint32_t retnode = 0;
 	if(n > 1)
@@ -385,13 +385,15 @@ uint8_t ext2_touch(char *file, ext2_priv_data *priv UNUSED)
 	fi->type = INODE_TYPE_FILE;
 	fi->disk_sectors = 2;
 	/* Create the directory entry */
-	size_t n = strsplit(fil, '/');
+	/*
+	size_t n = strtok(fil, "/");
 	n--;
 	while(n)
 	{
 		fil += strlen(fil) + 1;
 		n--;
 	}
+	*/
 	//printf("filename: %s\n", fil);
 	ext2_dir *entry = (ext2_dir *)malloc(sizeof(ext2_dir) + strlen(fil) + 1);
 	entry->size = sizeof(ext2_dir) + strlen(fil) + 1;

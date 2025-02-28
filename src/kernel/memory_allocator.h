@@ -2,10 +2,22 @@
 
 #include <stddef.h>  // For size_t
 #include <stdint.h>
+#include <stdbool.h>
 #include <boot/bootparams.h>
 
 // Define the size of a single page (typically 4KB)
 #define PAGE_SIZE 4096
+typedef struct HeapBlock
+{
+    size_t size;
+    struct HeapBlock* nextBlock;
+    uint8_t* data;
+} HeapBlock;
+typedef struct Page
+{
+    HeapBlock* heapBlock;
+    uint32_t allocatedBlocks;
+} Page;
 
 // Bitmap structure to manage page allocation
 typedef struct PageBitmap {
@@ -13,23 +25,21 @@ typedef struct PageBitmap {
     size_t size;       // Number of bits (pages) we can track
 } PageBitmap;
 
-// Block structure for the linked list inside a page
-typedef struct Block {
-    size_t size;          // Size of the block in bytes
-    struct Block *next;   // Pointer to the next free block
-} Block;
-
-// Page structure to hold the free list and the page data
-typedef struct Page {
-    Block *free_list;     // The head of the free list
-    uint8_t data[PAGE_SIZE];  // The actual data of the page (size is PAGE_SIZE)
-} Page;
+extern PageBitmap *bitmap;
+extern Page *pages;
+extern size_t num_pages;
 
 // Function declarations
-void mm_init(MemoryRegion memRegion);
-void *allocate_page(void);
-void free_page(void *page_address);
-void *page_alloc(Page *page, size_t size);
-void page_free(Page *page, void *ptr);
-void init_page(Page *page);
+void mm_init(MemoryInfo* memInfo);
+Page* allocate_page();
+void free_page(Page*page);
 void dump_memory_status();
+void *heap_alloc(Page *page, size_t size);
+void heap_free(Page *page, void *ptr);
+
+// Bitmap management functions
+void set_bit(size_t index);
+void clear_bit(size_t index);
+bool is_bit_set(size_t index);
+
+void mm_test();

@@ -316,3 +316,102 @@ x86_E820GetNextBlock:
     mov esp, ebp
     pop ebp
     ret
+
+;
+; bool ASMCALL x86_VESASupported(void* result);
+;
+global x86_VESASupported
+x86_VESASupported:
+
+    ; make new call frame
+    push ebp             ; save old call frame
+    mov ebp, esp          ; initialize new call frame
+
+    x86_EnterRealMode
+
+    ; save modified regs
+    push edi
+    push es
+
+    LinearToSegOffset [bp + 8], es, edi, di
+
+    mov ax, 0x4F00
+    int 10h
+
+    cmp al, 0x4E
+    jne .VESANotSupported
+
+    xor eax, eax
+    mov al, 1
+    jmp .Endif
+    
+    .VESANotSupported:
+    
+        xor eax, eax
+    
+    .Endif
+    
+    ; restore regs
+    pop es
+    pop edi
+
+    push eax
+
+    x86_EnterProtectedMode
+
+    pop eax
+
+    ; restore old call frame
+    mov esp, ebp
+    pop ebp
+    ret
+;
+; bool ASMCALL x86_GetVESAEntry(uint8_t mode, void* result);
+;
+global x86_GetVESAEntry
+x86_GetVESAEntry:
+
+    ; make new call frame
+    push ebp             ; save old call frame
+    mov ebp, esp          ; initialize new call frame
+
+    x86_EnterRealMode
+
+    ; save modified regs
+    push edx
+    push edi
+    push es
+
+    LinearToSegOffset [bp + 12], es, edi, di
+    mov edx, [bp- 8]
+    mov ax, 0x4F01
+    call 10h
+
+    cmp al, 0x4E
+    jne .VESANotSupported
+
+    xor eax, eax
+    mov al, 1
+    jmp .Endif
+    
+    .VESANotSupported:
+    
+        xor eax, eax
+    
+    .Endif
+    
+    ; restore regs
+    pop es
+    pop edi
+    pop edx
+
+    push eax
+
+    x86_EnterProtectedMode
+
+    pop eax
+
+    ; restore old call frame
+    mov esp, ebp
+    pop ebp
+    ret

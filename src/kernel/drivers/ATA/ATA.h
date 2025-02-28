@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef struct
+typedef struct ATA_Identify
 {
     uint16_t general_config; // Word 0: General configuration (bit flags)
     uint16_t cylinders;      // Word 1: Number of logical cylinders (CHS)

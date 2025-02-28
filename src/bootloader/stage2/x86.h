@@ -21,6 +21,9 @@ bool ASMCALL x86_Disk_Read(uint8_t drive,
                            uint16_t head,
                            uint8_t count,
                            void* lowerDataOut);
+bool ASMCALL x86_VESASupported(void* result);
+bool ASMCALL x86_GetVESAEntry(uint32_t mode, void* result);
+
 
 typedef struct 
 {

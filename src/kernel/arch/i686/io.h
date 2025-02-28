@@ -18,5 +18,7 @@ uint8_t ASMCALL i686_DisableInterrupts();
 void ASMCALL i686_HLT();
 void ASMCALL i686_int2();
 
+void ASMCALL i686_EnableMCE();
+
 void i686_iowait();
 void ASMCALL i686_Panic();

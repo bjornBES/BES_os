@@ -25,12 +25,11 @@ void timer_handler(Registers *r)
 
     /* Every 18 clocks (approximately 1 second), we will
      *  display a message on the screen */
-    if (timer_ticks % SECOUND_PER_PIT_TICK == 0)
+    if (timer_ticks % (SECOUND_PER_PIT_TICK * 5) == 0)
     {
         // log_debug("TIMER", "One second has passed\n");
     }
-    /*
-     */
+    i8259_SendEndOfInterrupt(0);
 }
 void timer_wait(int ticks)
 {

@@ -49,7 +49,7 @@ section .fsheaders
         ebr_signature:              db 29h
         ebr_volume_id:              db 12h, 34h, 56h, 78h   ; serial number, value doesn't matter
         ebr_volume_label:           db 'BJORNBES OS'        ; 11 bytes, padded with spaces
-        ebr_system_id:              db 'FAT32   '           ; 8 bytes
+        ebr_system_id:              db 'FAT12   '           ; 8 bytes
     %endif
 ;
 ; Code goes here
@@ -119,7 +119,7 @@ section .entry
         mov cl, [si]
         inc si
 
-        cmp eax, 0
+        cmp cl, 0
         je .read_finish
 
         call disk_read
@@ -144,8 +144,6 @@ section .entry
         mov ds, ax
         mov es, ax
         
-        mov si, msg_read_failed
-        call puts
         jmp STAGE2_LOAD_SEGMENT:STAGE2_LOAD_OFFSET
 
         jmp wait_key_and_reboot             ; should never happen
@@ -356,8 +354,11 @@ section .data
 
 
 section .data
+; 5 bytes / entry
+; 3 * 5 = 15
     global stage2_location
-    stage2_location:        times 30 db 0
+    stage2_location:
+        times 15 db 0
 
 section .bss
     buffer:                 resb 512

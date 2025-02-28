@@ -12,5 +12,4 @@ SECTIONS
     .bss                : { __bss_start = .;        *(.bss)     }
     
     __end = .;
-    .heap               : { __heap_start = .;       *(.heap)    }
 }

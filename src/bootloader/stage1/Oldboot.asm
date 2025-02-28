@@ -56,20 +56,16 @@ section .fsheaders
 ;
 section .entry
     global start
+    ;
+    ; Code goes here
+    ;
+
     start:
-        ; move partition entry from MBR to a different location so we 
-        ; don't overwrite it (which is passed through DS:SI)
-        mov ax, PARTITION_ENTRY_SEGMENT
-        mov es, ax
-        mov di, PARTITION_ENTRY_OFFSET
-        mov cx, 16
-        rep movsb
-        
         ; setup data segments
         mov ax, 0           ; can't set ds/es directly
         mov ds, ax
         mov es, ax
-        
+
         ; setup stack
         mov ss, ax
         mov sp, 0x7C00              ; stack grows downwards from where we are loaded in memory
@@ -86,58 +82,119 @@ section .entry
         ; BIOS should set DL to drive number
         mov [ebr_drive_number], dl
 
-        ; check extensions present
-        mov ah, 0x41
-        mov bx, 0x55AA
-        stc
-        int 13h
+        ; compute LBA of root directory = reserved + fats * sectors_per_fat
+        ; note: this section can be hardcoded
+        mov ax, 9
+        mov bl, [bdb_fat_count]
+        xor bh, bh
+        mul bx                              ; ax = (fats * sectors_per_fat)
+        add ax, [bdb_reserved_sectors]      ; ax = LBA of root directory
+        push ax
 
-        jc .no_disk_extensions
-        cmp bx, 0xAA55
-        jne .no_disk_extensions
+        ; compute size of root directory = (32 * number_of_entries) / bytes_per_sector
+        mov ax, [bdb_dir_entries_count]
+        shl ax, 5                           ; ax *= 32
+        xor dx, dx                          ; dx = 0
+        div word [bdb_bytes_per_sector]     ; number of sectors we need to read
 
-        ; extensions are present
-        mov byte [have_extensions], 1
-        jmp .after_disk_extensions_check
+        test dx, dx                         ; if dx != 0, add 1
+        jz .root_dir_after
+        inc ax                              ; division remainder != 0, add 1
+                                            ; this means we have a sector only partially filled with entries
+    .root_dir_after:
 
-    .no_disk_extensions:
-        mov byte [have_extensions], 0
-
-    .after_disk_extensions_check:
-        ; load stage2
-        mov si, stage2_location
-
-        mov ax, STAGE2_LOAD_SEGMENT         ; set segment registers
-        mov es, ax
-
-        mov bx, STAGE2_LOAD_OFFSET
-
-    .loop:
-        mov eax, [si]
-        add si, 4
-        mov cl, [si]
-        inc si
-
-        cmp eax, 0
-        je .read_finish
-
+        ; read root directory
+        mov cl, al                          ; cl = number of sectors to read = size of root directory
+        pop ax                              ; ax = LBA of root directory
+        mov dl, [ebr_drive_number]          ; dl = drive number (we saved it previously)
+        mov bx, buffer                      ; es:bx = buffer
         call disk_read
 
-        xor ch, ch
-        shl cx, 5
-        mov di, es
-        add di, cx
-        mov es, di
+        ; search for kernel.bin
+        xor bx, bx
+        mov di, buffer
 
-        jmp .loop
+    .search_kernel:
+        mov si, file_stage2_bin
+        mov cx, 11                          ; compare up to 11 characters
+        push di
+        repe cmpsb
+        pop di
+        je .found_kernel
+
+        add di, 32
+        inc bx
+        cmp bx, [bdb_dir_entries_count]
+        jl .search_kernel
+
+        ; kernel not found
+        jmp kernel_not_found_error
+
+    .found_kernel:
+
+        ; di should have the address to the entry
+        mov ax, [di + 26]                   ; first logical cluster field (offset 26)
+        mov [stage2_cluster], ax
+
+        ; load FAT from disk into memory
+        mov ax, [bdb_reserved_sectors]
+        mov bx, buffer
+        mov cl, [bdb_sectors_per_fat]
+        mov dl, [ebr_drive_number]
+        call disk_read
+
+        ; read kernel and process FAT chain
+        mov bx, STAGE2_LOAD_SEGMENT
+        mov es, bx
+        mov bx, STAGE2_LOAD_OFFSET
+
+    .load_kernel_loop:
+
+        ; Read next cluster
+        mov ax, [stage2_cluster]
+
+        ; not nice :( hardcoded value
+        add ax, 31                          ; first cluster = (stage2_cluster - 2) * sectors_per_cluster + start_sector
+                                            ; start sector = reserved + fats + root directory size = 1 + 18 + 134 = 33
+        mov cl, 1
+        mov dl, [ebr_drive_number]
+        call disk_read
+
+        add bx, [bdb_bytes_per_sector]
+
+        ; compute location of next cluster
+        mov ax, [stage2_cluster]
+        mov cx, 3
+        mul cx
+        mov cx, 2
+        div cx                              ; ax = index of entry in FAT, dx = cluster mod 2
+
+        mov si, buffer
+        add si, ax
+        mov ax, [ds:si]                     ; read entry from FAT table at index ax
+
+        or dx, dx
+        jz .even
+
+    .odd:
+        shr ax, 4
+        jmp .next_cluster_after
+
+    .even:
+        and ax, 0x0FFF
+
+    .next_cluster_after:
+        cmp ax, 0x0FF8                      ; end of chain
+        jae .read_finish
+
+        mov [stage2_cluster], ax
+        jmp .load_kernel_loop
 
     .read_finish:
-        
+
         ; jump to our kernel
         mov dl, [ebr_drive_number]          ; boot device in dl
-        mov si, PARTITION_ENTRY_OFFSET
-        mov di, PARTITION_ENTRY_SEGMENT
-    
+
         mov ax, STAGE2_LOAD_SEGMENT         ; set segment registers
         mov ds, ax
         mov es, ax
@@ -329,7 +386,7 @@ section .text
 
 section .rodata
 
-    msg_read_failed:        db 'Read failed!', ENDL, 0
+    msg_read_failed:        db 'Read failed!', 0
     msg_stage2_not_found:   db 'STAGE2.BIN not found!', ENDL, 0
     file_stage2_bin:        db 'STAGE2  BIN'
 
@@ -349,11 +406,6 @@ section .data
 
     PARTITION_ENTRY_SEGMENT equ 0x2000
     PARTITION_ENTRY_OFFSET  equ 0x0
-
-
-section .data
-    global stage2_location
-    stage2_location:        times 30 db 0
 
 section .bss
     buffer:                 resb 512

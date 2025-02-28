@@ -11,9 +11,9 @@ bool ELF_Read(Partition* part, const char* path, void** entryPoint)
     uint8_t* loadBuffer = MEMORY_LOAD_KERNEL;
     uint32_t filePos = 0;
     uint32_t read;
-
     // Read header
     FAT_File* fd = FAT_Open(part, path);
+    printf("Hello world");
     if ((read = FAT_Read(part, fd, sizeof(ELFHeader), headerBuffer)) != sizeof(ELFHeader))
     {
         printf("ELF Load error!\n");

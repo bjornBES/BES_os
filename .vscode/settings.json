@@ -1,7 +1,8 @@
 {
     "files.associations": {
-        "*.s": "ca65",
         "*.embeddedhtml": "html",
+        "*.s": "ca65",
+        "*.inc": "c",
         "x86.h": "c",
         "stdio.h": "c",
         "stdlib.h": "c",
@@ -13,7 +14,6 @@
         "device.h": "c",
         "*.x": "c",
         "*.def": "c",
-        "*.inc": "c",
         "stdarg.h": "c",
         "pci.h": "c",
         "stdint.h": "c",
@@ -60,6 +60,13 @@
         "span": "c",
         "valarray": "c",
         "initializer_list": "c",
-        "cstddef": "c"
+        "cstddef": "c",
+        "buffer": "c",
+        "socket": "c",
+        "utility": "c",
+        "source_location": "c",
+        "random": "c",
+        "memory_allocator.h": "c",
+        "cmos.h": "c"
     }
 }

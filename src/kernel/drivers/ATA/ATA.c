@@ -359,7 +359,6 @@ uint32_t ata_read_one(uint8_t *buf, uint32_t lba, uint32_t offset, uint16_t devi
 
 	uint32_t count = 0;
 	// set_task(0);
-	uint16_t *dataBuffer = (uint16_t *)malloc(256);
 	for (int i = 0; i < 256; i++)
 	{
 		count++;
@@ -394,6 +393,12 @@ void ATA_init()
 	printf("Checking for ATA drives\n");
 	i686_IRQ_RegisterHandler(ATA_PRIMARY_IRQ, ide_primary_irq);
 	i686_IRQ_RegisterHandler(ATA_SECONDARY_IRQ, ide_secondary_irq);
+
+	filesystemInfo_t *fs = (filesystemInfo_t*)malloc(sizeof(filesystemInfo_t));
+	fs->name = "ATA";
+
+	device_t * dev = (device_t*)malloc(sizeof(device_t)); 
+
 }
 
 bool ATA_identify(ATA_Identify_t *buffer)
@@ -416,10 +421,15 @@ bool ATA_identify(ATA_Identify_t *buffer)
 		return false;
 	}
 
-	uint16_t *pBuffer = (uint16_t *)&buffer;
+	uint8_t *pBuffer = ((uint8_t *)buffer);
 	for (int i = 0; i < 256; i++)
 	{
-		pBuffer[i] = i686_inw(channel + ATA_REG_DATA);
+		uint16_t data = i686_inw(channel + ATA_REG_DATA);
+		uint8_t b1 = data & 0x00FF;
+		uint8_t b2 = (data >> 8);
+
+		pBuffer[i * 2] = b1; 
+		pBuffer[i * 2 + 1] = b2; 
 	}
 	return true;
 }

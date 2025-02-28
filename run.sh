@@ -1,6 +1,6 @@
 #!/bin/bash
 
-QEMU_ARGS="-debugcon stdio -m 8g -d guest_errors -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0"
+QEMU_ARGS="-debugcon stdio -m 16g -d guest_errors -device ahci,id=ahci"
 
 if [ "$#" -le 1 ]; then
     echo "Usage: ./run.sh <image_type> <image>"
@@ -16,13 +16,7 @@ case "$1" in
                 exit 2
 esac
 
-if ["$#" -ge 3 ]; then
 
-    if [ "$3" -eq "debug" ] then
-        QEMU_ARGS="${QEMU_ARGS} -fda $2"
-    fi
-
-fi
 
 qemu-system-i386 $QEMU_ARGS
 

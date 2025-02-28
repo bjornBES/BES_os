@@ -43,7 +43,7 @@ BUILD_DIR="./build"
 #     exit 1
 # fi
 
-python3 ./image/partitons.py
+python3 ./image/MakeImage.py
 
 
 echo "Done with all"

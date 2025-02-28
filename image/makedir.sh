@@ -6,5 +6,4 @@ if [ -z "$1" ]; then
 	exit 1
 fi
 
-echo "mkdir $1"
-sudo mkdir -p $1
+mkdir -p $1

@@ -2,105 +2,77 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "drivers/device.h"
 
-typedef struct ATA_Identify
-{
-    uint16_t general_config; // Word 0: General configuration (bit flags)
-    uint16_t cylinders;      // Word 1: Number of logical cylinders (CHS)
-    uint16_t reserved_2;
-    uint16_t heads; // Word 3: Number of logical heads (CHS)
-    uint16_t reserved_4;
-    uint16_t sectors_per_track; // Word 6: Number of logical sectors per track (CHS)
-    uint16_t reserved_7_9[3];
-    char serial_number[20]; // Words 10-19: Serial number (ASCII)
-    uint16_t reserved_20_22[3];
-    char firmware_revision[8];    // Words 23-26: Firmware revision (ASCII)
-    char model_number[40];        // Words 27-46: Model number (ASCII)
-    uint16_t maximum_rw_multiple; // Word 47: Maximum sectors per R/W multiple
+typedef struct {
+    uint16_t general_config;                    // word: 0
+    uint16_t cylinders;                         // word: 1
+    uint16_t specific_config;                   // word: 2
+    uint16_t heads;                             // word: 3
+    uint16_t reserved4;                         // word: 4
+    uint16_t sectors_per_track;                 // word: 5
+    uint16_t reserved6_9[3];                    // words: 6-9
+    char serial_number[20];                     // 10–19 (ASCII)
+    uint16_t reserved_20_22[3];                 // 20–22
+    char firmware_revision[8];                  // 23–26 (ASCII)
+    char model_number[40];                      // 27–46 (ASCII)
+    uint16_t max_sectors_per_interrupt;         // 47
     uint16_t reserved_48;
-    uint32_t capabilities; // Words 49-50: Capabilities flags
-    uint32_t reserved_51_52;
-    uint16_t field_validity;           // Word 53: Field validity flags
-    uint16_t current_cylinders;        // Word 54: Current CHS cylinders
-    uint16_t current_heads;            // Word 55: Current CHS heads
-    uint16_t current_sectors;          // Word 56: Current CHS sectors
-    uint32_t current_capacity;         // Words 57-58: Current CHS capacity
-    uint32_t lba_sector_count;         // Words 60-61: Total LBA sectors (28-bit)
-    uint16_t multiword_dma;            // Word 63: Multiword DMA modes supported
-    uint16_t pio_modes;                // Word 64: PIO modes supported
-    uint16_t min_dma_cycle_time;       // Word 65: Minimum DMA cycle time
-    uint16_t recommended_dma_cycle;    // Word 66: Recommended DMA cycle time
-    uint16_t min_pio_cycle_time;       // Word 67: Minimum PIO cycle time (without flow control)
-    uint16_t min_pio_cycle_time_iordy; // Word 68: Minimum PIO cycle time (with IORDY flow control)
-    uint16_t reserved_69_74[6];
-    uint16_t queue_depth;             // Word 75: Queue depth (NCQ support)
-    uint16_t sata_capabilities;       // Word 76: SATA capabilities
-    uint16_t sata_features_supported; // Word 77: SATA features supported
-    uint32_t reserved_78_79;
-    uint16_t major_version;             // Word 80: ATA Major version number
-    uint16_t minor_version;             // Word 81: ATA Minor version number
-    uint16_t command_sets_supported[3]; // Words 82-84: Supported command sets (bitmask)
-    uint16_t command_sets_enabled[3];   // Words 85-87: Enabled command sets (bitmask)
-    uint16_t ultra_dma_modes;           // Word 88: Ultra DMA mode support
-    uint16_t reserved_89_99[11];
-    uint32_t lba48_sector_count; // Words 100-103: 48-bit LBA sector count
-    uint16_t reserved_104_126[23];
-    uint16_t security_status; // Word 128: Security status (drive locked, frozen, etc.)
-    uint16_t reserved_129_159[31];
-    uint16_t apm_value; // Word 160: Advanced Power Management (APM)
-    uint16_t reserved_161_191[31];
-    uint16_t aam_value; // Word 192: Acoustic Management (AAM)
-    uint16_t reserved_193_254[62];
-    uint16_t integrity_word; // Word 255: Integrity checksum
-} __attribute__((packed)) ATA_Identify_t;
+    uint32_t capabilities;                      // Words 49-50: Capabilities flags
+    uint16_t pio_timing;                        // 51
+    uint16_t dma_timing;                        // 52
+    uint16_t field_validity;                    // 53
+    uint16_t current_cylinders;                 // 54
+    uint16_t current_heads;                     // 55
+    uint16_t current_sectors_per_track;         // 56
+    uint32_t current_capacity;                  // 57–58 (not reliable)
+    uint16_t multi_sector_settings;             // 59
+    uint32_t lba28_total_sectors;               // 60–61
+    uint16_t single_word_dma;                   // 62
+    uint16_t multi_word_dma;                    // 63
+    uint16_t advanced_pio_modes;                // 64
+    uint16_t min_dma_cycle_time;                // 65
+    uint16_t recommended_dma_cycle_time;        // 66
+    uint16_t min_pio_cycle_time_no_flow;        // 67
+    uint16_t min_pio_cycle_time_with_flow;      // 68
+    uint16_t reserved1[6];                      // 69–74
+    uint16_t queue_depth;                       // 75
+    uint16_t sata_capabilities;                 // 76 ← [AHCI relevant]
+    uint32_t sata_reserved;                     // 77–78
+    uint16_t sata_features_supported;           // 79
+    uint16_t ata_major_version;                 // 80
+    uint16_t ata_minor_version;                 // 81
+    uint16_t command_sets_supported[3];         // 82–84
+    uint16_t command_sets_enabled[3];           // 85–87
+    uint16_t ultra_dma_modes;                   // 88
+    uint16_t time_required_erase;               // 89
+    uint16_t time_required_enhanced_erase;      // 90
+    uint16_t current_apm_value;                 // 91
+    uint16_t master_password_revision;          // 92
+    uint16_t hw_reset_result;                   // 93
+    uint16_t acoustic_management;               // 94
+    uint16_t stream_minimum_req_size;           // 95
+    uint16_t stream_transfer_time_dma;          // 96
+    uint16_t stream_access_latency_dma;         // 97
+    uint32_t stream_perf_granularity;           // 98–99
+    uint64_t lba48_total_sectors;               // 100–103 ← [Use this for LBA48 drives]
+    uint16_t streaming_transfer_time;           // 104
+    uint16_t dsm_features;                      // 105
+    uint16_t phys_log_sector_info;              // 106
+    uint16_t inter_seek_delay;                  // 107
+    uint64_t world_wide_name;                   // 108–111
+    uint64_t reserved2;                         // 112–115
+    uint16_t logical_sector_size_info;          // 117
+    uint32_t commands_supported_2;              // 118–119
+    uint32_t commands_enabled_2;                // 120–121
+    uint16_t reserved3[6];                      // 122–127
+    uint16_t security_status;                   // 128
+    uint16_t vendor_specific[31];               // 129–159
+    uint16_t reserved5[96];                     // 160–255
+} __attribute__((packed)) IdentifyDeviceData;
 
-typedef struct ahci_command_list_entry_t
-{
-    uint8_t command_fis_length_in_dwords : 5;
-    uint8_t atapi : 1;
-    uint8_t write : 1;
-    uint8_t prefetchable : 1;
-    uint8_t reset : 1;
-    uint8_t bist : 1;
-    uint8_t clear : 1;
-    uint8_t reserved1 : 1;
-    uint8_t port_multiplier : 4;
-    uint16_t number_of_command_table_entries;
-    uint32_t byte_count;
-    uint32_t command_table_low_memory;
-    uint32_t command_table_high_memory;
-    uint8_t reserved2[16];
-} __attribute__((packed)) ahci_command_list_entry_t;
-
-typedef struct ahci_command_and_prd_table_t
-{
-    uint8_t fis_type;
-    uint8_t flags;
-    uint8_t command;
-    uint8_t features;
-    uint8_t lba_0;
-    uint8_t lba_1;
-    uint8_t lba_2;
-    uint8_t device_head;
-    uint8_t lba_3;
-    uint8_t lba_4;
-    uint8_t lba_5;
-    uint8_t features_expanded;
-    uint8_t sector_count_low;
-    uint8_t sector_count_high;
-    uint8_t reserved1;
-    uint8_t control;
-    uint8_t reserved2[0x30];
-
-    uint8_t atapi_command[0x10];
-    uint8_t reserved3[0x30];
-
-    uint32_t data_base_low_memory;
-    uint32_t data_base_high_memory;
-    uint32_t reserved4;
-    uint32_t data_byte_count;
-} __attribute__((packed)) ahci_command_and_prd_table_t;
+extern uint16_t ata_Device;
 
 void ATA_init();
-bool ATA_identify(ATA_Identify_t *buffer);
-uint32_t ATA_read(uint8_t *buf, uint32_t lba, uint32_t numsects, uint16_t drive);
+bool ATA_identify(IdentifyDeviceData *buffer);
+bool ATA_read(uint8_t *buf, uint32_t lba, uint32_t numsects, struct __device_t* drive);

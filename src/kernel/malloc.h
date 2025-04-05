@@ -1,12 +1,14 @@
 #pragma once
 #include <stddef.h>  // For size_t
 
-// Declare malloc, free, calloc, and realloc functions
-void *malloc(size_t size);
-void free(void *ptr);
+#include "memory_allocator.h"
 
-void *calloc(size_t num, size_t size);
-void *realloc(void *ptr, size_t size);
+// Declare malloc, free, calloc, and realloc functions
+void *malloc(size_t size, Page* page);
+void free(void *ptr, Page* page);
+
+void *calloc(size_t num, size_t size, Page* page);
+void *realloc(void *ptr, size_t size, Page* page);
 
 void printStatus();
 

@@ -67,6 +67,19 @@
         "source_location": "c",
         "random": "c",
         "memory_allocator.h": "c",
-        "cmos.h": "c"
+        "cmos.h": "c",
+        "math.h": "c",
+        "storage.h": "c",
+        "minmax.h": "c",
+        "proc.h": "c",
+        "keyboard.h": "c",
+        "float.h": "c",
+        "limits.h": "c",
+        "printf.h": "c",
+        "features.h": "c",
+        "charconv": "c",
+        "iomanip": "c",
+        "ctype.h": "c",
+        "tgmath.h": "c"
     }
 }

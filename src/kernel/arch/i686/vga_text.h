@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <boot/bootparams.h>
 
 extern bool VGA_mono;
 
@@ -82,15 +83,23 @@ enum CRTController
 
 /* VGA Mode Information Structure */
 typedef struct {
-    uint8_t mode;       /* VGA mode number */
-    uint8_t type;       /* Text or graphics */
-    uint32_t base;      /* Framebuffer base address */
-    uint16_t width;     /* Columns (text) or pixels (graphics) */
-    uint16_t height;    /* Rows (text) or pixels (graphics) */
-    uint8_t bpp;        /* Bits per pixel (for graphics) */
+    uint8_t mode;                // VGA Mode Type (Text or Graphics)
+    uint16_t width;              // Resolution width in pixels
+    uint16_t height;             // Resolution height in pixels
+    uint8_t bpp;                 // Bits per pixel
+    uint16_t pitch;              // Bytes per scanline (pitch)
+    uint32_t framebuffer;        // Physical address of the linear framebuffer
+    uint8_t memory_model;        // Memory model (e.g., Direct Color)
+    uint8_t planes;              // Number of planes
+    uint8_t red_mask;            // Red color mask (for direct color modes)
+    uint8_t red_position;        // Red color position
+    uint8_t green_mask;          // Green color mask
+    uint8_t green_position;      // Green color position
+    uint8_t blue_mask;           // Blue color mask
+    uint8_t blue_position;       // Blue color position
 } vga_mode_t;
 
 void VGA_clrscr();
 void VGA_putc(char c);
-void VGA_init();
+void VGA_init(VESAInfo* VESAinfo);
 void VGA_setcursor(int x, int y);

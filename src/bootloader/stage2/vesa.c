@@ -1,6 +1,8 @@
 #include "vesa.h"
 #include "x86.h"
 
+#include "stdio.h"
+
 #include <stdbool.h>
 
 uint16_t VESAModes[] = {
@@ -35,12 +37,11 @@ int g_VesaEntriesCount;
 
 void Detect_VESA(VESAInfo* vesaInfo)
 {
-    XGAInfo Info;
+    VbeInfoBlock Info;
     VESASupported = x86_VESASupported(&Info);
 
     if (VESASupported)
     {
-        vesa_mode_info_t entry;
         uint32_t index = 0;
         int ret = 1;
         
@@ -48,7 +49,7 @@ void Detect_VESA(VESAInfo* vesaInfo)
         
         while (ret > 0 && VESAModes[index] != 0)
         {
-            ret = x86_GetVESAEntry(index, &g_VesaEntries[g_VesaEntriesCount]);
+            ret = x86_GetVESAEntry(VESAModes[index], &g_VesaEntries[g_VesaEntriesCount]);
             g_VesaEntriesCount++;
             index++;
         }

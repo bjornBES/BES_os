@@ -11,6 +11,8 @@
 #define MAX_FILE_HANDLES        10
 #define ROOT_DIRECTORY_HANDLE   -1
 #define FAT_CACHE_SIZE          5
+#define DIR_ENTRY_SIZE          32
+#define FAT32_EOC               0x0FFFFFF8 // End of Cluster marker for FAT32
 
 typedef struct 
 {
@@ -31,17 +33,25 @@ typedef struct
 typedef struct 
 {
     uint8_t Order;
-    int16_t Chars1[5];
+    int16_t name1[5];
     uint8_t Attribute;
     uint8_t LongEntryType;
     uint8_t Checksum;
-    int16_t Chars2[6];
+    int16_t name2[6];
     uint16_t _AlwaysZero;
-    int16_t Chars3[2];
+    int16_t name3[2];
 } __attribute__((packed)) FAT_LongFileEntry;
 
+typedef union
+{
+    FAT_DirectoryEntry Entry;
+    FAT_LongFileEntry LongEntry;
+} FAT_FileEntry;
+
+
 #define FAT_LFN_LAST            0x40
-                                    
+                  
+// not in use
 typedef struct 
 {
     int Handle;
@@ -100,14 +110,15 @@ typedef struct
 
 } __attribute__((packed)) FAT_BootSector;
 
+// not in use
 typedef struct
 {
-    uint8_t Buffer[SECTOR_SIZE];
     FAT_File Public;
     bool Opened;
     uint32_t FirstCluster;
     uint32_t CurrentCluster;
     uint32_t CurrentSectorInCluster;
+    uint8_t* Buffer;
 
 } FAT_FileData;
 
@@ -115,6 +126,19 @@ typedef struct {
     uint8_t Order;
     int16_t Chars[13];
 } FAT_LFNBlock;
+
+typedef struct 
+{
+    FAT_FileEntry* entries;  // Dynamically allocated based on root directory size
+    uint32_t entryCount;     // Track number of entries
+} FAT_Directory; 
+
+typedef enum __FatType
+{
+    FAT12,
+    FAT16,
+    FAT32,
+} FatType;
 
 typedef struct
 {
@@ -124,17 +148,29 @@ typedef struct
         uint8_t BootSectorBytes[SECTOR_SIZE];
     } BS;
 
-    FAT_FileData RootDirectory;
+    FatType FATType;
+    uint32_t FirstDataSector;
+    uint32_t RootDirSector;
+    uint32_t CountofClusters;
+    uint32_t FATSector;
+    uint32_t FATSize;
 
-    FAT_FileData OpenedFiles[MAX_FILE_HANDLES];
+    FAT_Directory RootDirectory;
 
+    FAT_LFNBlock* LFNBlocks;
+    int LFNCount;
+
+    // this is where the last read was at
     uint8_t FatCache[FAT_CACHE_SIZE * SECTOR_SIZE];
     uint32_t FatCachePosition;
 
-    FAT_LFNBlock LFNBlocks[FAT_LFN_LAST];
-    int LFNCount;
-
 } FAT_Data;
+
+typedef struct __fat_priv_data {
+    uint32_t BytesPerCluster;
+    uint32_t ClusterSize;
+    uint32_t RootDirSizeSec;
+} __attribute__((packed)) fatPrivData;
 
 enum FAT_Attributes
 {
@@ -147,4 +183,5 @@ enum FAT_Attributes
     FAT_ATTRIBUTE_LFN               = FAT_ATTRIBUTE_READ_ONLY | FAT_ATTRIBUTE_HIDDEN | FAT_ATTRIBUTE_SYSTEM | FAT_ATTRIBUTE_VOLUME_ID
 };
 
-bool fat32Probe(device_t* dev);
+bool fatProbe(device_t* dev);
+bool fatMount(device_t *dev, void *priv);

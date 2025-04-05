@@ -3,7 +3,7 @@
 #include "drivers/ATA/ATA.h"
 #include <stdint.h>
 
-void GetDisk(ATA_Identify_t* ATA_identify, DISK* diskout)
+void GetDisk(IdentifyDeviceData* ATA_identify, DISK* diskout)
 {
     diskout->cylinders = ATA_identify->cylinders;
     diskout->heads = ATA_identify->heads;

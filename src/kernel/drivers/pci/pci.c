@@ -9,13 +9,16 @@
 #include "arch/i686/io.h"
 #include "arch/i686/i8259.h"
 #include "drivers/ide/ide_controller.h"
+#include "drivers/ahci/ahci.h"
 
 #include "drivers/ATA/ATA.h"
-#include "drivers/ATA/storage.h"
+#include "drivers/storage.h"
 
 #include "pci.h"
 
 #define MODULE "PCI"
+
+Page pdevPage;
 
 pci_device **pci_devices = 0;
 uint32_t devs = 0;
@@ -26,7 +29,9 @@ uint32_t pci_num_of_devices;
 pci_driver **pci_drivers = 0;
 uint32_t drivs = 0;
 
-#define getAddress(bus, device, function, offset) (uint64_t)(0x80000000 | (bus << 16) | (device << 11) | (function << 8) | offset);
+uint16_t headerType;
+
+#define getAddress(bus, slot, function, offset) (uint32_t)((1U << 31) | (bus << 16) | (slot << 11) | (function << 8) | (offset));
 
 void add_pci_device(pci_device *pdev)
 {
@@ -35,87 +40,90 @@ void add_pci_device(pci_device *pdev)
     return;
 }
 
-uint32_t pci_read_int32(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset)
+uint32_t pciReadDword(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset)
 {
-    uint64_t address = getAddress(bus, device, function, offset);
-    i686_outd(0xCF8, address);
-    return i686_ind(0xCFC);
+    uint32_t address = getAddress(bus, slot, function, (offset & 0xFC));
+    i686_outd(PCI_CONFIG_ADDRESS, address);
+    return i686_ind(PCI_CONFIG_DATA);
 }
 
-uint16_t pci_read_int16(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset)
+void pciWriteDword(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset, uint32_t value)
 {
-    uint16_t tmp = 0;
-    uint64_t address = getAddress(bus, device, function, offset);
-    i686_outd(0xCF8, address);
-    tmp = (uint16_t)((i686_ind(0xCFC) >> ((offset & 2) * 8)) & 0xffff);
-    return (tmp);
+    uint32_t address = getAddress(bus, slot, function, offset);
+    i686_outd(PCI_CONFIG_ADDRESS, address);
+    i686_outd(PCI_CONFIG_DATA, value);
 }
 
-void pci_write(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset, uint32_t value)
+uint32_t pciReadBarType(uint32_t bus, uint32_t slot, uint32_t function, uint32_t bar)
 {
-    uint64_t address = getAddress(bus, device, function, offset);
-    i686_outd(0xCF8, address);
-    i686_outd(0xCFC, value);
+    uint32_t address = getAddress(bus, slot, function, bar);
+    i686_outd(PCI_CONFIG_ADDRESS, address);
+    return (uint16_t)(i686_ind(PCI_CONFIG_DATA) & 0x1);
 }
 
-uint32_t pci_read_bar_type(uint32_t bus, uint32_t device, uint32_t function, uint32_t bar)
+uint16_t pciReadIOBar(uint32_t bus, uint32_t slot, uint32_t function, uint32_t bar)
 {
-    uint64_t address = getAddress(bus, device, function, bar);
-    i686_outd(0xCF8, address);
-    return (uint16_t)(i686_ind(0xCFC) & 0x1);
+    uint32_t address = getAddress(bus, slot, function, bar);
+    i686_outd(PCI_CONFIG_ADDRESS, address);
+    return (uint16_t)(i686_ind(PCI_CONFIG_DATA) & 0xFFFC);
 }
 
-uint16_t pci_read_io_bar(uint32_t bus, uint32_t device, uint32_t function, uint32_t bar)
+uint32_t pciReadMMIOBar(uint32_t bus, uint32_t slot, uint32_t function, uint32_t bar)
 {
-    uint64_t address = getAddress(bus, device, function, bar);
-    i686_outd(0xCF8, address);
-    return (uint16_t)(i686_ind(0xCFC) & 0xFFFC);
+    uint32_t address = getAddress(bus, slot, function, bar);
+    i686_outd(PCI_CONFIG_ADDRESS, address);
+    return (i686_ind(PCI_CONFIG_DATA) & 0xFFFFFFF0);
 }
 
-uint32_t pci_read_mmio_bar(uint32_t bus, uint32_t device, uint32_t function, uint32_t bar)
+void pciEnableIOBusmastering(uint32_t bus, uint32_t device, uint32_t function)
 {
-    uint64_t address = getAddress(bus, device, function, bar);
-    i686_outd(0xCF8, address);
-    return (i686_ind(0xCFC) & 0xFFFFFFF0);
+    pciWriteDword(bus, device, function, 0x04, ((pciReadDword(bus, device, function, 0x04) & ~(1 << 10)) | (1 << 2) | (1 << 0))); // enable interrupts, enable bus mastering, enable IO space
 }
 
-void pci_enable_io_busmastering(uint32_t bus, uint32_t device, uint32_t function)
+void pciEnableMMIOBusmastering(uint32_t bus, uint32_t device, uint32_t function)
 {
-    pci_write(bus, device, function, 0x04, ((pci_read_int32(bus, device, function, 0x04) & ~(1 << 10)) | (1 << 2) | (1 << 0))); // enable interrupts, enable bus mastering, enable IO space
+    pciWriteDword(bus, device, function, 0x04, ((pciReadDword(bus, device, function, 0x04) & ~(1 << 10)) | (1 << 2) | (1 << 1))); // enable interrupts, enable bus mastering, enable MMIO space
 }
 
-void pci_enable_mmio_busmastering(uint32_t bus, uint32_t device, uint32_t function)
+void pciDisableInterrupts(uint32_t bus, uint32_t device, uint32_t function)
 {
-    pci_write(bus, device, function, 0x04, ((pci_read_int32(bus, device, function, 0x04) & ~(1 << 10)) | (1 << 2) | (1 << 1))); // enable interrupts, enable bus mastering, enable MMIO space
+    pciWriteDword(bus, device, function, 0x04, (pciReadDword(bus, device, function, 0x04) | (1 << 10))); // disable interrupts
 }
 
-void pci_disable_interrupts(uint32_t bus, uint32_t device, uint32_t function)
+uint32_t getStorageBAR(uint32_t bus, uint32_t device, uint32_t function, uint8_t barIndex)
 {
-    pci_write(bus, device, function, 0x04, (pci_read_int32(bus, device, function, 0x04) | (1 << 10))); // disable interrupts
+    if (pciReadBarType(bus, device, function, 0x10 + (barIndex)) == 1)
+    {
+        return pciReadIOBar(bus, device, function, 0x10 + (barIndex));
+    }
+    else
+    {
+        return pciReadMMIOBar(bus, device, function, 0x10 + (barIndex));
+    }
 }
 
-uint32_t getVendorID(uint32_t bus, uint32_t device, uint32_t function)
+uint16_t getVendorID(uint32_t bus, uint32_t device, uint32_t function)
 {
-    uint32_t r0 = pci_read_int32(bus, device, function, 0);
+    uint16_t r0 = pciReadDword(bus, device, function, 0);
     return r0;
 }
-uint32_t getDeviceID(uint32_t bus, uint32_t device, uint32_t function)
+uint16_t getDeviceID(uint32_t bus, uint32_t device, uint32_t function)
 {
-    uint32_t r0 = pci_read_int32(bus, device, function, 2);
+    uint16_t r0 = pciReadDword(bus, device, function, 2);
     return r0;
 }
 uint16_t getClassId(uint16_t bus, uint16_t device, uint16_t function)
 {
-    uint32_t r0 = pci_read_int16(bus, device, function, 0xA);
+    uint16_t r0 = pciReadDword(bus, device, function, 0xA);
     return (r0 & ~0x00FF) >> 8;
 }
 uint16_t getSubClassId(uint16_t bus, uint16_t device, uint16_t function)
 {
-    uint32_t r0 = pci_read_int16(bus, device, function, 0xA);
+    uint16_t r0 = pciReadDword(bus, device, function, 0xA);
     return (r0 & ~0xFF00);
 }
 
-void scan_pci(void)
+void pciScan(void)
 {
     // initalize values that are used to determine presence of devices
     ide_0x1F0_controller_present = STATUS_FALSE;
@@ -127,61 +135,222 @@ void scan_pci(void)
     // number_of_ethernet_cards = 0;
 
     // this array is used in System board
-    pci_devices_array_mem = (uint32_t)calloc(12 * 1000, sizeof(uint32_t));
     pci_num_of_devices = 0;
 
-    log_debug(MODULE "\n\nPCI devices:", 0);
+    log_debug(MODULE, "PCI devices:");
 
     for (int bus = 0; bus < 256; bus++)
     {
         for (int device = 0; device < 32; device++)
         {
-            scan_pci_device(bus, device, 0);
+            uint16_t vendor = getVendorID(bus, device, 0);
+            if (vendor == 0xFFFF)
+            {
+                continue;
+            }
+            pciScanDevice(bus, device, 0);
 
             // multifunctional device
-            if ((pci_read_int32(bus, device, 0, 0x0C) & 0x00800000) == 0x00800000)
+            if ((pciReadDword(bus, device, 0, 0x0C) & 0x00800000) == 0x00800000)
             {
                 for (int function = 1; function < 8; function++)
                 {
-                    scan_pci_device(bus, device, function);
+                    uint16_t vendor = getVendorID(bus, device, function);
+                    if (vendor == 0xFFFF)
+                    {
+                        continue;
+                    }
+                    pciScanDevice(bus, device, function);
                 }
             }
         }
     }
 }
 
-void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
+void pciScanDevice(uint32_t bus, uint32_t device, uint32_t function)
 {
-    uint32_t full_device_id, vendor_id, device_id, type_of_device, class, subclass, progif, device_irq, mmio_port_base;
-    uint16_t io_port_base;
+    uint32_t mmioPortBase;
+    uint16_t ioPortBase;
 
     // read base informations about device
-    vendor_id = (getVendorID(bus, device, function) & 0xFFFF);
-    device_id = (getVendorID(bus, device, function) >> 16);
-    full_device_id = pci_read_int32(bus, device, function, 0);
-    if (full_device_id == 0xFFFFFFFF)
+    uint16_t vendorID = (getVendorID(bus, device, function) & 0xFFFF);
+    uint16_t deviceID = (getVendorID(bus, device, function) >> 16);
+
+    uint32_t fullDeviceId = pciReadDword(bus, device, function, 0);
+    if (fullDeviceId == 0xFFFFFFFF)
     {
         return; // no device
     }
-    type_of_device = (pci_read_int32(bus, device, function, 0x08) >> 8);
-    class = (type_of_device >> 16);
-    subclass = ((type_of_device >> 8) & 0xFF);
-    progif = (type_of_device & 0xFF);
-    device_irq = (pci_read_int32(bus, device, function, 0x3C) & 0xFF);
+    uint32_t typeOfDevice = (pciReadDword(bus, device, function, 0x08) >> 8);
+    uint32_t classID = (typeOfDevice >> 16);
+    uint32_t subclassID = ((typeOfDevice >> 8) & 0xFF);
+    uint32_t progif = (typeOfDevice & 0xFF);
+    uint32_t deviceIrq = (pciReadDword(bus, device, function, 0x3C) & 0xFF);
+
+    log_debug(MODULE, "PCI Device Found: Bus %d, Device %d, Function %d, Vendor: 0x%X, Device: 0x%X, Class: 0x%X, Subclass: 0x%X",
+              bus, device, function, vendorID, deviceID, classID, subclassID);
+
+    if (classID == 1)
+    {
+        // IDE
+        if (subclassID == 0x1 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
+        {
+            pci_device_ide_controller:
+            log_debug(MODULE, "IDE controller");
+            pciEnableIOBusmastering(bus, device, function);
+            pciDisableInterrupts(bus, device, function);
+        }
+
+        // FDD
+        if (subclassID == 0x2 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
+        {
+            log_debug(MODULE, "FDD controller");
+            pciEnableIOBusmastering(bus, device, function);
+            pciDisableInterrupts(bus, device, function);
+        }
+
+        // SATA controller
+        if (subclassID == 0x06 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
+        {
+            if (progif == 0x01)
+            {
+                log_debug(MODULE, "AHCI controller");
+                pciEnableMMIOBusmastering(bus, device, function);
+                pciDisableInterrupts(bus, device, function);
+
+                uint32_t mmioBase = pciReadMMIOBar(bus, device, function, PCI_BAR5);
+                log_debug(MODULE, "AHCI MMIO Base: 0x%x", mmioBase);
+                AHCI_init(mmioBase);
+            
+                number_of_storage_controllers++;
+            }
+        }
+    }
+
+    // Network Controller
+    else if (classID == 0x02)
+    {
+        // Ethernet
+        if (subclassID == 0x0)
+        {
+            log_debug(MODULE, "Ethernet Controller");
+        }
+    }
+
+    // Display Controller
+    else if (classID == 0x03)
+    {
+        // VGA
+        if (subclassID == 0x0)
+        {
+            log_debug(MODULE, "VGA controller");
+        }
+    }
+
+    // Multimedia Controller
+    else if (classID == 0x04)
+    {
+        // Audio Device
+        if (subclassID == 0x3)
+        {
+            log_debug(MODULE, "Audio Device");
+        }
+    }
+
+    // Bridge
+    else if (classID == 0x06)
+    {
+        // Host
+        if (subclassID == 0x0)
+        {
+            log_debug(MODULE, "Host Bridge");
+        }
+
+        // ISA
+        if (subclassID == 0x1)
+        {
+            log_debug(MODULE, "ISA Bridge");
+        }
+
+        // Other
+        if (subclassID == 0x80)
+        {
+            log_debug(MODULE, "Other");
+        }
+    }
+
+    /*
+    else if (classID == 0x02)
+    {
+        log_debug(MODULE, "Found Network Controller at Bus %d, Device %d", bus, device);
+        log_debug(MODULE, "Subclass ID: 0x%X", subclassID);
+    }
+    else if (classID == 0x03)
+    {
+        log_debug(MODULE, "Found Display Controller at Bus %d, Device %d", bus, device);
+        log_debug(MODULE, "Subclass ID: 0x%X", subclassID);
+    }
+    else if (classID == 0x04)
+    {
+        log_debug(MODULE, "Found Multimedia Controller at Bus %d, Device %d", bus, device);
+        log_debug(MODULE, "Subclass ID: 0x%X", subclassID);
+    }
+    else if (classID == 0x05)
+    {
+        log_debug(MODULE, "Found Memory Controller at Bus %d, Device %d", bus, device);
+        log_debug(MODULE, "Subclass ID: 0x%X", subclassID);
+    }
+    else if (classID == 0x06)
+    {
+        log_debug(MODULE, "Found Bridge at Bus %d, Device %d", bus, device);
+        log_debug(MODULE, "Subclass ID: 0x%X", subclassID);
+    }
+    else if (classID == 0x07)
+    {
+        log_debug(MODULE, "Found Simple Communication Controller at Bus %d, Device %d", bus, device);
+        log_debug(MODULE, "Subclass ID: 0x%X", subclassID);
+    }
+    else if (classID == 0x08)
+    {
+        log_debug(MODULE, "Found Base System Peripheral at Bus %d, Device %d", bus, device);
+        log_debug(MODULE, "Subclass ID: 0x%X", subclassID);
+    }
+    else if (classID == 0x09)
+    {
+        log_debug(MODULE, "Found Input Device Controller at Bus %d, Device %d", bus, device);
+        log_debug(MODULE, "Subclass ID: 0x%X", subclassID);
+    }
+    else if (classID == 0x0A)
+    {
+        log_debug(MODULE, "Found Docking Station at Bus %d, Device %d", bus, device);
+        log_debug(MODULE, "Subclass ID: 0x%X", subclassID);
+    }
+    else if (classID == 0x0B)
+    {
+        log_debug(MODULE, "Found Processor at Bus %d, Device %d", bus, device);
+        log_debug(MODULE, "Subclass ID: 0x%X", subclassID);
+    }
+    else if (classID == 0x0C)
+    {
+        log_debug(MODULE, "Found Serial Bus Controller at Bus %d, Device %d", bus, device);
+        log_debug(MODULE, "Subclass ID: 0x%X", subclassID);
+    }
+    */
+
+    /*
 
     // save device to array
     if (pci_num_of_devices < 1000)
     {
         uint32_t *pci_devices_array = (uint32_t *)(pci_devices_array_mem + pci_num_of_devices * 12);
         pci_devices_array[0] = (bus | (device << 8) | (function << 16));
-        pci_devices_array[1] = type_of_device;
-        pci_devices_array[2] = full_device_id;
+        pci_devices_array[1] = typeOfDevice;
+        pci_devices_array[2] = fullDeviceId;
         pci_num_of_devices++;
     }
 
     // Graphic card
-    /*
-    if(type_of_device==0x030000 && number_of_graphic_cards<MAX_NUMBER_OF_GRAPHIC_CARDS) {
+    if(typeOfDevice==0x030000 && number_of_graphic_cards<MAX_NUMBER_OF_GRAPHIC_CARDS) {
      log_debug(MODULE, "\nGraphic card");
 
      if(number_of_graphic_cards>=MAX_NUMBER_OF_GRAPHIC_CARDS) {
@@ -192,30 +361,29 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
      graphic_cards_info[number_of_graphic_cards].device_id = device_id;
 
      if(vendor_id==VENDOR_INTEL) {
-      pci_enable_io_busmastering(bus, device, function);
-      graphic_cards_info[number_of_graphic_cards].mmio_base = pci_read_mmio_bar(bus, device, function, PCI_BAR0);
-      graphic_cards_info[number_of_graphic_cards].linear_frame_buffer = (uint8_t *) (pci_read_mmio_bar(bus, device, function, PCI_BAR2));
+      pciEnableIOBusmastering(bus, device, function);
+      graphic_cards_info[number_of_graphic_cards].mmio_base = pciReadMMIOBar(bus, device, function, PCI_BAR0);
+      graphic_cards_info[number_of_graphic_cards].linear_frame_buffer = (uint8_t *) (pciReadMMIOBar(bus, device, function, PCI_BAR2));
      }
 
      number_of_graphic_cards++;
      return;
     }
-     */
 
     // IDE controller
-    if ((type_of_device & 0xFFFF00) == 0x010100 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
+    if ((typeOfDevice & 0xFFFF00) == 0x010100 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
     {
     pci_device_ide_controller:
         log_debug(MODULE, "\nIDE controller");
-        pci_enable_io_busmastering(bus, device, function);
-        pci_disable_interrupts(bus, device, function);
+        pciEnableIOBusmastering(bus, device, function);
+        pciDisableInterrupts(bus, device, function);
 
         // first controller
         storage_controllers[number_of_storage_controllers].controller_type = IDE_CONTROLLER;
-        io_port_base = pci_read_io_bar(bus, device, function, PCI_BAR0);
-        if (io_port_base == 0 || ide_is_bus_floating(io_port_base) == STATUS_FALSE)
+        ioPortBase = pciReadIOBar(bus, device, function, PCI_BAR0);
+        if (ioPortBase == 0 || ide_is_bus_floating(ioPortBase) == STATUS_FALSE)
         {
-            if (io_port_base == 0 || io_port_base == 0x1F0)
+            if (ioPortBase == 0 || ioPortBase == 0x1F0)
             {
                 if (get_ide_0x1F0_controller_present() == STATUS_FALSE)
                 {
@@ -227,8 +395,8 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
             }
             else
             {
-                storage_controllers[number_of_storage_controllers].base_1 = io_port_base;
-                storage_controllers[number_of_storage_controllers].base_2 = pci_read_io_bar(bus, device, function, PCI_BAR1);
+                storage_controllers[number_of_storage_controllers].base_1 = ioPortBase;
+                storage_controllers[number_of_storage_controllers].base_2 = pciReadIOBar(bus, device, function, PCI_BAR1);
                 number_of_storage_controllers++;
             }
         }
@@ -239,10 +407,10 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
 
         // second controller
         storage_controllers[number_of_storage_controllers].controller_type = IDE_CONTROLLER;
-        io_port_base = pci_read_io_bar(bus, device, function, PCI_BAR2);
-        if (io_port_base == 0 || ide_is_bus_floating(io_port_base) == STATUS_FALSE)
+        ioPortBase = pciReadIOBar(bus, device, function, PCI_BAR2);
+        if (ioPortBase == 0 || ide_is_bus_floating(ioPortBase) == STATUS_FALSE)
         {
-            if (io_port_base == 0 || io_port_base == 0x170)
+            if (ioPortBase == 0 || ioPortBase == 0x170)
             {
                 if (get_ide_0x170_controller_present() == STATUS_FALSE)
                 {
@@ -254,8 +422,8 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
             }
             else
             {
-                storage_controllers[number_of_storage_controllers].base_1 = io_port_base;
-                storage_controllers[number_of_storage_controllers].base_2 = pci_read_io_bar(bus, device, function, PCI_BAR3);
+                storage_controllers[number_of_storage_controllers].base_1 = ioPortBase;
+                storage_controllers[number_of_storage_controllers].base_2 = pciReadIOBar(bus, device, function, PCI_BAR3);
                 number_of_storage_controllers++;
             }
         }
@@ -264,14 +432,14 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
     }
 
     // SATA controller
-    if (type_of_device == 0x010601 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
+    if (typeOfDevice == 0x010601 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
     {
         log_debug(MODULE, "\nAHCI controller");
-        pci_enable_mmio_busmastering(bus, device, function);
-        pci_disable_interrupts(bus, device, function);
+        pciEnableMMIOBusmastering(bus, device, function);
+        pciDisableInterrupts(bus, device, function);
 
         // test presence of AHCI interface
-        if ((i686_ind(pci_read_mmio_bar(bus, device, function, PCI_BAR5) + 0x04) & 0x80000000) == 0x00000000)
+        if ((i686_ind(pciReadMMIOBar(bus, device, function, PCI_BAR5) + 0x04) & 0x80000000) == 0x00000000)
         {
             log_debug(MODULE, " with IDE interface");
             goto pci_device_ide_controller; // IDE interface
@@ -279,17 +447,16 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
 
         // save device
         storage_controllers[number_of_storage_controllers].controller_type = AHCI_CONTROLLER;
-        storage_controllers[number_of_storage_controllers].base_1 = pci_read_mmio_bar(bus, device, function, PCI_BAR5);
+        storage_controllers[number_of_storage_controllers].base_1 = pciReadMMIOBar(bus, device, function, PCI_BAR5);
         number_of_storage_controllers++;
         return;
     }
 
-    /*
     // Ethernet card
-    if (type_of_device == 0x020000)
+    if (typeOfDevice == 0x020000)
     {
         log_debug(MODULE, "\nEthernet card ");
-        log_hex_with_space(full_device_id);
+        log_hex_with_space(fullDeviceId);
 
         if (number_of_ethernet_cards >= MAX_NUMBER_OF_ETHERNET_CARDS)
         {
@@ -297,7 +464,7 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
         }
 
         // read basic values
-        ethernet_cards[number_of_ethernet_cards].id = full_device_id;
+        ethernet_cards[number_of_ethernet_cards].id = fullDeviceId;
         ethernet_cards[number_of_ethernet_cards].irq = (pci_read(bus, device, function, 0x3C) & 0xFF);
         ethernet_cards[number_of_ethernet_cards].bus = bus;
         ethernet_cards[number_of_ethernet_cards].dev = device;
@@ -310,16 +477,16 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
             // connect to driver for Intel e1000
             ethernet_cards[number_of_ethernet_cards].initalize = ec_intel_e1000_initalize;
 
-            ethernet_cards[number_of_ethernet_cards].bar_type = pci_read_bar_type(bus, device, function, PCI_BAR0);
+            ethernet_cards[number_of_ethernet_cards].bar_type = pciReadBarType(bus, device, function, PCI_BAR0);
             if (ethernet_cards[number_of_ethernet_cards].bar_type == PCI_MMIO_BAR)
             {
-                ethernet_cards[number_of_ethernet_cards].base = pci_read_mmio_bar(bus, device, function, PCI_BAR0);
-                pci_enable_mmio_busmastering(bus, device, function);
+                ethernet_cards[number_of_ethernet_cards].base = pciReadMMIOBar(bus, device, function, PCI_BAR0);
+                pciEnableMMIOBusmastering(bus, device, function);
             }
             else
             {
-                ethernet_cards[number_of_ethernet_cards].base = pci_read_io_bar(bus, device, function, PCI_BAR0);
-                pci_enable_io_busmastering(bus, device, function);
+                ethernet_cards[number_of_ethernet_cards].base = pciReadIOBar(bus, device, function, PCI_BAR0);
+                pciEnableIOBusmastering(bus, device, function);
             }
         }
 
@@ -329,9 +496,9 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
             // connect to driver for Amd PCNET
             ethernet_cards[number_of_ethernet_cards].initalize = ec_amd_pcnet_initalize;
 
-            pci_enable_io_busmastering(bus, device, function);
+            pciEnableIOBusmastering(bus, device, function);
             ethernet_cards[number_of_ethernet_cards].bar_type = PCI_IO_BAR;
-            ethernet_cards[number_of_ethernet_cards].base = pci_read_io_bar(bus, device, function, PCI_BAR0);
+            ethernet_cards[number_of_ethernet_cards].base = pciReadIOBar(bus, device, function, PCI_BAR0);
         }
 
         // Broadcom NetXtreme
@@ -340,9 +507,9 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
             // connect to driver for Broadcom NetXtreme
             ethernet_cards[number_of_ethernet_cards].initalize = ec_broadcom_netxtreme_initalize;
 
-            pci_enable_mmio_busmastering(bus, device, function);
+            pciEnableMMIOBusmastering(bus, device, function);
             ethernet_cards[number_of_ethernet_cards].bar_type = PCI_MMIO_BAR;
-            ethernet_cards[number_of_ethernet_cards].base = pci_read_mmio_bar(bus, device, function, PCI_BAR0);
+            ethernet_cards[number_of_ethernet_cards].base = pciReadMMIOBar(bus, device, function, PCI_BAR0);
         }
 
         // Qualcomm Atheros
@@ -351,10 +518,10 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
             // connect to driver for Qualcomm Atheros
             ethernet_cards[number_of_ethernet_cards].initalize = ec_atheros_initalize;
 
-            pci_enable_io_busmastering(bus, device, function);
-            pci_enable_mmio_busmastering(bus, device, function);
+            pciEnableIOBusmastering(bus, device, function);
+            pciEnableMMIOBusmastering(bus, device, function);
             ethernet_cards[number_of_ethernet_cards].bar_type = PCI_MMIO_BAR;
-            ethernet_cards[number_of_ethernet_cards].base = pci_read_mmio_bar(bus, device, function, PCI_BAR0);
+            ethernet_cards[number_of_ethernet_cards].base = pciReadMMIOBar(bus, device, function, PCI_BAR0);
         }
 
         // Realtek
@@ -365,25 +532,25 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
                 // connect to driver for Realtek 8139
                 ethernet_cards[number_of_ethernet_cards].initalize = ec_realtek_8139_initalize;
 
-                pci_enable_io_busmastering(bus, device, function);
+                pciEnableIOBusmastering(bus, device, function);
                 ethernet_cards[number_of_ethernet_cards].bar_type = PCI_IO_BAR;
-                ethernet_cards[number_of_ethernet_cards].base = pci_read_io_bar(bus, device, function, PCI_BAR0);
+                ethernet_cards[number_of_ethernet_cards].base = pciReadIOBar(bus, device, function, PCI_BAR0);
             }
             else if (device_id == 0x8136 || device_id == 0x8161 || device_id == 0x8168 || device_id == 0x8169)
             {
                 // connect to driver for Realtek 8169
                 ethernet_cards[number_of_ethernet_cards].initalize = ec_realtek_8169_initalize;
 
-                ethernet_cards[number_of_ethernet_cards].bar_type = pci_read_bar_type(bus, device, function, PCI_BAR0);
+                ethernet_cards[number_of_ethernet_cards].bar_type = pciReadBarType(bus, device, function, PCI_BAR0);
                 if (ethernet_cards[number_of_ethernet_cards].bar_type == PCI_MMIO_BAR)
                 {
-                    ethernet_cards[number_of_ethernet_cards].base = pci_read_mmio_bar(bus, device, function, PCI_BAR0);
-                    pci_enable_mmio_busmastering(bus, device, function);
+                    ethernet_cards[number_of_ethernet_cards].base = pciReadMMIOBar(bus, device, function, PCI_BAR0);
+                    pciEnableMMIOBusmastering(bus, device, function);
                 }
                 else
                 {
-                    ethernet_cards[number_of_ethernet_cards].base = pci_read_io_bar(bus, device, function, PCI_BAR0);
-                    pci_enable_io_busmastering(bus, device, function);
+                    ethernet_cards[number_of_ethernet_cards].base = pciReadIOBar(bus, device, function, PCI_BAR0);
+                    pciEnableIOBusmastering(bus, device, function);
                 }
             }
         }
@@ -391,20 +558,18 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
         number_of_ethernet_cards++;
         return;
     }
-    */
 
-    /*
     // Ethernet card
-    if (type_of_device == 0x028000)
+    if (typeOfDevice == 0x028000)
     {
         log_debug(MODULE, "\nWireless card ");
-        log_hex_with_space(full_device_id);
+        log_hex_with_space(fullDeviceId);
 
         return;
     }
 
     // AC97 sound card
-    if (type_of_device == 0x040100 && number_of_sound_cards < MAX_NUMBER_OF_SOUND_CARDS)
+    if (typeOfDevice == 0x040100 && number_of_sound_cards < MAX_NUMBER_OF_SOUND_CARDS)
     {
         log_debug(MODULE, "\nsound card AC97");
 
@@ -413,20 +578,20 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
             return;
         }
 
-        pci_enable_io_busmastering(bus, device, function);
+        pciEnableIOBusmastering(bus, device, function);
 
         sound_cards_info[number_of_sound_cards].driver = SOUND_CARD_DRIVER_AC97;
         sound_cards_info[number_of_sound_cards].vendor_id = vendor_id;
         sound_cards_info[number_of_sound_cards].device_id = device_id;
-        sound_cards_info[number_of_sound_cards].io_base = pci_read_io_bar(bus, device, function, PCI_BAR0);
-        sound_cards_info[number_of_sound_cards].io_base_2 = pci_read_io_bar(bus, device, function, PCI_BAR1);
+        sound_cards_info[number_of_sound_cards].io_base = pciReadIOBar(bus, device, function, PCI_BAR0);
+        sound_cards_info[number_of_sound_cards].io_base_2 = pciReadIOBar(bus, device, function, PCI_BAR1);
         number_of_sound_cards++;
 
         return;
     }
 
     // HD Audio sound card
-    if (type_of_device == 0x040300 && number_of_sound_cards < MAX_NUMBER_OF_SOUND_CARDS)
+    if (typeOfDevice == 0x040300 && number_of_sound_cards < MAX_NUMBER_OF_SOUND_CARDS)
     {
         log_debug(MODULE, "\nsound card HDA");
 
@@ -435,19 +600,19 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
             return;
         }
 
-        pci_enable_mmio_busmastering(bus, device, function);
+        pciEnableMMIOBusmastering(bus, device, function);
 
         sound_cards_info[number_of_sound_cards].driver = SOUND_CARD_DRIVER_HDA;
         sound_cards_info[number_of_sound_cards].vendor_id = vendor_id;
         sound_cards_info[number_of_sound_cards].device_id = device_id;
-        sound_cards_info[number_of_sound_cards].mmio_base = pci_read_mmio_bar(bus, device, function, PCI_BAR0);
+        sound_cards_info[number_of_sound_cards].mmio_base = pciReadMMIOBar(bus, device, function, PCI_BAR0);
         number_of_sound_cards++;
 
         return;
     }
 
     // Universal Host Controller Interface
-    if (type_of_device == 0x0C0300)
+    if (typeOfDevice == 0x0C0300)
     {
         log_debug(MODULE, "\nUHCI");
 
@@ -457,17 +622,17 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
         }
 
         usb_controllers[usb_controllers_pointer].type = USB_CONTROLLER_UHCI;
-        usb_controllers[usb_controllers_pointer].base = pci_read_io_bar(bus, device, function, PCI_BAR4);
+        usb_controllers[usb_controllers_pointer].base = pciReadIOBar(bus, device, function, PCI_BAR4);
         usb_controllers_pointer++;
 
         // disable BIOS legacy support
-        pci_write(bus, device, function, 0xC0, 0x8F00);
+        pciWriteDword(bus, device, function, 0xC0, 0x8F00);
 
         return;
     }
 
     // Open Host Controller Interface
-    if (type_of_device == 0x0C0310)
+    if (typeOfDevice == 0x0C0310)
     {
         log_debug(MODULE, "\nOHCI");
 
@@ -477,7 +642,7 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
         }
 
         usb_controllers[usb_controllers_pointer].type = USB_CONTROLLER_OHCI;
-        usb_controllers[usb_controllers_pointer].base = pci_read_mmio_bar(bus, device, function, PCI_BAR0);
+        usb_controllers[usb_controllers_pointer].base = pciReadMMIOBar(bus, device, function, PCI_BAR0);
         usb_controllers_pointer++;
 
         // disable BIOS legacy support
@@ -490,7 +655,7 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
     }
 
     // Enhanced Host Controller Interface
-    if (type_of_device == 0x0C0320)
+    if (typeOfDevice == 0x0C0320)
     {
         log_debug(MODULE, "\nEHCI");
 
@@ -503,15 +668,14 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
         usb_controllers[usb_controllers_pointer].device = device;
         usb_controllers[usb_controllers_pointer].function = function;
         usb_controllers[usb_controllers_pointer].type = USB_CONTROLLER_EHCI;
-        usb_controllers[usb_controllers_pointer].base = pci_read_mmio_bar(bus, device, function, PCI_BAR0);
+        usb_controllers[usb_controllers_pointer].base = pciReadMMIOBar(bus, device, function, PCI_BAR0);
         usb_controllers_pointer++;
 
         return;
     }
-    */
 
     // eXtensible Host Controller Interface
-    if (type_of_device == 0x0C0330)
+    if (typeOfDevice == 0x0C0330)
     {
         log_debug(MODULE, "\nxHCI");
 
@@ -519,7 +683,7 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
     }
 
     // Host bridge
-    if (type_of_device == 0x060000)
+    if (typeOfDevice == 0x060000)
     {
         log_debug(MODULE, "\nHost bridge");
 
@@ -527,7 +691,7 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
     }
 
     // ISA bridge
-    if (type_of_device == 0x060100)
+    if (typeOfDevice == 0x060100)
     {
         log_debug(MODULE, "\nISA bridge");
 
@@ -535,7 +699,7 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
     }
 
     // PCI bridge
-    if ((type_of_device & 0xFFFF00) == 0x060400)
+    if ((typeOfDevice & 0xFFFF00) == 0x060400)
     {
         log_debug(MODULE, "\nPCI bridge");
 
@@ -543,34 +707,16 @@ void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function)
     }
 
     // Other bridge
-    if (type_of_device == 0x068000)
+    if (typeOfDevice == 0x068000)
     {
         log_debug(MODULE, "\nOther bridge");
 
         return;
     }
 
-    log_debug(MODULE, "\nunknown device %X", type_of_device);
-    pci_disable_interrupts(bus, device, function); // disable interrupts from every device that we do not know
-}
-
-uint8_t *get_pci_vendor_string(uint32_t vendor_id)
-{
-    uint32_t pci_vendor_id_string_array[256];
-
-    for (uint32_t i = 0; i < 256; i += 2)
-    {
-        if (pci_vendor_id_string_array[i] == 0)
-        {
-            break;
-        }
-        else if (pci_vendor_id_string_array[i] == vendor_id)
-        {
-            return (uint8_t *)(pci_vendor_id_string_array[i + 1]);
-        }
-    }
-
-    return ""; // this vendor id is not in list
+    log_debug(MODULE, "\nunknown device %X", typeOfDevice);
+    pciDisableInterrupts(bus, device, function); // disable interrupts from every device that we do not know
+    */
 }
 
 void pci_probe()
@@ -579,40 +725,22 @@ void pci_probe()
     {
         for (uint32_t slot = 0; slot < 32; slot++)
         {
-            for (uint32_t function = 0; function < 8; function++)
-            {
-                uint16_t vendor = (uint16_t)(getVendorID(bus, slot, function) & 0x0000FFFF);
-                if (vendor == 0xffff)
-                    continue;
-                /*
-                uint16_t device = getDeviceID(bus, slot, function);
-                printf("vendor: 0x%x device: 0x%x\n", vendor, device);
-                pci_device *pdev = (pci_device *)malloc(sizeof(pci_device));
-                pdev->vendor = vendor;
-                pdev->device = device;
-                pdev->func = function;
-                pdev->driver = 0;
-                add_pci_device(pdev);
-                */
-            }
+            uint16_t vendor = (uint16_t)(getVendorID(bus, slot, 0));
+            if (vendor == 0xffff)
+                continue;
+            uint16_t device = getDeviceID(bus, slot, 0);
+            printf("bus: 0x%x slot: 0x%x vendor: 0x%x device: 0x%x\n", bus, slot, vendor, device);
+            pci_device *pdev = (pci_device *)malloc(sizeof(pci_device), &pdevPage);
+            pdev->vendor = vendor;
+            pdev->device = device;
+            pdev->func = 0;
+            pdev->driver = 0;
+            add_pci_device(pdev);
         }
     }
 }
 
-uint16_t pciCheckVendor(uint16_t bus, uint16_t slot)
-{
-    uint16_t vendor = (uint16_t)(getVendorID(bus, slot, 0) & 0x0000FFFF);
-    uint16_t device;
-    /* check if device is valid */
-    if (vendor != 0xFFFF)
-    {
-        device = getDeviceID(bus, slot, 0);
-        /* valid device */
-    }
-    return (vendor);
-}
-
-void pci_init()
+void pci_init(uint8_t HWChar)
 {
     devs = drivs = 0;
     // pci_devices = (pci_device **)malloc(32 * sizeof(pci_device));
@@ -620,23 +748,3 @@ void pci_init()
     pci_probe();
     printf("PCI driver support loaded.\n");
 }
-/*
-void pci_register_driver(pci_driver *driv)
-{
-    pci_drivers[drivs] = driv;
-    drivs++;
-    return;
-}
-
-void pci_proc_dump(uint8_t *buffer)
-{
-    for (int i = 0; i < devs; i++)
-    {
-        pci_device *pci_dev = pci_devices[i];
-        if (pci_dev->driver)
-        printf("[%x:%x:%x] => %s\n", pci_dev->vendor, pci_dev->device, pci_dev->func, pci_dev->driver->name);
-        else
-        printf("[%x:%x:%x]\n", pci_dev->vendor, pci_dev->device, pci_dev->func);
-    }
-}
-*/

@@ -1,5 +1,5 @@
 
-#pragma onces
+#pragma once
 
 #include <stdint.h>
 

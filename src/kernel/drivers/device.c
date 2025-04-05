@@ -1,18 +1,56 @@
 #include "device.h"
 #include "malloc.h"
 #include "memory.h"
+#include "stdio.h"
+#include "debug.h"
 
-device_t* devices = 0;
+#define MODULE "DEVICE"
+
+device_t **devices = 0;
+Page* devicesPage;
 uint8_t lastid = 0;
 
 void initDevice()
 {
-
+	devices = (device_t **)malloc(64 * sizeof(device_t), devicesPage);
+	memset(devices, 0, 64 * sizeof(device_t));
+	lastid = 0;
 }
 
-int addDevice(device_t* dev)
+void PrintDeviceOut()
 {
-    devices = (device_t*)malloc(sizeof(device_t)*64);
-    memset(devices, 0, sizeof(device_t)*64);
-    lastid = 0;
+	log_debug(MODULE, "sizeof device %u", sizeof(device_t));
+	for (int i = 0; i < lastid; i++)
+	{
+		// if(!devices[lastid]) return;
+		log_info(MODULE, "id: %d, unique: %d, %s, %s", i, devices[i]->id, devices[i]->dev_type == DEVICE_CHAR ? "CHAR" : "BLOCK", devices[i]->name);
+	}
+}
+
+int addDevice(device_t *dev)
+{
+	devices[lastid] = dev;
+	lastid++;
+	return lastid - 1;
+}
+
+device_t *GetDeviceUsingId(uint32_t id)
+{
+	for (int i = 0; i < 64; i++)
+	{
+		if (devices[i]->id == id)
+		{
+			return devices[i];
+		}
+		else
+		{
+			continue;
+		}
+	}
+	return 0;
+}
+
+device_t *GetDevice(uint32_t id)
+{
+	return devices[id];
 }

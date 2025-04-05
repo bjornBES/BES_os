@@ -5,11 +5,13 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
+#include <printfDriver/printf.h>
+
 #include <hal/vfs.h>
 
 void fputc(char c, fd_t file)
 {
-    VFS_Write(file, &c, sizeof(c));
+    VFS_Write(file, (uint8_t*)&c, sizeof(c));
 }
 
 void fputs(const char* str, fd_t file)
@@ -63,6 +65,7 @@ void fprintf_signed(fd_t file, long long number, int radix)
     else fprintf_unsigned(file, number, radix);
 }
 
+/*
 void vfprintf(fd_t file, const char* fmt, va_list args)
 {
     int state = PRINTF_STATE_NORMAL;
@@ -70,139 +73,140 @@ void vfprintf(fd_t file, const char* fmt, va_list args)
     int radix = 10;
     bool sign = false;
     bool number = false;
-
+    
     while (*fmt)
     {
         switch (state)
         {
             case PRINTF_STATE_NORMAL:
-                switch (*fmt)
-                {
-                    case '%':   state = PRINTF_STATE_LENGTH;
-                                break;
-                    default:    fputc(*fmt, file);
-                                break;
-                }
+            switch (*fmt)
+            {
+                case '%':   state = PRINTF_STATE_LENGTH;
                 break;
-
+                default:    fputc(*fmt, file);
+                break;
+            }
+            break;
+            
             case PRINTF_STATE_LENGTH:
-                switch (*fmt)
-                {
-                    case 'h':   length = PRINTF_LENGTH_SHORT;
-                                state = PRINTF_STATE_LENGTH_SHORT;
-                                break;
-                    case 'l':   length = PRINTF_LENGTH_LONG;
-                                state = PRINTF_STATE_LENGTH_LONG;
-                                break;
-                    default:    goto PRINTF_STATE_SPEC_;
-                }
+            switch (*fmt)
+            {
+                case 'h':   length = PRINTF_LENGTH_SHORT;
+                state = PRINTF_STATE_LENGTH_SHORT;
                 break;
-
+                case 'l':   length = PRINTF_LENGTH_LONG;
+                state = PRINTF_STATE_LENGTH_LONG;
+                break;
+                default:    goto PRINTF_STATE_SPEC_;
+            }
+            break;
+            
             case PRINTF_STATE_LENGTH_SHORT:
-                if (*fmt == 'h')
-                {
-                    length = PRINTF_LENGTH_SHORT_SHORT;
-                    state = PRINTF_STATE_SPEC;
-                }
-                else goto PRINTF_STATE_SPEC_;
-                break;
-
+            if (*fmt == 'h')
+            {
+                length = PRINTF_LENGTH_SHORT_SHORT;
+                state = PRINTF_STATE_SPEC;
+            }
+            else goto PRINTF_STATE_SPEC_;
+            break;
+            
             case PRINTF_STATE_LENGTH_LONG:
-                if (*fmt == 'l')
-                {
-                    length = PRINTF_LENGTH_LONG_LONG;
-                    state = PRINTF_STATE_SPEC;
-                }
-                else goto PRINTF_STATE_SPEC_;
-                break;
-
+            if (*fmt == 'l')
+            {
+                length = PRINTF_LENGTH_LONG_LONG;
+                state = PRINTF_STATE_SPEC;
+            }
+            else goto PRINTF_STATE_SPEC_;
+            break;
+            
             case PRINTF_STATE_SPEC:
             PRINTF_STATE_SPEC_:
-                switch (*fmt)
+            switch (*fmt)
+            {
+                case 'c':   fputc((char)va_arg(args, int), file);
+                break;
+                
+                case 's':   
+                fputs(va_arg(args, const char*), file);
+                break;
+                
+                case '%':   fputc('%', file);
+                break;
+                
+                case 'd':
+                case 'i':   radix = 10; sign = true; number = true;
+                break;
+                
+                case 'u':   radix = 10; sign = false; number = true;
+                break;
+                
+                case 'X':
+                case 'x':
+                case 'p':   radix = 16; sign = false; number = true;
+                break;
+                
+                case 'o':   radix = 8; sign = false; number = true;
+                break;
+                
+                // ignore invalid spec
+                default:    break;
+            }
+            
+            if (number)
+            {
+                if (sign)
                 {
-                    case 'c':   fputc((char)va_arg(args, int), file);
-                                break;
-
-                    case 's':   
-                                fputs(va_arg(args, const char*), file);
-                                break;
-
-                    case '%':   fputc('%', file);
-                                break;
-
-                    case 'd':
-                    case 'i':   radix = 10; sign = true; number = true;
-                                break;
-
-                    case 'u':   radix = 10; sign = false; number = true;
-                                break;
-
-                    case 'X':
-                    case 'x':
-                    case 'p':   radix = 16; sign = false; number = true;
-                                break;
-
-                    case 'o':   radix = 8; sign = false; number = true;
-                                break;
-
-                    // ignore invalid spec
-                    default:    break;
-                }
-
-                if (number)
-                {
-                    if (sign)
+                    switch (length)
                     {
-                        switch (length)
-                        {
                         case PRINTF_LENGTH_SHORT_SHORT:
                         case PRINTF_LENGTH_SHORT:
                         case PRINTF_LENGTH_DEFAULT:     fprintf_signed(file, va_arg(args, int), radix);
-                                                        break;
-
+                        break;
+                        
                         case PRINTF_LENGTH_LONG:        fprintf_signed(file, va_arg(args, long), radix);
-                                                        break;
-
+                        break;
+                        
                         case PRINTF_LENGTH_LONG_LONG:   fprintf_signed(file, va_arg(args, long long), radix);
-                                                        break;
-                        }
+                        break;
                     }
-                    else
+                }
+                else
+                {
+                    switch (length)
                     {
-                        switch (length)
-                        {
                         case PRINTF_LENGTH_SHORT_SHORT:
                         case PRINTF_LENGTH_SHORT:
                         case PRINTF_LENGTH_DEFAULT:     fprintf_unsigned(file, va_arg(args, unsigned int), radix);
-                                                        break;
-                                                        
+                        break;
+                        
                         case PRINTF_LENGTH_LONG:        fprintf_unsigned(file, va_arg(args, unsigned  long), radix);
-                                                        break;
-
+                        break;
+                        
                         case PRINTF_LENGTH_LONG_LONG:   fprintf_unsigned(file, va_arg(args, unsigned  long long), radix);
-                                                        break;
-                        }
+                        break;
                     }
                 }
-
-                // reset state
-                state = PRINTF_STATE_NORMAL;
-                length = PRINTF_LENGTH_DEFAULT;
-                radix = 10;
-                sign = false;
-                number = false;
-                break;
+            }
+            
+            // reset state
+            state = PRINTF_STATE_NORMAL;
+            length = PRINTF_LENGTH_DEFAULT;
+            radix = 10;
+            sign = false;
+            number = false;
+            break;
         }
-
+        
         fmt++;
     }
 }
+*/
 
 void fprintf(fd_t file, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    vfprintf(file, fmt, args);
+    vprintf(file, fmt, args);
     va_end(args);
 }
 
@@ -229,12 +233,31 @@ void puts(const char* str)
     fputs(str, VFS_FD_STDOUT);
 }
 
-void printf(const char* fmt, ...)
+int printf(const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    vfprintf(VFS_FD_STDOUT, fmt, args);
+    int ret = vprintf(VFS_FD_STDOUT, fmt, args);
     va_end(args);
+    return ret;
+}
+
+int sprintf(char *s, const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  const int ret = vsprintf(s, format, args);
+  va_end(args);
+  return ret;
+}
+
+int snprintf(char *s, size_t n, const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  const int ret = vsnprintf(s, n, format, args);
+  va_end(args);
+  return ret;
 }
 
 void print_buffer(const char* msg, const void* buffer, uint32_t count)
@@ -256,7 +279,7 @@ void debugf(const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    vfprintf(VFS_FD_DEBUG, fmt, args);
+    vprintf(VFS_FD_DEBUG, fmt, args);
     va_end(args);
 }
 

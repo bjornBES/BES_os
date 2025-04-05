@@ -12,7 +12,8 @@ reserved_sectors=$3
 
 if [ "$filesystemType" == "fat12" ] || [ "$filesystemType" == "fat16" ] || [ "$filesystemType" == "fat32" ]; then
     fat_type="${filesystemType:3}"
-    mkfs.fat -F "$fat_type" -n BESOS -R "$reserved_sectors" "$target"
+    echo "mkfs.fat -F "$fat_type" -n BESOS -R "$reserved_sectors" "$target""
+    mkfs.fat -F "$fat_type" -n BESOS -R "$reserved_sectors" -s 2 "$target"
 elif ["$filesystemType" == "ext2"]; then
     mkfs.ext2 -L BESOS $target
 else

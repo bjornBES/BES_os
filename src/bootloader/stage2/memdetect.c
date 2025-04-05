@@ -14,7 +14,7 @@ void Memory_Detect(MemoryInfo* memoryInfo)
     int ret;
     
     g_MemRegionCount = 0;
-    ret = E820GetNextBlock(&block, &continuation);
+    ret = x86_E820GetNextBlock(&block, &continuation);
 
     while (ret > 0 && continuation != 0)
     {
@@ -26,7 +26,7 @@ void Memory_Detect(MemoryInfo* memoryInfo)
 
         printf("E820: base=0x%llx length=0x%llx type=0x%x\n", block.Base, block.Length, block.Type);
 
-        ret = E820GetNextBlock(&block, &continuation);
+        ret = x86_E820GetNextBlock(&block, &continuation);
     }
 
     // fill meminfo structure

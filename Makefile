@@ -12,17 +12,7 @@ include build_tools/toolchain.mk
 floppy_image: $(BUILD_DIR)/image.img
 
 $(BUILD_DIR)/image.img: bootloader kernel
-	@bash ./build_tools/make_disk.sh $(TARGET_DIR) $(imageFS)
-
-#	@mcopy -i $(floppyOutput) $(TARGET_DIR)/bin/stage2.bin ::
-
-#	@mmd -i $(floppyOutput) boot
-#	@mcopy -i $(floppyOutput) $(BUILD_DIR)/bin/kernel.bin ::boot/kernel.elf
-#
-#	@mcopy -i $(floppyOutput) $(TARGET_DIR)/test.txt ::
-#
-#	@mmd -i $(floppyOutput) mydir
-#	@mcopy -i $(floppyOutput) $(TARGET_DIR)/test.txt ::mydir/
+	@bash ./build_tools/make_disk.sh $(imageType) $(imageFS) $(imageSize) $(arch) $(config)
 
 	@echo "--> Created: " $(floppyOutput)
 
@@ -60,8 +50,10 @@ $(BUILD_DIR)/tools/fat: always tools/fat/fat.c
 	@mkdir -p $(BUILD_DIR)/tools
 	@$(MAKE) -C tools/fat BUILD_DIR=$(abspath $(BUILD_DIR))
 
+runnow:
+	bash run.sh disk $(BUILD_DIR)/image.img $(BUILD_DIR)/floppyImage.img $(BUILD_DIR)/sataImage.img
 run: $(BUILD_DIR)/image.img
-	bash run.sh disk $(BUILD_DIR)/image.img
+	bash run.sh disk $(BUILD_DIR)/image.img $(BUILD_DIR)/floppyImage.img $(BUILD_DIR)/sataImage.img
 debug_flags:
 	@echo "add -g"
 	$(eval TARGET_ASM += -g)
@@ -72,6 +64,8 @@ debug: debug_flags clean all
 	@echo "running debug"
 	bash debug.sh disk $(BUILD_DIR)/image.img
 
+load: $(BUILD_DIR)/image.img
+	@bash ./image/LoadImage.sh $(BUILD_DIR)/image.img
 
 #
 # Always

@@ -1,26 +1,22 @@
 #include "vga_text.h"
 
 #include <stdio.h>
+#include "debug.h"
+#include "malloc.h"
 #include <arch/i686/io.h>
 
 #include <stdarg.h>
+
+#define MODULE "VGA"
+
+extern char VGAModesAddr;
 
 uint16_t SCREEN_WIDTH = 80;
 uint16_t SCREEN_HEIGHT = 25;
 const uint8_t DEFAULT_COLOR = 0x7;
 
-vga_mode_t vga_modes[] = {
-    /* Text Modes */
-    {0x03, VGA_MODE_TEXT, 0xB8000, 80, 25, 0}, /* 80x25 Color Text */
-    {0x07, VGA_MODE_TEXT, 0xB0000, 80, 25, 0}, /* 80x25 Monochrome Text */
-
-    /* Standard VGA Graphics Modes */
-    {0x12, VGA_MODE_GRAPH, 0xA0000, 640, 480, 1}, /* 640x480 16-color */
-    {0x13, VGA_MODE_GRAPH, 0xA0000, 320, 200, 8}, /* 320x200 256-color */
-
-    /* Custom / Placeholder for Future Modes */
-    {0xFF, 0, 0, 0, 0, 0} /* End marker */
-};
+Page *VGAModePage;
+vga_mode_t *vga_modes;
 
 bool VGA_mono;
 uint16_t VGA_mode;
@@ -194,6 +190,7 @@ void VGA_setcursor(int x, int y)
 
 void VGA_clrscr()
 {
+    log_debug(MODULE, "enter VGA_clrscr");
     for (int y = 0; y < SCREEN_HEIGHT; y++)
         for (int x = 0; x < SCREEN_WIDTH; x++)
         {
@@ -275,8 +272,56 @@ void SwitchColor()
     VGA_mono = false;
 }
 
-void VGA_init()
+uint8_t GetVgaMode(vesa_mode_info_t *vesaMode)
 {
+    if (vesaMode->attributes & 0x01 || vesaMode->memory_model == 0x00)
+    {
+        return VGA_MODE_TEXT;
+    }
+    else
+    {
+        return VGA_MODE_GRAPH;
+    }
+}
+
+void SwitchToVGAModes(VESAInfo* VESAinfo)
+{
+    vga_modes = (vga_mode_t*)&VGAModesAddr;
+    int size = 0;
+    for (size_t i = 0; i < VESAinfo->VESACount; i++)
+    {
+        vesa_mode_info_t* entry = &VESAinfo->entries[i];
+
+        log_debug(MODULE, "%u: %ux%u %u 0x%X %s, mm: %u",
+                            i,
+                            entry->width,
+                            entry->height,
+                            entry->bpp,
+                            entry->framebuffer,
+                            (entry->attributes & 0x80) ? "Yes" : "No",
+                            entry->memory_model);
+
+        vga_modes[i].mode = GetVgaMode(entry);
+        vga_modes[i].width = entry->width;
+        vga_modes[i].height = entry->height;
+        vga_modes[i].bpp = entry->bpp;
+        vga_modes[i].pitch = entry->pitch;
+        vga_modes[i].framebuffer = entry->framebuffer;
+        vga_modes[i].memory_model = entry->memory_model;
+        vga_modes[i].planes = entry->planes;
+        vga_modes[i].red_mask = entry->red_mask;
+        vga_modes[i].red_position = entry->red_position;
+        vga_modes[i].green_mask = entry->green_mask;
+        vga_modes[i].green_position = entry->green_position;
+        vga_modes[i].blue_mask = entry->blue_mask;
+        vga_modes[i].blue_position = entry->blue_position;
+        size += sizeof(vga_mode_t);
+    }
+}
+
+void VGA_init(VESAInfo* VESAinfo)
+{
+    // log_debug(MODULE, "enter VGA_init");
     SwitchMono();
     uint8_t data = ReadRegister(External_Registers, ER_OutputRegister);
     data |= 0b10100010;
@@ -284,4 +329,6 @@ void VGA_init()
 
     WriteRegister(CRT_Controller_Registers, CRTC_Start_Address_High_Register, 0);
     WriteRegister(CRT_Controller_Registers, CRTC_Start_Address_Low_Register, 0);
+
+    SwitchToVGAModes(VESAinfo);
 }

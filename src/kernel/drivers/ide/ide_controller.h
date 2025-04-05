@@ -5,6 +5,7 @@
 
 extern bool ide_0x1F0_controller_present;
 extern bool ide_0x170_controller_present;
+extern uint8_t *ide_buf;
 
 #define ATA_SR_BSY     0x80    // Busy
 #define ATA_SR_DRDY    0x40    // Drive ready
@@ -110,12 +111,12 @@ typedef struct ide_device
     uint16_t Capabilities; // Features.
     uint32_t CommandSets;    // Command Sets Supported.
     uint32_t Size;           // Size in Sectors.
-    uint8_t Model[41];     // Model in string.
+    char Model[41];     // Model in string.
 } ide_device;
 
 typedef struct
 {
-    uint8_t drive;
+    uint16_t drive;
 } ide_private_data;
 
 extern ide_device ide_devices[4];
@@ -125,6 +126,8 @@ void ide_write(uint8_t channel, uint8_t reg, uint8_t data);
 uint8_t ide_read(uint8_t channel, uint8_t reg);
 void ide_read_buffer(uint8_t channel, uint8_t reg, uint32_t buffer, uint32_t quads);
 
+void ideSelectDrive(uint8_t channel, uint8_t drive);
+
 uint8_t ide_print_error(uint32_t drive, uint8_t err);
 
 uint8_t ide_is_bus_floating(uint16_t base_port);
@@ -132,15 +135,9 @@ uint8_t ide_is_bus_floating(uint16_t base_port);
 void ide_400ns_delay(uint8_t channel);
 uint8_t ide_polling(uint8_t channel, uint32_t advanced_check);
 uint8_t ide_print_error(uint32_t drive, uint8_t err);
-void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4);
+bool ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4);
 
 void __attribute__((cdecl)) SendData(uint32_t bus, uint16_t selector, uint32_t words, uint32_t edi);
 void __attribute__((cdecl)) ReceiveData(uint32_t bus, uint16_t selector, uint32_t words, uint32_t edi);
 void __attribute__((cdecl)) SendPacket(uint32_t bus, uint8_t atapi_packet[12]);
 void __attribute__((cdecl)) insl(int port, uint32_t addr, int cnt);
-
-bool get_ide_0x1F0_controller_present();
-void set_ide_0x1F0_controller_present(bool value);
-
-bool get_ide_0x170_controller_present();
-void set_ide_0x170_controller_present(bool value);

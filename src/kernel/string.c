@@ -4,6 +4,7 @@
 #include "memory.h"
 #include <stdint.h>
 #include <stddef.h>
+#include <ctype.h>
 
 const char *strchr(const char *str, char chr)
 {
@@ -60,6 +61,18 @@ uint32_t strlen(const char *str)
     return len;
 }
 
+// internal secure strlen
+// @return The length of the string (excluding the terminating 0) limited by 'maxsize'
+// @note strlen uses size_t, but wes only use this function with size_t
+// variables - hence the signature.
+size_t strnlen_s(const char *str, size_t maxsize)
+{
+  const char *s;
+  for (s = str; *s && maxsize--; ++s)
+    ;
+  return (size_t)(s - str);
+}
+
 int strcmp(const char *a, const char *b)
 {
     if (a == NULL && b == NULL)
@@ -108,12 +121,24 @@ void atoi(char *str, int *a)
     *a = k;
 }
 
-char strcat(char *dest, const char *src)
+// internal ASCII string to size_t conversion
+size_t atou(const char *str)
+{
+  size_t i = 0U;
+  while (isdigit(*str))
+  {
+    i = i * 10U + (size_t)(*((str)++) - '0');
+  }
+  return i;
+}
+
+char *strcat(char *dest, const char *src)
 {
     char *end = dest + strlen(dest);
     memcpy(end, src, strlen(src));
     end = end + strlen(src);
     *end = '\0';
+    return dest;
 }
 
 uint32_t strcrl(string str, const char what, const char with)
@@ -223,7 +248,7 @@ uint32_t str_begins_with(string str, string with)
     return ret;
 }
 
-wchar_t *utf16_to_codepoint(wchar_t *string, int *codepoint)
+uint16_t *utf16_to_codepoint(uint16_t *string, int *codepoint)
 {
     int c1 = *string;
     ++string;
@@ -235,7 +260,6 @@ wchar_t *utf16_to_codepoint(wchar_t *string, int *codepoint)
         *codepoint = ((c1 & 0x3ff) << 10) + (c2 & 0x3ff) + 0x10000;
     }
     *codepoint = c1;
-
     return string;
 }
 
@@ -273,24 +297,34 @@ char *codepoint_to_utf8(int codepoint, char *stringOutput)
     if (codepoint <= 0x7F)
     {
         *stringOutput = (char)codepoint;
+        stringOutput++;
     }
     else if (codepoint <= 0x7FF)
     {
-        *stringOutput++ = 0xC0 | ((codepoint >> 6) & 0x1F);
-        *stringOutput++ = 0x80 | (codepoint & 0x3F);
+        *stringOutput = 0xC0 | ((codepoint >> 6) & 0x1F);
+        stringOutput++;
+        *stringOutput = 0x80 | (codepoint & 0x3F);
+        stringOutput++;
     }
     else if (codepoint <= 0xFFFF)
     {
-        *stringOutput++ = 0xE0 | ((codepoint >> 12) & 0xF);
-        *stringOutput++ = 0x80 | ((codepoint >> 6) & 0x3F);
-        *stringOutput++ = 0x80 | (codepoint & 0x3F);
+        *stringOutput = 0xE0 | ((codepoint >> 12) & 0xF);
+        stringOutput++;
+        *stringOutput = 0x80 | ((codepoint >> 6) & 0x3F);
+        stringOutput++;
+        *stringOutput = 0x80 | (codepoint & 0x3F);
+        stringOutput++;
     }
     else if (codepoint <= 0x1FFFFF)
     {
-        *stringOutput++ = 0xF0 | ((codepoint >> 18) & 0x7);
-        *stringOutput++ = 0x80 | ((codepoint >> 12) & 0x3F);
-        *stringOutput++ = 0x80 | ((codepoint >> 6) & 0x3F);
-        *stringOutput++ = 0x80 | (codepoint & 0x3F);
+        *stringOutput = 0xF0 | ((codepoint >> 18) & 0x7);
+        stringOutput++;
+        *stringOutput = 0x80 | ((codepoint >> 12) & 0x3F);
+        stringOutput++;
+        *stringOutput = 0x80 | ((codepoint >> 6) & 0x3F);
+        stringOutput++;
+        *stringOutput = 0x80 | (codepoint & 0x3F);
+        stringOutput++;
     }
     return stringOutput;
 }

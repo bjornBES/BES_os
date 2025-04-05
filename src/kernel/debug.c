@@ -1,5 +1,6 @@
 #include "debug.h"
 #include <stdio.h>
+#include <printfDriver/printf.h>
 
 static const char* const g_LogSeverityColors[] =
 {
@@ -16,13 +17,13 @@ void logf(const char* module, DebugLevel level, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-
+    
     if (level < MIN_LOG_LEVEL)
-        return;
-
+    return;
+    
     fputs(g_LogSeverityColors[level], VFS_FD_DEBUG);    // set color depending on level
     fprintf(VFS_FD_DEBUG, "[%s] ", module);             // write module
-    vfprintf(VFS_FD_DEBUG, fmt, args);                  // write text
+    vprintf(VFS_FD_DEBUG, fmt, args);                  // write text
     fputs(g_ColorReset, VFS_FD_DEBUG);                  // reset format
     fputs("\r\n", VFS_FD_DEBUG);                        // newline
 

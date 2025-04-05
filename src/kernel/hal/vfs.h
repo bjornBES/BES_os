@@ -7,13 +7,13 @@
 
 typedef int fd_t;
 
-#define VFS_FD_STDIN 0
-#define VFS_FD_STDOUT 1
-#define VFS_FD_STDERR 2
-#define VFS_FD_DEBUG 3
+#define VFS_FD_STDIN (fd_t)0
+#define VFS_FD_STDOUT (fd_t)1
+#define VFS_FD_STDERR (fd_t)2
+#define VFS_FD_DEBUG (fd_t)3
 
 int VFS_Write(fd_t file, uint8_t *data, size_t size);
-int VFS_Read(fd_t file, uint8_t* buffer, size_t size); 
+bool VFS_Read(char* filename, uint8_t* buffer); 
 
 typedef enum FS
 {
@@ -33,6 +33,7 @@ typedef struct MountPoint_t
     device_t *dev;
 } MountPoint;
 
+bool tryMountFS(device_t* dev, char* loc);
 
 void VFS_init();
 

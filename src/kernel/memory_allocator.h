@@ -17,6 +17,7 @@ typedef struct Page
 {
     HeapBlock* heapBlock;
     uint32_t allocatedBlocks;
+    int32_t prosses;
 } Page;
 
 // Bitmap structure to manage page allocation
@@ -30,7 +31,7 @@ extern Page *pages;
 extern size_t num_pages;
 
 // Function declarations
-void mm_init(MemoryInfo* memInfo);
+void mm_init();
 Page* allocate_page();
 void free_page(Page*page);
 void dump_memory_status();

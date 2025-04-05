@@ -1,24 +1,38 @@
 #!/bin/bash
 
-QEMU_ARGS="-debugcon stdio -m 16g -d guest_errors -device ahci,id=ahci"
+QEMU_ARGS="-k da -debugcon stdio -vga std -m 8g -d guest_errors -netdev user,id=mynet0 -net nic,model=rtl8139,netdev=mynet0"
 
-if [ "$#" -le 1 ]; then
-    echo "Usage: ./run.sh <image_type> <image>"
+if [ "$#" -le 2 ]; then
+    echo "Usage: ./run.sh <image_type> <image> <floppy_image> ..."
     exit 1
 fi
 
-case "$1" in
-    "floppy")   QEMU_ARGS="${QEMU_ARGS} -fda $2"
-    ;;
-    "disk")     QEMU_ARGS="${QEMU_ARGS} -hda $2"
-    ;;
-    *)          echo "Unknown image type $1."
-                exit 2
-esac
+IMAGE=$2
+FLOPPY_IMAGE=$3
+D3_IMAGE=$4
 
+if [ "$1" == "floppy" ]; then
+    QEMU_ARGS="${QEMU_ARGS} -fda $IMAGE"
+    QEMU_ARGS="${QEMU_ARGS} -fdb $FLOPPY_IMAGE"
+    QEMU_ARGS="${QEMU_ARGS} -drive format=raw,id=disk,if=none"
+elif [ "$1" == "disk" ]; then
+    QEMU_ARGS="${QEMU_ARGS} -fda $FLOPPY_IMAGE"
+#    QEMU_ARGS="${QEMU_ARGS} -device floppy,id=fdc1"
+    QEMU_ARGS="${QEMU_ARGS} -drive file=$IMAGE,format=raw,id=disk,if=ide"
+    QEMU_ARGS="${QEMU_ARGS} -drive file=$D3_IMAGE,format=raw,id=sata_disk,if=none -device ahci,id=ahci -device ide-hd,drive=sata_disk"
+#    QEMU_ARGS="${QEMU_ARGS} -device ide-hd,drive=disk"
 
+else
+    echo "Unknown image type: $1"
+    exit 2
+fi
 
-qemu-system-i386 $QEMU_ARGS
+QEMU_ARGS="${QEMU_ARGS} -boot order=c,menu=on"
+
+QEMU_ARGS="${QEMU_ARGS} -device intel-hda"
+QEMU_ARGS="${QEMU_ARGS} -device sb16"
+
+qemu-system-x86_64 $QEMU_ARGS
 
 #qemu:
 #qemu-system-x86_64 -drive file=$(TARGET_IMG),format=raw,id=disk,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -m 1g -netdev user,id=mynet0 -net nic,model=rtl8139,netdev=mynet0
@@ -28,4 +42,3 @@ qemu-system-i386 $QEMU_ARGS
 
 #qemu_iso:
 #qemu-system-x86_64 -drive file=$(TARGET_ISO),format=raw -m 1g -netdev user,id=mynet0 -net nic,model=rtl8139,netdev=mynet0
-

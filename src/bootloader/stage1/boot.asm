@@ -354,8 +354,6 @@ section .data
 
 
 section .data
-; 5 bytes / entry
-; 3 * 5 = 15
     global stage2_location
     stage2_location:
         times 15 db 0

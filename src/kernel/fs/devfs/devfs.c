@@ -21,6 +21,7 @@ uint8_t devfs_read()
 uint8_t devfs_read_dir()
 {
 	printf(".\n..\n");
+	return 0;
 }
 
 uint8_t devfs_exist(char *f)

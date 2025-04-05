@@ -1,4 +1,5 @@
-export CFLAGS = -I /usr/local/i686-elf/include -I ./ -I $(SOURCE_DIR)/src/libs 
+export CFLAGS = -Wall -Werror -I /usr/local/i686-elf/include -I ./ -I $(SOURCE_DIR)/src/libs -Wno-error=unused-variable -Wno-error=unused-label -Wno-error=deprecated
+# the -Wno-error=unused-variable flag is temp
 export ASMFLAGS =
 export CC = gcc
 export CXX = g++
@@ -14,7 +15,7 @@ export imageSize = 250m
 export floppyOutput = $(BUILD_DIR)/image.img
 export config = debug
 
-arch = i686
+export arch = i686
 export TARGET = ${arch}-elf
 binPath = $(TOOLCHAIN_DIR)/$(TARGET)/bin
 export TARGET_ASM = nasm
@@ -22,7 +23,7 @@ export TARGET_ASM = nasm
 export TARGET_ASMFLAGS = -f elf -I.
 export TARGET_CFLAGS = $(CFLAGS) -std=c99 -nostdlib -ffreestanding #-O2
 export TARGET_CXXFLAGS = $(CFLAGS) -std=c++17 -fno-exceptions -fno-rtti #-O2
-export TARGET_LINKFLAGS = -nostdlib
+export TARGET_LINKFLAGS = $(LINKFLAGS) -nostdlib
 
 export TARGET_CC = ${binPath}/$(TARGET)-gcc
 export TARGET_CXX = ${binPath}/$(TARGET)-g++
@@ -33,7 +34,6 @@ export SOURCE_DIR = $(abspath .)
 export BUILD_DIR = $(abspath build)/$(arch)_$(config)
 export INCLUDE_DIR = $(abspath include)
 export TOOLCHAIN_DIR = $(abspath toolchain)
-export TARGET_DIR = $(abspath target)
 
 BINUTILS_VERSION = 2.37
 BINUTILS_URL = https://ftp.gnu.org/gnu/binutils/binutils-$(BINUTILS_VERSION).tar.xz

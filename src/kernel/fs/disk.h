@@ -31,7 +31,7 @@ typedef struct {
     uint64_t disk_size_bytes;   // Disk size in bytes (computed)
 } DISK;
 
-void GetDisk(ATA_Identify_t* ATA_Identify, DISK* diskOut);
+void GetDisk(IdentifyDeviceData* ATA_Identify, DISK* diskOut);
 
 void DISK_LBA2CHS(DISK* disk, uint32_t lba, uint16_t* cylinderOut, uint16_t* sectorOut, uint16_t* headOut);
 void DISK_CHS2LBA(DISK* disk, uint16_t cylinder, uint16_t sector, uint16_t head, uint32_t* lbaOut);

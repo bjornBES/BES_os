@@ -11,6 +11,7 @@
 #include "elf.h"
 #include "memdetect.h"
 #include "vesa.h"
+#include "pci.h"
 #include <boot/bootparams.h>
 
 uint8_t* KernelLoadBuffer = (uint8_t*)MEMORY_LOAD_KERNEL;
@@ -44,7 +45,9 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
     Memory_Detect(&g_BootParams.Memory);
 
     Detect_VESA(&g_BootParams.VESA);
-    
+
+    Detect_PCI(&g_BootParams.PCI);
+
     // load kernel
     KernelStart kernelEntry;
     if (!ELF_Read(&part, "/boot/kernel.elf", (void**)&kernelEntry))

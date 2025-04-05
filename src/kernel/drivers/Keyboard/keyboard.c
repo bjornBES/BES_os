@@ -4,6 +4,8 @@
 #include "malloc.h"
 #include "memory.h"
 
+#include "stdio.h"
+
 #include "arch/i686/i8259.h"
 #include "arch/i686/irq.h"
 #include "arch/i686/io.h"
@@ -17,6 +19,8 @@ uint8_t *keycache = 0;
 uint16_t key_loc = 0;
 uint8_t __kbd_enabled = 0;
 
+Page* keycachePage;
+
 void keyboard_irq(Registers *r)
 {
 	keycache[key_loc++] = KeyboardToAscii(i686_inb(0x60));
@@ -25,7 +29,7 @@ void keyboard_irq(Registers *r)
 
 void keyboard_init()
 {
-    keycache = (uint8_t*)malloc(256);
+    keycache = (uint8_t*)malloc(256, keycachePage);
     memset(keycache, 0, 256);
 
     i686_IRQ_RegisterHandler(1, keyboard_irq);
@@ -58,6 +62,20 @@ char KeyboardGetKey()
 out:
 	return c;
 }
+
+void PressAnyKeyLoop()
+{
+	printf("Press any key...");
+	while (true)
+    {
+        if (KeyboardGetKey() != 0)
+        {
+            break;
+        }
+        continue;
+    }
+}
+
 static char* _qwertzuiop = "qwertzuiop"; // 0x10-0x1c
 static char* _asdfghjkl = "asdfghjkl";
 static char* _yxcvbnm = "yxcvbnm";

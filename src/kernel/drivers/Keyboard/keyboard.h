@@ -77,5 +77,6 @@ enum KEYCODE {
 
 void keyboard_init();
 uint8_t KeyboardEnabled();
+void PressAnyKeyLoop();
 char KeyboardGetKey();
 uint8_t KeyboardToAscii(uint8_t key);

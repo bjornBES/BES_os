@@ -338,7 +338,7 @@ x86_VESASupported:
     mov ax, 0x4F00
     int 10h
 
-    cmp al, 0x4E
+    cmp AX, 0x004F
     jne .VESANotSupported
 
     xor eax, eax
@@ -349,7 +349,7 @@ x86_VESASupported:
     
         xor eax, eax
     
-    .Endif
+    .Endif:
     
     ; restore regs
     pop es
@@ -365,8 +365,9 @@ x86_VESASupported:
     mov esp, ebp
     pop ebp
     ret
+
 ;
-; bool ASMCALL x86_GetVESAEntry(uint8_t mode, void* result);
+; bool __attribute__((cdecl)) x86_GetVESAEntry(uint16_t mode, void* result);
 ;
 global x86_GetVESAEntry
 x86_GetVESAEntry:
@@ -378,32 +379,31 @@ x86_GetVESAEntry:
     x86_EnterRealMode
 
     ; save modified regs
-    push edx
+    push ecx
     push edi
     push es
 
     LinearToSegOffset [bp + 12], es, edi, di
-    mov edx, [bp- 8]
+    mov cx, [bp + 8]
     mov ax, 0x4F01
-    call 10h
+    int 10h
 
-    cmp al, 0x4E
+    cmp al, 0x4F
     jne .VESANotSupported
 
-    xor eax, eax
     mov al, 1
     jmp .Endif
     
     .VESANotSupported:
     
-        xor eax, eax
+    xor eax, eax
     
-    .Endif
+    .Endif:
     
     ; restore regs
     pop es
     pop edi
-    pop edx
+    pop ecx
 
     push eax
 
@@ -413,5 +413,79 @@ x86_GetVESAEntry:
 
     ; restore old call frame
     mov esp, ebp
+    pop ebp
+    ret
+
+
+;
+; bool __attribute__((cdecl)) x86_PCIInitCheck(uint8_t* PCIchar, uint8_t* protectedModeEntry, uint16_t* PCIInterfaceLevel, uint8_t* lastPCIBus);
+;
+global x86_PCIInitCheck
+x86_PCIInitCheck:
+    ; make new call frame
+    push ebp             ; save old call frame
+    mov ebp, esp          ; initialize new call frame
+
+    x86_EnterRealMode   ; enter into rmode again
+
+    ; save modified regs
+    push ebx
+    push ecx
+    push edx
+    push edi
+    push esi
+    push es
+    
+    xor edi, edi
+    LinearToSegOffset [bp + 12], es, esi, si        ; getting the protectedModeEntry address
+    mov [es:si], edi                                ; protectedModeEntry = null 
+    
+    LinearToSegOffset [bp + 16], es, esi, si        ; getting the PCIInterfaceLevel address
+    mov [es:si], edi                                ; PCIInterfaceLevel = null
+
+    LinearToSegOffset [bp + 20], es, esi, si        ; getting the lastPCIBus address
+    mov [es:si], edi                                ; lastPCIBus = null
+    
+    mov ax, 0xB101
+    int 0x1A                                        ; calling the INSTALLATION CHECK function
+
+    LinearToSegOffset [bp + 8], es, esi, si         ; getting the address PCIchar / [es:si] = PCIchar
+    cmp ah, 0x00
+    jne .PCINotInstalled
+
+    .Succedeed:
+    mov [es:si], al                                 ; setting the PCI hardware characteristics
+    mov eax, 1
+        
+    LinearToSegOffset [bp + 12], es, esi, si        ; getting the protectedModeEntry address
+    mov [es:si], edi                                ; setting the address of protected-mode entry point
+
+    LinearToSegOffset [bp + 16], es, esi, si        ; getting the PCIInterfaceLevel address
+    mov [es:si], ebx                                ; setting the PCI interface level
+        
+    LinearToSegOffset [bp + 20], es, esi, si        ; getting the lastPCIBus address
+    mov [es:si], ecx                                ; setting the number of last PCI bus in system
+        
+    jmp .EndIf
+        
+    .PCINotInstalled:
+    mov [es:si], ah
+    mov eax, 0
+
+    .EndIf:
+
+    pop es
+    pop esi
+    pop edi
+    pop edx
+    pop ecx
+    pop ebx
+    
+    push eax
+    
+    x86_EnterProtectedMode                          ; enter into pmode again
+    
+    pop eax
+
     pop ebp
     ret

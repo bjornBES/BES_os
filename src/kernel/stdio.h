@@ -8,18 +8,16 @@ void fputs(const char* str, fd_t file);
 void vfprintf(fd_t file, const char* fmt, va_list args);
 void fprintf(fd_t file, const char* fmt, ...);
 void fprint_buffer(fd_t file, const char* msg, const void* buffer, uint32_t count);
+int snprintf(char *s, size_t n, const char *format, ...);
 
 void putc(char c);
 void puts(const char* str);
-void printf(const char* fmt, ...);
+int printf(const char* fmt, ...);
 void print_buffer(const char* msg, const void* buffer, uint32_t count);
 
 void debugc(char c);
 void debugs(const char* str);
 void debugf(const char* fmt, ...);
 void debug_buffer(const char* msg, const void* buffer, uint32_t count);
-
-#define kprintf(...) { printf(__VA_ARGS__);}
-#define mprint(...) { printf(__VA_ARGS__);}
 
 #define panic() { printf("***KERNEL PANIC*** in %s at line %d\r\n", __FILE__, __LINE__); for (;;);}

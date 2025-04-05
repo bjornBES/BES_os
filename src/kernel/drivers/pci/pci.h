@@ -2,6 +2,9 @@
 
 #include <stdint.h>
 
+#define PCI_CONFIG_ADDRESS  0xCF8
+#define PCI_CONFIG_DATA     0xCFC
+
 #define PCI_BAR0 0x10
 #define PCI_BAR1 0x14
 #define PCI_BAR2 0x18
@@ -53,17 +56,20 @@ typedef struct __pci_driver {
 	uint8_t (*exit_driver)(void);
 } pci_driver;
 
-void pci_init();
+uint32_t pciReadDword(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset);
+void pciWriteDword(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset, uint32_t value);
+void pci_init(uint8_t HWChar);
 
-uint16_t pci_read_int16(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset);
-uint32_t pci_read_int32(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset);
-void pci_write(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset, uint32_t value);
-uint32_t pci_read_bar_type(uint32_t bus, uint32_t device, uint32_t function, uint32_t bar);
-uint16_t pci_read_io_bar(uint32_t bus, uint32_t device, uint32_t function, uint32_t bar);
-uint32_t pci_read_mmio_bar(uint32_t bus, uint32_t device, uint32_t function, uint32_t bar);
-void pci_enable_io_busmastering(uint32_t bus, uint32_t device, uint32_t function);
-void pci_enable_mmio_busmastering(uint32_t bus, uint32_t device, uint32_t function);
-void pci_disable_interrupts(uint32_t bus, uint32_t device, uint32_t function);
-void scan_pci(void);
-void scan_pci_device(uint32_t bus, uint32_t device, uint32_t function);
+uint32_t pciReadBarType(uint32_t bus, uint32_t device, uint32_t function, uint32_t bar);
+uint16_t pciReadIOBar(uint32_t bus, uint32_t device, uint32_t function, uint32_t bar);
+uint32_t pciReadMMIOBar(uint32_t bus, uint32_t device, uint32_t function, uint32_t bar);
+
+void pciEnableIOBusmastering(uint32_t bus, uint32_t device, uint32_t function);
+void pciEnableMMIOBusmastering(uint32_t bus, uint32_t device, uint32_t function);
+void pciDisableInterrupts(uint32_t bus, uint32_t device, uint32_t function);
+
+uint32_t getStorageBAR(uint32_t bus, uint32_t device, uint32_t function, uint8_t barIndex);
+
+void pciScan(void);
+void pciScanDevice(uint32_t bus, uint32_t device, uint32_t function);
 uint8_t *get_pci_vendor_string(uint32_t vendor_id);

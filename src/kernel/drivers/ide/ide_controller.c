@@ -26,19 +26,13 @@ bool ide_0x170_controller_present = 0;
 uint16_t ide_drive_type;
 uint32_t ide_drive_size;
 
-uint8_t *ide_buf;
 volatile static uint8_t ide_irq_invoked = 0;
 static uint8_t atapi_packet[12] = {0xA8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 uint8_t package[1] = {0};
 
-bool get_ide_0x1F0_controller_present() { return ide_0x1F0_controller_present; }
-void set_ide_0x1F0_controller_present(bool value) { ide_0x1F0_controller_present = value; }
-
-bool get_ide_0x170_controller_present() { return ide_0x170_controller_present; }
-void set_ide_0x170_controller_present(bool value) { ide_0x170_controller_present = value; }
-
 void ide_write(uint8_t channel, uint8_t reg, uint8_t data)
 {
+    // log_debug(MODULE, "enter ide_write(channel: %x, reg: %x, data: %x) file %s:%u", channel, reg, data, __FILE__, __LINE__);
     if (reg > 0x07 && reg < 0x0C)
         ide_write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
     if (reg < 0x08)
@@ -51,10 +45,12 @@ void ide_write(uint8_t channel, uint8_t reg, uint8_t data)
         i686_outb(channels[channel].bmide + reg - 0x0E, data);
     if (reg > 0x07 && reg < 0x0C)
         ide_write(channel, ATA_REG_CONTROL, channels[channel].nIEN);
+    // log_debug(MODULE, "exit ide_write(channel: %x, reg: %x, data: %x) file %s:%u", channel, reg, data, __FILE__, __LINE__);
 }
 
 uint8_t ide_read(uint8_t channel, uint8_t reg)
 {
+    // log_debug(MODULE, "enter ide_read(channel: %x, reg: %x) file %s:%u", channel, reg, __FILE__, __LINE__);
     uint8_t result;
     if (reg > 0x07 && reg < 0x0C)
         ide_write(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
@@ -68,11 +64,13 @@ uint8_t ide_read(uint8_t channel, uint8_t reg)
         result = i686_inb(channels[channel].bmide + reg - 0x0E);
     if (reg > 0x07 && reg < 0x0C)
         ide_write(channel, ATA_REG_CONTROL, channels[channel].nIEN);
+    // log_debug(MODULE, "exit ide_read(channel: %x, reg: %x) = %x file %s:%u", channel, reg, result, __FILE__, __LINE__);
     return result;
 }
 
 void ide_read_buffer(uint8_t channel, uint8_t reg, uint32_t buffer, uint32_t quads)
 {
+    // log_debug(MODULE, "enter ide_read_buffer(channel: %x, reg: %x, buffer: %x, quads: %x) file %s:%u", channel, reg, buffer, quads, __FILE__, __LINE__);
     /* WARNING: This code contains a serious bug. The inline assembly trashes ES and
      *           ESP for all of the code the compiler generates between the inline
      *           assembly blocks.
@@ -116,48 +114,63 @@ void ide_read_buffer(uint8_t channel, uint8_t reg, uint32_t buffer, uint32_t qua
     {
         ide_write(channel, ATA_REG_CONTROL, channels[channel].nIEN);
     }
+    // log_debug(MODULE, "exit ide_read_buffer(channel: %x, reg: %x, buffer: %x, quads: %x) file %s:%u", channel, reg, buffer, quads, __FILE__, __LINE__);
     return;
 }
 
 void ide_400ns_delay(uint8_t channel)
 {
+    // log_debug(MODULE, "enter ide_400ns_delay(channel: %x) file %s:%u", channel, __FILE__, __LINE__);
     for (int i = 0; i < 4; i++)
         i686_inb(channel + ATA_REG_ALTSTATUS); // Reading the Alternate Status port wastes 100ns; loop four times.
 }
 
 uint8_t ide_polling(uint8_t channel, uint32_t advanced_check)
 {
-
+    // log_debug(MODULE, "enter ide_polling(channel: %x, advanced_check: %x) file %s:%u", channel, advanced_check, __FILE__, __LINE__);
+    
     // (I) Delay 400 nanosecond for BSY to be set:
     // -------------------------------------------------
     ide_400ns_delay(channel);
-
+    
     // (II) Wait for BSY to be cleared:
     // -------------------------------------------------
     while (ide_read(channel, ATA_REG_STATUS) & ATA_SR_BSY)
+    {
         ; // Wait for BSY to be zero.
-
+    }
+    
     if (advanced_check)
     {
         uint8_t state = ide_read(channel, ATA_REG_STATUS); // Read Status Register.
-
+        
         // (III) Check For Errors:
         // -------------------------------------------------
         if (state & ATA_SR_ERR)
+        {
+            log_debug(MODULE, "exit ide_polling(channel: %x, advanced_check: %x) with error 2 file %s:%u", channel, advanced_check, __FILE__, __LINE__);
             return 2; // Error.
-
+        }
+        
         // (IV) Check If Device fault:
         // -------------------------------------------------
         if (state & ATA_SR_DF)
+        {
+            log_debug(MODULE, "exit ide_polling(channel: %x, advanced_check: %x) with error 1 file %s:%u", channel, advanced_check, __FILE__, __LINE__);
             return 1; // Device Fault.
-
+        }
+        
         // (V) Check DRQ:
         // -------------------------------------------------
         // BSY = 0; DF = 0; ERR = 0 so we should check for DRQ now.
         if ((state & ATA_SR_DRQ) == 0)
+        {
+            log_debug(MODULE, "exit ide_polling(channel: %x, advanced_check: %x) with error 3 file %s:%u", channel, advanced_check, __FILE__, __LINE__);
             return 3; // DRQ should be set
+        }
     }
-
+    
+    // log_debug(MODULE, "exit ide_polling(channel: %x, advanced_check: %x) with 0 file %s:%u", channel, advanced_check, __FILE__, __LINE__);
     return 0; // No Error.
 }
 
@@ -227,19 +240,24 @@ uint8_t ide_print_error(uint32_t drive, uint8_t err)
         err = 8;
     }
     printf("- [%s %s] %s\n",
-           (const uint8_t *[]){"Primary", "Secondary"}[ide_devices[drive].Channel], // Use the channel as an index into the array
-           (const uint8_t *[]){"Master", "Slave"}[ide_devices[drive].Drive],        // Same as above, using the drive
+           ide_devices[drive].Channel == 0 ? "Primary" : "Secondary", // Use the channel as an index into the array
+           ide_devices[drive].Drive == 0 ? "Master" : "Slave",        // Same as above, using the drive
            ide_devices[drive].Model);
 
     return err;
 }
 
-void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4)
+void ideSelectDrive(uint8_t channel, uint8_t drive)
 {
+    ide_write(channel, ATA_REG_HDDEVSEL, 0xA0 | (drive << 4)); // Select Drive.
+    sleepMs(1); // Wait 1ms for drive select to work.
+}
 
+bool ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4)
+{
     int j, i, k, count = 0;
 
-    ide_buf = (uint8_t *)malloc(0x200);
+    uint8_t ide_buf[0x200];
 
     // 1- Detect I/O Ports which interface IDE Controller:
     channels[ATA_PRIMARY].base = (BAR0 & 0xFFFFFFFC) + 0x1F0 * (!BAR0);
@@ -264,9 +282,7 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
             ide_devices[count].Reserved = 0; // Assuming that no drive here.
 
             // (I) Select Drive:
-            ide_write(i, ATA_REG_HDDEVSEL, 0xA0 | (j << 4)); // Select Drive.
-
-            sleepMs(1); // Wait 1ms for drive select to work.
+            ideSelectDrive(i, j); // Select Drive.
 
             // (II) Send ATA Identify Command:
             ide_write(i, ATA_REG_COMMAND, ATA_CMD_IDENTIFY);
@@ -337,6 +353,7 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
             ide_devices[count].Signature = *((uint16_t *)(ide_buf + ATA_IDENT_DEVICETYPE));
             ide_devices[count].Capabilities = *((uint16_t *)(ide_buf + ATA_IDENT_CAPABILITIES));
             ide_devices[count].CommandSets = *((uint32_t *)(ide_buf + ATA_IDENT_COMMANDSETS));
+
             // log_debug(MODULE, "Read Device Parameters");
 
             // (VII) Get Size:
@@ -361,28 +378,33 @@ void ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
             ide_devices[count].Model[40] = 0; // Terminate String.
 
             count++;
-            // log_debug(MODULE, "Some other inits %s", ide_devices[count].Model);
         }
     }
-    free(ide_buf);
 
     // log_debug(MODULE, "Print Summary");
     // 4- Print Summary:
+    int foundDrives = 0;
     for (i = 0; i < 4; i++)
     {
         if (ide_devices[i].Reserved == 1)
         {
+            foundDrives++;
             printf(" Found %s Drive %dGB - %s\n",
-                      (const char *[]){"ATA", "ATAPI"}[ide_devices[i].Type], /* Type */
-                      ide_devices[i].Size / 1024 / 1024 / 2,                 /* Size */
-                      ide_devices[i].Model);
+                   (const char *[]){"ATA", "ATAPI"}[ide_devices[i].Type], /* Type */
+                   ide_devices[i].Size / 1024 / 1024 / 2,                 /* Size */
+                   ide_devices[i].Model);
         }
     }
-    return;
+    if (foundDrives == 0)
+    {
+        return false;
+    }
+    return true;
 }
 
 uint8_t GetCmd(uint8_t lba_mode, uint8_t dma, uint8_t direction)
 {
+    log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
     if (dma == NoDMA)
     {
         if (direction == ATA_READ)
@@ -445,10 +467,12 @@ uint8_t GetCmd(uint8_t lba_mode, uint8_t dma, uint8_t direction)
             }
         }
     }
+    return false;
 }
 
 uint8_t ide_ata_access(uint8_t direction, uint8_t drive, uint32_t lba, uint8_t numsects, uint16_t selector, uint32_t edi)
 {
+    log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
     uint8_t lba_mode /* 0: CHS, 1:LBA28, 2: LBA48 */, dma /* 0: No DMA, 1: DMA */, cmd;
     uint8_t lba_io[6];
     uint32_t channel = ide_devices[drive].Channel; // Read the Channel.
@@ -556,7 +580,8 @@ uint8_t ide_ata_access(uint8_t direction, uint8_t drive, uint32_t lba, uint8_t n
         // PIO Read.
         for (i = 0; i < numsects; i++)
         {
-            if (err = ide_polling(channel, 1))
+            err = ide_polling(channel, 1);
+            if (err)
                 return err; // Polling, set error and exit if there is.
             ReceiveData(bus, selector, words, edi);
 
@@ -575,23 +600,26 @@ uint8_t ide_ata_access(uint8_t direction, uint8_t drive, uint32_t lba, uint8_t n
         ide_write(channel, ATA_REG_COMMAND, (char[]){ATA_CMD_CACHE_FLUSH, ATA_CMD_CACHE_FLUSH, ATA_CMD_CACHE_FLUSH_EXT}[lba_mode]);
         ide_polling(channel, 0); // Polling.
     }
-
+    log_debug(MODULE, "exit file %s:%u", __FILE__, __LINE__);
     return 0; // Easy, isn't it?
 }
 
 void ide_wait_irq()
 {
+    log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
     while (!ide_irq_invoked)
         ;
     ide_irq_invoked = 0;
 }
 void ide_irq()
 {
+    log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
     ide_irq_invoked = 1;
 }
 
 uint8_t ide_atapi_read(uint8_t drive, uint32_t lba, uint8_t numsects, uint16_t selector, uint32_t edi)
 {
+    log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
     uint8_t channel = ide_devices[drive].Channel;
     uint32_t slavebit = ide_devices[drive].Drive;
     uint32_t bus = channels[channel].base;
@@ -640,7 +668,8 @@ uint8_t ide_atapi_read(uint8_t drive, uint32_t lba, uint8_t numsects, uint16_t s
 
     // (VII): Waiting for the driver to finish or return an error code:
     // ------------------------------------------------------------------
-    if (err = ide_polling(channel, 1))
+    err = ide_polling(channel, 1);
+    if (err)
         return err; // Polling and return if error.
 
     // (VIII): Sending the packet data:
@@ -652,7 +681,8 @@ uint8_t ide_atapi_read(uint8_t drive, uint32_t lba, uint8_t numsects, uint16_t s
     for (i = 0; i < numsects; i++)
     {
         ide_wait_irq(); // Wait for an IRQ.
-        if (err = ide_polling(channel, 1))
+        err = ide_polling(channel, 1);
+        if (err)
             return err; // Polling and return if error.
         // Receive data via insw
         // selector, words, bus, edi
@@ -668,13 +698,13 @@ uint8_t ide_atapi_read(uint8_t drive, uint32_t lba, uint8_t numsects, uint16_t s
     // ------------------------------------------------------------------
     while (ide_read(channel, ATA_REG_STATUS) & (ATA_SR_BSY | ATA_SR_DRQ))
         ;
-
+    log_debug(MODULE, "exit file %s:%u", __FILE__, __LINE__);
     return 0; // Easy, ... Isn't it?
 }
 
 void ide_read_sectors(uint8_t drive, uint8_t numsects, uint32_t lba, uint16_t es, uint32_t edi)
 {
-
+    log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
     // 1: Check if the drive presents:
     // ==================================
     if (drive > 3 || ide_devices[drive].Reserved == 0)
@@ -707,11 +737,12 @@ void ide_read_sectors(uint8_t drive, uint8_t numsects, uint32_t lba, uint16_t es
         }
         package[0] = ide_print_error(drive, err);
     }
+    log_debug(MODULE, "exit file %s:%u", __FILE__, __LINE__);
 }
 
 void ide_write_sectors(uint8_t drive, uint8_t numsects, uint32_t lba, uint16_t es, uint32_t edi)
 {
-
+    log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
     // 1: Check if the drive presents:
     // ==================================
     if (drive > 3 || ide_devices[drive].Reserved == 0)
@@ -739,10 +770,12 @@ void ide_write_sectors(uint8_t drive, uint8_t numsects, uint32_t lba, uint16_t e
         }
         package[0] = ide_print_error(drive, err);
     }
+    log_debug(MODULE, "exit file %s:%u", __FILE__, __LINE__);
 }
 
 uint8_t ide_is_bus_floating(uint16_t base_port)
 {
+    log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
     if (i686_inb(base_port + 7) == 0xFF || i686_inb(base_port + 7) == 0x7F)
     { // invalid state of status register
         return STATUS_TRUE;

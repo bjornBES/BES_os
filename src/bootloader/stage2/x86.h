@@ -22,8 +22,8 @@ bool ASMCALL x86_Disk_Read(uint8_t drive,
                            uint8_t count,
                            void* lowerDataOut);
 bool ASMCALL x86_VESASupported(void* result);
-bool ASMCALL x86_GetVESAEntry(uint32_t mode, void* result);
-
+bool ASMCALL x86_GetVESAEntry(uint16_t mode, void* result);
+bool ASMCALL x86_PCIInitCheck(uint8_t* PCIchar, uint8_t* protectedModeEntry, uint16_t* PCIInterfaceLevel, uint8_t* lastPCIBus);
 
 typedef struct 
 {
@@ -44,8 +44,3 @@ enum E820MemoryBlockType
 };
 
 int __attribute__((cdecl)) x86_E820GetNextBlock(E820MemoryBlock* block, uint32_t* continuationId);
-
-static int E820GetNextBlock(E820MemoryBlock* block, uint32_t* continuationId)
-{
-    return x86_E820GetNextBlock(block, continuationId);
-}

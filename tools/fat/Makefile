@@ -1,6 +1,8 @@
 BUILD_DIR?=build
 CC?=gcc
 CFLAGS?=-ggdb
+CFLAGS := $(filter-out -Werror, $(CFLAGS))
+CFLAGS := $(filter-out -Wall, $(CFLAGS))
 
 SOURCES_C=$(wildcard *.c)
 OBJECTS_C=$(patsubst %.c, $(BUILD_DIR)/tools/fat/%.o, $(SOURCES_C))
@@ -18,6 +20,7 @@ $(BUILD_DIR)/tools/fat/%.o: %.c always
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
 always:
+# need to remove -Werror from CFLAGS
 	@mkdir -p $(BUILD_DIR)/tools/fat
 
 clean:

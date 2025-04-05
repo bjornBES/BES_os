@@ -108,6 +108,17 @@ i686_ind:
     pop ebp
     ret
 
+;
+; void ASMCALL i686_SetStack(uint32_t address);
+;
+global i686_SetStack
+i686_SetStack:
+    [bits 32]
+    mov ebp, esp
+    mov eax, [ebp + 8]
+    mov esp, eax
+    ret
+
 global i686_Panic
 i686_Panic:
     cli

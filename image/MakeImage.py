@@ -19,6 +19,8 @@ from build_scripts.config import mountMethod
 
 SECTOR_SIZE = 512
 
+bashScriptsPath = "scripts/image"
+
 imageType = ""
 imageFS = ""
 imageSize = ""
@@ -30,7 +32,7 @@ FLOPPYBASEDIR = ""
 SATABASEDIR = ""
 
 def copyFile(source, destination):
-    bashPath = Path("./image/copyFile.sh").absolute()
+    bashPath = Path(f"{bashScriptsPath}/copyFile.sh").absolute()
     subprocess.run(["bash", bashPath, source, destination, str(os.path.getsize(source))])
     
 
@@ -103,7 +105,7 @@ def create_filesystem(target: str, filesystem, reserved_sectors=0, offset=0):
         if filesystem == 'fat32':
             reserved_sectors = 32
 
-    bashPath = Path("./image/mkfs_fatShell.sh").absolute()
+    bashPath = Path(f"{bashScriptsPath}/mkfs_fatShell.sh").absolute()
     result = subprocess.run(["bash", bashPath, target, filesystem, reserved_sectors.__str__()])
 
     if result.returncode == 1:
@@ -149,7 +151,7 @@ def install_stage1(target: str, stage1: str, stage2_offset, stage2_size, offset=
 
 def mount_fs(image: str, mount_dir: str, mount_method: str):
     try:
-        bashPath = Path("./image/mountDisk.sh").absolute()
+        bashPath = Path(f"{bashScriptsPath}/mountDisk.sh").absolute()
         subprocess.run(["bash", bashPath, image, mount_dir, mount_method], text=True, check=True)
         print(f"> Mounted {image} at {mount_dir}")
     except subprocess.CalledProcessError as e:
@@ -160,7 +162,7 @@ def mount_fs(image: str, mount_dir: str, mount_method: str):
 def unmount_fs(mount_dir: str, mount_method):
     time.sleep(2)
     try:
-        bashPath = Path("./image/umountDisk.sh").absolute()
+        bashPath = Path(f"{bashScriptsPath}/umountDisk.sh").absolute()
         subprocess.run(["bash", bashPath, mount_dir, mount_method], text=True, check=True)
         print(f"> Unmounted {mount_dir}")
     except subprocess.CalledProcessError as e:
@@ -168,15 +170,15 @@ def unmount_fs(mount_dir: str, mount_method):
         raise
 
 def makedirs(dir : str, UseSudo : bool):
-    bashPath = Path("./image/makedir.sh").absolute()
+    bashPath = Path(f"{bashScriptsPath}/makedir.sh").absolute()
     subprocess.run(["bash", bashPath, dir, UseSudo.__str__()], text=True, check=True)
 
 def mmd(image, file_dst):
-    bashPath = Path("./image/shellmmd.sh").absolute()
+    bashPath = Path(f"{bashScriptsPath}/shellmmd.sh").absolute()
     subprocess.run(["bash", bashPath, image, file_dst], text=True, check=True)
 
 def mcopy(image, file_src, file_dst):
-    bashPath = Path("./image/shellmcopy.sh").absolute()
+    bashPath = Path(f"{bashScriptsPath}/shellmcopy.sh").absolute()
     subprocess.run(["bash", bashPath, image, file_src, file_dst], text=True, check=True)
 
 def loadFiles(files, tempdir, baseDir):

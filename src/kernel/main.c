@@ -183,13 +183,20 @@ void PrintMemoryRegions()
 
 void KernelInits()
 {
+    log_crit("MAIN", "KernelInits()");
     _init();
     HAL_Initialize();
+    log_crit("MAIN", "HAL_Initialize() done");
     mm_init();
-
+    log_crit("MAIN", "mm_init() done");
+    
     keyboard_init();
+    log_crit("MAIN", "Done keyboard_init()");
     VGA_init(&params->VESA);
+    log_crit("MAIN", "VGA_init() done");
     pit_init();
+    log_crit("MAIN", "pit_init() done");
+    log_crit("MAIN", "KernelInits() done");
 }
 
 void printHexFormat(uint8_t *buffer, uint32_t size)
@@ -202,25 +209,33 @@ void KernelStart(BootParams *bootParams)
 
     KernelInits();
 
+    while (true)
+    {
+        ;
+    }
+    
+
     PrintMemoryRegions();
 
     i686_ISR_RegisterHandler(2, debug);
 
     VGA_clrscr();
     pci_init(params->PCI.PCIHWCharacteristics);
-    // PressAnyKeyLoop();
+    
+    PressAnyKeyLoop();
     printStatus();
-    // PressAnyKeyLoop();
+    
+    PressAnyKeyLoop();
     pciScan();
     printStatus();
     log_err("MAIN", "pciScan done");
     
     VFS_init();
     log_err("MAIN", "VFS done");
-    ATA_init();
+    // ATA_init();
     log_err("MAIN", "ATA done");
 
-    // PressAnyKeyLoop();
+    PressAnyKeyLoop();
 
     /*
     */

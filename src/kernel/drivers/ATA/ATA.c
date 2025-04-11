@@ -276,8 +276,6 @@ void ATA_init()
 
 bool ATA_identify(IdentifyDeviceData *buffer)
 {
-	uint16_t channel = 0;
-
 	ide_select_drive(ATA_PRIMARY, ATA_MASTER);
 
 	ide_write(ATA_PRIMARY, ATA_REG_SECCOUNT0, 0);

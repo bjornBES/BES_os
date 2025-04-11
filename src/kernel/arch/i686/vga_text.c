@@ -292,15 +292,6 @@ void SwitchToVGAModes(VESAInfo* VESAinfo)
     {
         vesa_mode_info_t* entry = &VESAinfo->entries[i];
 
-        log_debug(MODULE, "%u: %ux%u %u 0x%X %s, mm: %u",
-                            i,
-                            entry->width,
-                            entry->height,
-                            entry->bpp,
-                            entry->framebuffer,
-                            (entry->attributes & 0x80) ? "Yes" : "No",
-                            entry->memory_model);
-
         vga_modes[i].mode = GetVgaMode(entry);
         vga_modes[i].width = entry->width;
         vga_modes[i].height = entry->height;
@@ -315,6 +306,16 @@ void SwitchToVGAModes(VESAInfo* VESAinfo)
         vga_modes[i].green_position = entry->green_position;
         vga_modes[i].blue_mask = entry->blue_mask;
         vga_modes[i].blue_position = entry->blue_position;
+
+        log_debug(MODULE, "%u: %ux%u %u 0x%X %s, mm: %u",
+            i,
+            vga_modes[i].width,
+            vga_modes[i].height,
+            vga_modes[i].bpp,
+            vga_modes[i].framebuffer,
+            (vga_modes[i].mode == VGA_MODE_GRAPH) ? "Yes" : "No",
+            vga_modes[i].memory_model);
+
         size += sizeof(vga_mode_t);
     }
 }

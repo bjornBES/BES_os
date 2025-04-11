@@ -80,6 +80,7 @@
         "charconv": "c",
         "iomanip": "c",
         "ctype.h": "c",
-        "tgmath.h": "c"
+        "tgmath.h": "c",
+        "debug.h": "c"
     }
 }

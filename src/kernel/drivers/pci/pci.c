@@ -31,7 +31,7 @@ uint32_t drivs = 0;
 
 uint16_t headerType;
 
-#define getAddress(bus, slot, function, offset) (uint32_t)((1U << 31) | (bus << 16) | (slot << 11) | (function << 8) | (offset));
+#define getAddress(bus, slot, function, offset) ((uint32_t)((1U << 31) | ((bus) << 16) | ((slot) << 11) | ((function) << 8) | ((offset) & 0xFC)))
 
 void add_pci_device(pci_device *pdev)
 {
@@ -102,6 +102,13 @@ uint32_t getStorageBAR(uint32_t bus, uint32_t device, uint32_t function, uint8_t
     }
 }
 
+uint32_t pciReadBar(uint32_t bus, uint32_t device, uint32_t function, uint8_t barIndex)
+{
+    uint8_t offset = 0x10 + (barIndex * 4);
+    uint32_t address = getAddress(bus, device, function, offset);
+    i686_outd(PCI_CONFIG_ADDRESS, address);
+    return i686_ind(PCI_CONFIG_DATA);
+}
 uint16_t getVendorID(uint32_t bus, uint32_t device, uint32_t function)
 {
     uint16_t r0 = pciReadDword(bus, device, function, 0);
@@ -181,11 +188,17 @@ void pciScanDevice(uint32_t bus, uint32_t device, uint32_t function)
     {
         return; // no device
     }
+
+    // yes bad, to ignore warnings but the veriable will be used later
+    // and also the lines to ignore the warnings.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
     uint32_t typeOfDevice = (pciReadDword(bus, device, function, 0x08) >> 8);
     uint32_t classID = (typeOfDevice >> 16);
     uint32_t subclassID = ((typeOfDevice >> 8) & 0xFF);
     uint32_t progif = (typeOfDevice & 0xFF);
     uint32_t deviceIrq = (pciReadDword(bus, device, function, 0x3C) & 0xFF);
+#pragma GCC diagnostic pop
 
     log_debug(MODULE, "PCI Device Found: Bus %d, Device %d, Function %d, Vendor: 0x%X, Device: 0x%X, Class: 0x%X, Subclass: 0x%X",
               bus, device, function, vendorID, deviceID, classID, subclassID);
@@ -195,10 +208,40 @@ void pciScanDevice(uint32_t bus, uint32_t device, uint32_t function)
         // IDE
         if (subclassID == 0x1 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
         {
-            pci_device_ide_controller:
             log_debug(MODULE, "IDE controller");
             pciEnableIOBusmastering(bus, device, function);
             pciDisableInterrupts(bus, device, function);
+
+            uint32_t bar0 = pciReadBar(bus, device, function, 0);
+            uint32_t bar1 = pciReadBar(bus, device, function, 1);
+            uint32_t bar2 = pciReadBar(bus, device, function, 2);
+            uint32_t bar3 = pciReadBar(bus, device, function, 3);
+            uint32_t bar4 = pciReadBar(bus, device, function, 4);
+
+            if (!(bar0 & 0xFFFFFFFE))
+            {
+                bar0 = 0x1F0;
+            }
+            if (!(bar1 & 0xFFFFFFFE))
+            {
+                bar1 = 0x3F6;
+            }
+            if (!(bar2 & 0xFFFFFFFE))
+            {
+                bar2 = 0x170;
+            }
+            if (!(bar3 & 0xFFFFFFFE))
+            {
+                bar3 = 0x376;
+            }
+            if (!(bar4 & 0xFFFFFFFE))
+            {
+                bar4 = 0; // may be optional
+            }
+
+            ide_initialize(bar0, bar1, bar2, bar3, bar4);
+            log_debug(MODULE, "IDE controller initialized: 0x%X, 0x%X, 0x%X, 0x%X, 0x%X", bar0, bar1, bar2, bar3, bar4);
+            printf(MODULE, "IDE controller initialized: 0x%X, 0x%X, 0x%X, 0x%X, 0x%X\n", bar0, bar1, bar2, bar3, bar4);
         }
 
         // FDD
@@ -221,7 +264,7 @@ void pciScanDevice(uint32_t bus, uint32_t device, uint32_t function)
                 uint32_t mmioBase = pciReadMMIOBar(bus, device, function, PCI_BAR5);
                 log_debug(MODULE, "AHCI MMIO Base: 0x%x", mmioBase);
                 AHCI_init(mmioBase);
-            
+
                 number_of_storage_controllers++;
             }
         }

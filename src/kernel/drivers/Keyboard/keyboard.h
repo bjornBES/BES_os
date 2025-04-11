@@ -2,81 +2,93 @@
 
 #include <stdint.h>
 
-enum KEYCODE {
-	NULL_KEY = 0,
-	Q_PRESSED = 0x10,
-	Q_RELEASED = 0x90,
-	W_PRESSED = 0x11,
-	W_RELEASED = 0x91,
-	E_PRESSED = 0x12,
-	E_RELEASED = 0x92,
-	R_PRESSED = 0x13,
-	R_RELEASED = 0x93,
-	T_PRESSED = 0x14,
-	T_RELEASED = 0x94,
-	Z_PRESSED = 0x15,
-	Z_RELEASED = 0x95,
-	U_PRESSED = 0x16,
-	U_RELEASED = 0x96,
-	I_PRESSED = 0x17,
-	I_RELEASED = 0x97,
-	O_PRESSED = 0x18,
-	O_RELEASED = 0x98,
-	P_PRESSED = 0x19,
-	P_RELEASED = 0x99,
-	A_PRESSED = 0x1E,
-	A_RELEASED = 0x9E,
-	S_PRESSED = 0x1F,
-	S_RELEASED = 0x9F,
-	D_PRESSED = 0x20,
-	D_RELEASED = 0xA0,
-	F_PRESSED = 0x21,
-	F_RELEASED = 0xA1,
-	G_PRESSED = 0x22,
-	G_RELEASED = 0xA2,
-	H_PRESSED = 0x23,
-	H_RELEASED = 0xA3,
-	J_PRESSED = 0x24,
-	J_RELEASED = 0xA4,
-	K_PRESSED = 0x25,
-	K_RELEASED = 0xA5,
-	L_PRESSED = 0x26,
-	L_RELEASED = 0xA6,
-	Y_PRESSED = 0x2C,
-	Y_RELEASED = 0xAC,
-	X_PRESSED = 0x2D,
-	X_RELEASED = 0xAD,
-	C_PRESSED = 0x2E,
-	C_RELEASED = 0xAE,
-	V_PRESSED = 0x2F,
-	V_RELEASED = 0xAF,
-	B_PRESSED = 0x30,
-	B_RELEASED = 0xB0,
-	N_PRESSED = 0x31,
-	N_RELEASED = 0xB1,
-	M_PRESSED = 0x32,
-	M_RELEASED = 0xB2,
-
-	ZERO_PRESSED = 0x29,
-	ONE_PRESSED = 0x2,
-	NINE_PRESSED = 0xA,
-
-	POINT_PRESSED = 0x34,
-	POINT_RELEASED = 0xB4,
-
-	SLASH_RELEASED = 0xB5,
-
-	BACKSPACE_PRESSED = 0xE,
-	BACKSPACE_RELEASED = 0x8E,
-	SPACE_PRESSED = 0x39,
-	SPACE_RELEASED = 0xB9,
-	ENTER_PRESSED = 0x1C,
-	ENTER_RELEASED = 0x9C,
-
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+static uint16_t english_keyboard_layout[256] = {
+	0, 0,																 // zero, escape
+	'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 0, 0,	 // backspace, tab
+	'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', 0xA, 0,	 // enter, left ctrl
+	'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '`', '`', 0, '\\', // left shift
+	'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0, '*', 0, ' ',	 // right shift
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,										 // other control keys
+	'7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '0', '.',	 // numpad
+	0																	 // other keys
 };
+static uint16_t english_shift_keyboard_layout[256] = {
+	0, 0,																// zero, escape
+	'!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', 0, 0,	// backspace, tab
+	'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', 0xA, 0, // enter, left ctrl
+	'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~', 0, '|', // left shift
+	'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0, '*', 0, ' ',	// right shift
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,										// other control keys
+	'7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '0', '.',	// numpad
+	0																	// other keys
+};
+
+static uint16_t danish_keyboard_layout[256] = {
+	0, 0,																 // zero, escape
+	'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '+', ' ', 0, 0,	 // backspace, tab
+	'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', ' ', ' ', 0xA, 0,	 // enter, left ctrl
+	'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ' ', ' ', '\'', 0, '<', // left shift
+	'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-', 0, '*', 0, ' ',	 // right shift
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,										 // other control keys
+	'7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '0', '.',	 // numpad
+	0																	 // other keys
+};
+static uint16_t danish_shift_keyboard_layout[256] = {
+	0, 0,																// zero, escape
+	'!', '"', '#', ' ', '%', '&', '/', '(', ')', '=', '?', '`', 0, 0,	// backspace, tab
+	'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', ' ', '^', 0xA, 0, // enter, left ctrl
+	'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ' ', ' ', '*', 0, '>', // left shift
+	'Z', 'X', 'C', 'V', 'B', 'N', 'M', ';', ':', '_', 0, '*', 0, ' ',	// right shift
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,										// other control keys
+	'7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '0', '.',	// numpad
+	0																	// other keys
+};
+
+static uint16_t slovak_keyboard_layout[256] = {
+	0, 0,																			   // zero, escape
+	'+', 0x13E, 0x161, 0x10D, 0x165, 0x17E, 0xFD, 0xE1, 0xED, 0xE9, '=', 0x0301, 0, 0, // backspace, tab
+	'q', 'w', 'e', 'r', 't', 'z', 'u', 'i', 'o', 'p', 0xFA, 0xE4, 0xA, 0,			   // enter, left ctrl
+	'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 0xF4, 0xA7, ';', 0, 0x148,			   // left shift
+	'y', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-', 0, '\\', 0, ' ',				   // right shift
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,													   // other control keys
+	'7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '0', '.',				   // numpad
+	0																				   // other keys
+};
+
+static uint16_t slovak_shift_keyboard_layout[256] = {
+	0, 0,																   // zero, escape
+	'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '%', 0x030C, 0, 0,   // backspace, tab
+	'Q', 'W', 'E', 'R', 'T', 'Z', 'U', 'I', 'O', 'P', '/', '(', 0xA, 0,	   // enter, left ctrl
+	'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', '"', '!', 0xC2B0, 0, ')', // left shift
+	'Y', 'X', 'C', 'V', 'B', 'N', 'M', '?', ':', '_', 0, '|', 0, ' ',	   // right shift
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,										   // other control keys
+	'7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3', '0', '.',	   // numpad
+	0																	   // other keys
+};
+
+#pragma GCC diagnostic pop
+
+typedef struct keyboard_keys_t
+{
+	uint8_t shift : 1;
+	uint8_t ctrl : 1;
+	uint8_t alt : 1;
+	uint8_t reserved : 5;
+	uint32_t pressed_keys[6];
+} __attribute__((packed)) keyboardKeys;
+
+typedef struct keyboard_leds_t
+{
+	uint8_t capslock : 1;
+	uint8_t numlock : 1;
+	uint8_t scrollock : 1;
+	uint8_t reserved : 5;
+} __attribute__((packed)) keyboardLEDs;
 
 void keyboard_init();
 uint8_t KeyboardEnabled();
 void PressAnyKeyLoop();
 char KeyboardGetKey();
-uint8_t KeyboardToAscii(uint8_t key);
+uint8_t KeyboardScancodeToAscii(uint8_t key);

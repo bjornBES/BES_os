@@ -56,6 +56,7 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
         goto end;
     }
     
+    printf("Jumping to kernel at %p\r\n", kernelEntry);
     // execute kernel
     kernelEntry(&g_BootParams);
 

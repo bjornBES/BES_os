@@ -456,6 +456,7 @@ bool FAT_FindFile(Partition* disk, FAT_File* file, const char* name, FAT_Directo
 
 FAT_File* FAT_Open(Partition* disk, const char* path)
 {
+    printf("FAT: open %s\r\n", path);
     char name[MAX_PATH_SIZE];
 
     // ignore leading slash
@@ -508,5 +509,6 @@ FAT_File* FAT_Open(Partition* disk, const char* path)
         }
     }
 
+    printf("FAT: %s opened\r\n", name);
     return current;
 }

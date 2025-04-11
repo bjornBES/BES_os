@@ -2,8 +2,9 @@
 [bits 32]
 
 extern KernelStart
-
 extern stack_top
+
+section .StartText
 
 global start
 start:

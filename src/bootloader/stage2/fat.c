@@ -178,6 +178,8 @@ bool FAT_Initialize(Partition* disk)
         g_DataSectionLba = rootDirLba + rootDirSectors;
     }
 
+    printf("DataSector: %u RootSector %u\r\n", g_DataSectionLba, rootDirLba);
+
     g_Data->RootDirectory.Public.Handle = ROOT_DIRECTORY_HANDLE;
     g_Data->RootDirectory.Public.IsDirectory = true;
     g_Data->RootDirectory.Public.Position = 0;
@@ -311,6 +313,7 @@ uint32_t FAT_Read(Partition* disk, FAT_File* file, uint32_t byteCount, void* dat
     if (!fd->Public.IsDirectory || (fd->Public.IsDirectory && fd->Public.Size != 0))
         byteCount = min(byteCount, fd->Public.Size - fd->Public.Position);
 
+    uint16_t count = 0;
     while (byteCount > 0)
     {
         uint32_t leftInBuffer = SECTOR_SIZE - (fd->Public.Position % SECTOR_SIZE);
@@ -321,7 +324,8 @@ uint32_t FAT_Read(Partition* disk, FAT_File* file, uint32_t byteCount, void* dat
         fd->Public.Position += take;
         byteCount -= take;
 
-        // printf("leftInBuffer=%lu take=%lu\r\n", leftInBuffer, take);
+        // printf("%u: leftInBuffer=%lu take=%lu\r\n", count, leftInBuffer, take);
+        count++;
         // See if we need to read more data
         if (leftInBuffer == take)
         {
@@ -456,7 +460,6 @@ bool FAT_FindFile(Partition* disk, FAT_File* file, const char* name, FAT_Directo
 
 FAT_File* FAT_Open(Partition* disk, const char* path)
 {
-    printf("FAT: open %s\r\n", path);
     char name[MAX_PATH_SIZE];
 
     // ignore leading slash
@@ -509,6 +512,5 @@ FAT_File* FAT_Open(Partition* disk, const char* path)
         }
     }
 
-    printf("FAT: %s opened\r\n", name);
     return current;
 }

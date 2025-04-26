@@ -5,17 +5,14 @@ phys = 0x00100000;
 SECTIONS
 {
     . = phys;
+
     
-    .StartText          : { *(.StartText) }
     .text               : { __text_start = .;       *(.text)    }
     .data               : { __data_start = .;       *(.data)    }
     .rodata             : { __rodata_start = .;     *(.rodata)  }
     .bss                : 
     { 
         __bss_start = .;        *(.bss)     
-        isr_stack_bottom = ALIGN(4096);
-        . += 16384;  /* 16 KB ISR Stack */
-        isr_stack_top = .;
     }
     stack_bottom = .;
     stack_bottom = ALIGN(4096);

@@ -1,6 +1,7 @@
 #include "mbr.h"
 #include "memory.h"
 #include "stdio.h"
+#include "disk.h"
 
 typedef struct {
     // 0x00	1	Drive attributes (bit 7 set = active or bootable)
@@ -44,5 +45,10 @@ void MBR_DetectPartition(Partition* part, DISK* disk, void* partition)
 
 bool Partition_ReadSectors(Partition* part, uint32_t lba, uint8_t sectors, void* lowerDataOut)
 {
+    uint16_t cylinder;
+    uint16_t sector;
+    uint16_t head;
+    DISK_LBA2CHS(part->disk, lba, &cylinder, &sector, &head);
+    // printf("Reading | disk: %u, lba: %u, count %u CHS: %u|%u|%u\r\n", part->disk, lba + part->partitionOffset, sectors, cylinder, sector, head);
     return DISK_ReadSectors(part->disk, lba + part->partitionOffset, sectors, lowerDataOut);
 }

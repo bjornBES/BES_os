@@ -52,8 +52,19 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
     KernelStart kernelEntry;
     if (!ELF_Read(&part, "/boot/kernel.elf", (void**)&kernelEntry))
     {
-        printf("ELF read failed, booting halted!");
+        printf("ELF read failed, booting halted!\n");
         goto end;
+    }
+    uint8_t* kernel = (uint8_t*)kernelEntry - 0xb50;
+    printf("Kernel address 0x%X", kernel);
+    for (uint16_t i = 0; i < 512; i++)
+    {
+        uint8_t word = kernel[(i)];
+        if (i % 16 == 0)
+        {
+            printf("\n%X\t", i);
+        }
+        printf("%X,", word);
     }
     
     printf("Jumping to kernel at %p\r\n", kernelEntry);

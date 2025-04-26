@@ -10,7 +10,6 @@
 
 ISRHandler g_ISRHandlers[256];
 struct tss_entry tss; // Global TSS struct for the current processor
-extern char isr_stack_top;
 
 static const char* const g_Exceptions[] = {
     "Divide by zero error",
@@ -48,15 +47,6 @@ static const char* const g_Exceptions[] = {
 };
 
 void i686_ISR_InitializeGates();
-
-void setup_tss() {
-    // Set the ISR stack pointer (ESP0) to point to the dedicated ISR stack
-    tss.esp0 = (uint32_t)isr_stack_top; // isr_stack_top points to the top of the ISR stack
-    tss.ss0 = 0x10;  // Kernel data segment (assuming 0x10 is the kernel data segment)
-    
-    // Load the TSS into the Task Register (TR)
-    __asm__ ("ltr %%ax" :: "a"(0x28)); // 0x28 is the selector for the TSS
-}
 
 void i686_ISR_Initialize()
 {

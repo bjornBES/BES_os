@@ -4,7 +4,7 @@
 extern KernelStart
 extern stack_top
 
-section .StartText
+section .text
 
 global start
 start:

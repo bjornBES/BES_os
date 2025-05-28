@@ -1,5 +1,5 @@
 #pragma once
-#include <stdint.h>
+#include "defaultInclude.h"
 
 typedef enum
 {
@@ -18,6 +18,22 @@ typedef enum
 
 } IDT_FLAGS;
 
+typedef struct
+{
+    uint16_t BaseLow;
+    uint16_t SegmentSelector;
+    uint8_t Reserved;
+    uint8_t Flags;
+    uint16_t BaseHigh;
+} __attribute__((packed)) IDTEntry;
+
+typedef struct
+{
+    uint16_t Limit;
+    IDTEntry* Ptr;
+} __attribute__((packed)) IDTDescriptor;
+
+void IDT_Load();
 void i686_IDT_Initialize();
 void i686_IDT_DisableGate(int interrupt);
 void i686_IDT_EnableGate(int interrupt);

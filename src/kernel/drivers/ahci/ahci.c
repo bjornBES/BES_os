@@ -1,6 +1,5 @@
 #include "ahci.h"
 #include "drivers/ide/ide_controller.h"
-#include "common.h"
 #include "debug.h"
 #include "arch/i686/io.h"
 #include "arch/i686/i8259.h"
@@ -165,7 +164,7 @@ bool is_sata(HBAPort *port)
 	return true;
 }
 
-void InitAbar(HBAData *abar)
+void InitAbar(HBAData *abar, device_t* dev)
 {
 	uint32_t pi = abar->pi;
 	for (uint8_t i = 0; i < 32; i++)
@@ -180,12 +179,15 @@ void InitAbar(HBAData *abar)
 				initialize_port(&ports[num_ports]);
 				sata_identify_packet info;
 				ahci_identify_device(ports[num_ports], &info);
+				ide_private_data* priv = dev->priv;
+				priv->drive = num_ports;
 				char name[41] = {0};
 				for (int i = 0; i < 40; i += 2)
 				{
 					name[i] = info.model_number[i + 1];
 					name[i + 1] = info.model_number[i];
 				}
+				dev->name = name;
 				printf("Detected SATA drive: %s (%u MiB)\n", name, info.total_sectors / 2048);
 				log_debug(MODULE, "Detected SATA drive: %s (%u MiB)", name, info.total_sectors / 2048);
 				num_ports++;
@@ -263,24 +265,39 @@ bool ahci_read_sectors_internal(ahci_port aport, uint32_t startl, uint32_t start
 	return true;
 }
 
-uint8_t ahci_read_sectors(void *buf, uint64_t start_sector, uint32_t count, device_t* device)
+uint32_t ahci_read_sectors(void *buf, uint64_t start_sector, uint32_t count, device_t* device)
 {
 	uint32_t drive_num = ((ide_private_data*)(device->priv))->drive;
 	if (ports[drive_num].abar != 0)
-		return ahci_read_sectors_internal(ports[drive_num], start_sector & 0xFFFFFFFF, (start_sector >> 32) & 0xFFFFFFFF, count, buf);
+	{
+		uint16_t* u16Buffer = (uint16_t*)buf;
+		if (ahci_read_sectors_internal(ports[drive_num], start_sector & 0xFFFFFFFF, (start_sector >> 32) & 0xFFFFFFFF, count, u16Buffer))
+		{
+			return count;
+		}
+	}
 	else
+	{
 		return 4;
+	}
+	return 5;
 }
 
 void AHCI_init(uint32_t bar5)
 {
 	ports = (ahci_port *)malloc(sizeof(ahci_port) * 4, &ahciPages);
-	log_crit(MODULE, "ahciPages: %u", ahciPages.prosses);
-	InitAbar((HBAData *)bar5);
-
-
 	device_t *dev = (device_t *)malloc(sizeof(device_t), &ahciPages);
 	ide_private_data *priv = (ide_private_data *)malloc(sizeof(ide_private_data), &ahciPages);
+	
+	dev->priv = priv;
+	log_crit(MODULE, "ahciPages: %u", ahciPages.prosses);
+	
+	InitAbar((HBAData *)bar5, dev);
 
+	dev->id = 33;
+	dev->dev_type = DEVICE_BLOCK;	
+	dev->read = ahci_read_sectors;
+
+	addDevice(dev);
 	log_crit(MODULE, "exiting init");
 }

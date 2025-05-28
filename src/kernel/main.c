@@ -1,7 +1,7 @@
 #include <arch/i686/irq.h>
-#include "arch/i686/vga_text.h"
-#include "arch/i686/timer.h"
+#include "drivers/VGA/vga.h"
 #include "arch/i686/io.h"
+#include "arch/i686/pit.h"
 
 #include <hal/hal.h>
 
@@ -13,6 +13,9 @@
 #include "memory.h"
 #include "string.h"
 #include "memory_allocator.h"
+#include "ctype.h"
+#include "time.h"
+#include "unistd.h"
 
 #include "fs/devfs/devfs.h"
 #include "fs/disk.h"
@@ -62,58 +65,147 @@ void ReadLine(char *buffer)
         {
             return;
         }
+        if (c == '\b')
+        {
+            if (bufferIndex > 0)
+            {
+                int x = 0;
+                int y = 0;
+                VGA_getcursor(&x, &y);
+                log_debug("MAIN", "backspace %u (X,Y): (%u, %u)", bufferIndex, x, y);
+                bufferIndex--;
+                x--;
+                VGA_setcursor(x, y);
+                printf(" ");
+                buffer[bufferIndex] = 0;
+                VGA_setcursor(x, y);
+            }
+        }
         else
         {
             buffer[bufferIndex] = c;
             bufferIndex++;
             printf("%c", c);
-            log_debug("MAIN", "char: %c - %u 0x%X", c, (uint8_t)c, (uint8_t)c);
+            // log_debug("MAIN", "char: %c - %u 0x%X", c, (uint8_t)c, (uint8_t)c);
         }
     }
+}
+
+bool cmpCommand(char *command, char *buffer)
+{
+    while (*command && *buffer)
+    {
+        if (!(*command == *buffer || toupper(*command) == *buffer))
+        {
+            return false;
+        }
+        command++;
+        buffer++;
+    }
+    return true;
 }
 
 void Update()
 {
     Page bufferPage;
     Page commandPage;
-    char *buffer = (char *)malloc(256, &bufferPage);
+    char *inputBuffer = (char *)malloc(256, &bufferPage);
     char *command = (char *)malloc(64, &commandPage);
+    uint32_t bufferSize = 4096;
+    void *buffer = malloc(4096, &bufferPage);
     VGA_clrscr();
     printf("BES OS v0.1\n");
     printf("This operating system is under construction.\n\n");
     while (true)
     {
         printf("$");
-        memset(buffer, 0, 256);
-        ReadLine(buffer);
+        memset(inputBuffer, 0, 256);
+        ReadLine(inputBuffer);
 
-        int count = strcount(buffer, ' ');
-        char *loc = strtok(buffer, " ");
-        char *args[count + 1];
+        int count = strcount(inputBuffer, ' ');
+        char *loc = strtok(inputBuffer, " ");
+        char *argv[count + 1];
 
         putc('\n');
 
-        log_debug("MAIN", "loc = %s", loc);
+        log_debug("MAIN", "loc = %s, count = %u", loc, count);
+        int argc = 0;
 
         for (size_t i = 0; i < count + 1; i++)
         {
-            if (strcmp(loc, ""))
+            if (loc == NULL)
             {
+                log_debug("MAIN", "continue loc = %s", loc);
                 continue;
             }
-            args[i] = loc;
-            log_debug("MAIN", "1: args[i] = %s", args[i]);
-            log_debug("MAIN", "loc = %s size = %u", loc, sizeof(loc));
+            argc++;
+            argv[i] = loc;
+            log_debug("MAIN", "%u: argv[i] = %s", i, argv[i]);
             if (i == 0)
             {
-                memcpy(command, loc, sizeof(loc) + 1);
+                command = memcpy(command, loc, sizeof(loc) + 1);
             }
             loc = strtok(NULL, " ");
         }
 
-        if (memcmp(command, "clear", sizeof(command) + 1) == false)
+        if (argv[0][0] == '\0')
+        {
+            continue;
+        }
+
+        log_debug("MAIN", "count = %u", count);
+        if (cmpCommand("clear", argv[0]) == true)
         {
             VGA_clrscr();
+        }
+        if (cmpCommand("read", argv[0]) == true)
+        {
+            if (count < 2)
+            {
+                printf("Usage: read <lbs> <count>\n");
+            }
+            uint32_t lbs = 0;
+            uint32_t sectorcount = 0;
+            atoi(argv[1], (int *)&lbs);
+            atoi(argv[2], (int *)&sectorcount);
+            if (bufferSize < sectorcount * 512)
+            {
+                log_debug("MAIN", "reallocating buffer %u", sectorcount * 512);
+                buffer = realloc(buffer, sectorcount * 512, &bufferPage);
+                bufferSize = sectorcount * 512;
+                memset(buffer, 0, bufferSize);
+            }
+            ATA_read(buffer, lbs, sectorcount, GetDeviceUsingId(32));
+        }
+        if (cmpCommand("hex", argv[0]) == true)
+        {
+            if (count < 1)
+            {
+                printf("Usage: hex <file dis>\n");
+            }
+            fd_t fd = VFS_FD_STDOUT;
+            atoi(argv[1], &fd);
+            uint8_t *u8Buffer = (uint8_t *)buffer;
+            for (uint16_t i = 0; i < bufferSize; i++)
+            {
+                uint8_t word = u8Buffer[i];
+
+                if (i % 16 == 0)
+                {
+                    fprintf(fd, "\n%04X\t", i);
+                }
+                fprintf(fd, "%02X,", word);
+            }
+        }
+        if (cmpCommand("info", argv[0]) == true)
+        {
+            if (count < 1)
+            {
+                printf("Usage: hex <file dis>\n");
+            }
+            fd_t fd = VFS_FD_STDOUT;
+            atoi(argv[1], &fd);
+            fprintf(fd, "\nBufferSize = %u\n", bufferSize);
         }
     }
 
@@ -183,103 +275,78 @@ void PrintMemoryRegions()
 
 void KernelInits()
 {
-    log_crit("MAIN", "KernelInits()");
     _init();
     HAL_Initialize();
-    log_crit("MAIN", "HAL_Initialize() done");
+    i686_ISR_RegisterHandler(2, debug);
     mm_init();
-    log_crit("MAIN", "mm_init() done");
-    
-    keyboard_init();
-    log_crit("MAIN", "Done keyboard_init()");
-    VGA_init(&params->VESA);
-    log_crit("MAIN", "VGA_init() done");
-    pit_init();
-    log_crit("MAIN", "pit_init() done");
-    log_crit("MAIN", "KernelInits() done");
-}
 
-void printHexFormat(uint8_t *buffer, uint32_t size)
-{
+    pit_init();
+    keyboard_init();
+    vga_initialize();
+    printf("MAIN: VGA_init() done\n");
+    printf("MAIN: KernelInits() done\n");
 }
 
 void KernelStart(BootParams *bootParams)
 {
     CopyParams(bootParams);
-
-    KernelInits();
-
-    while (true)
-    {
-        ;
-    }
+    pre_vga_initialize(params, &params->VESA);
     
+    KernelInits();
+    printf("KernelStart\n");
+
+    sleep(2);
 
     PrintMemoryRegions();
 
-    i686_ISR_RegisterHandler(2, debug);
-
     VGA_clrscr();
     pci_init(params->PCI.PCIHWCharacteristics);
-    
-    PressAnyKeyLoop();
     printStatus();
-    
-    PressAnyKeyLoop();
+
     pciScan();
     printStatus();
-    log_err("MAIN", "pciScan done");
-    
-    VFS_init();
-    log_err("MAIN", "VFS done");
-    // ATA_init();
-    log_err("MAIN", "ATA done");
-
-    PressAnyKeyLoop();
-
-    /*
-    */
-    uint8_t dataBuffer[512] = {0};
-    ahci_read_sectors(dataBuffer, 0, 1, GetDevice(ata_Device));
-    log_debug("MAIN", "ATA read done");
-    for (uint16_t i = 0; i < 512; i++)
-    {
-        uint8_t word = dataBuffer[(i)];
-        if (i % 16 == 0)
-        {
-            fprintf(VFS_FD_DEBUG, "\n%X\t", i);
-            fprintf(VFS_FD_STDOUT, "\n%X\t", i);
-        }
-        fprintf(VFS_FD_DEBUG, "%X,", word);
-        fprintf(VFS_FD_STDOUT, "%X,", word);
-    }
-    
-    sleepSec(10);
-    printf("sleep done");
-    PressAnyKeyLoop();
-
+    log_info("MAIN", "pciScan done");
     VGA_clrscr();
-    PrintDeviceOut();
-    device_t *dev = GetDevice(ata_Device);
-    printf("tring to mount %s on / (%d)!\n", dev->name, dev->id);
-    printStatus();
-    // dev->name;
-    Page bufferPage;
-    if (tryMountFS(dev, "/"))
-    {
-        log_debug("MAIN", "done mounting");
+    printf("12345678901234567890123456789012345678901234567890123456789012345678901234567890\n");
+    VGA_setcursor(0, 2);
+    printf("00000000011111111112222222222333333333344444444445555555555666666666677777777778\n");
+    
+    
+    VGA_setcursor(0, 6);
+    printf("1234567890123456789012345678901234567890\n");
+    printf("0000000001111111111222222222233333333334\n");
+    //VGA_clrscr();
+    // printf("ABC");
+    PressAnyKeyLoop();
 
+    VFS_init();
+    log_info("MAIN", "VFS done");
+    ATA_init();
+    log_info("MAIN", "ATA done");
+
+    if (ide_devices_count > 0)
+    {
+        VGA_clrscr();
         PrintDeviceOut();
-        PressAnyKeyLoop();
+        device_t *dev = GetDevice(ata_Device);
+        printStatus();
+        Page bufferPage;
+        if (!tryMountFS(dev, "/"))
+        {
+            printf("Unable to mount / on %s (%d)!\n", dev->name, dev->id);
+            log_crit("MAIN", "Unable to mount / on %s (%d)!\n", dev->name, dev->id);
+            for (;;)
+            {
+                ;
+            }
+        }
+        PrintDeviceOut();
 
         printStatus();
-        log_debug("MAIN", "in if stmt");
         ASM_INT2();
         uint8_t *buffer = (uint8_t *)malloc(512, &bufferPage);
-        log_debug("MAIN", "after malloc");
         VGA_clrscr();
         VFS_Read("/test.txt", buffer);
-        PressAnyKeyLoop();
 
         VGA_clrscr();
 
@@ -290,29 +357,18 @@ void KernelStart(BootParams *bootParams)
             if (i % 16 == 0)
             {
                 fprintf(VFS_FD_DEBUG, "\n%X\t", i);
-                fprintf(VFS_FD_STDOUT, "\n%X\t", i);
             }
             fprintf(VFS_FD_DEBUG, "%X,", word);
-            fprintf(VFS_FD_STDOUT, "%X,", word);
         }
-
+        
         ASM_INT2();
         free(buffer, &bufferPage);
     }
-    else
-    {
-        printf("Unable to mount / on %s (%d)!\n", dev->name, dev->id);
-    }
-
-    PressAnyKeyLoop();
 
     VGA_clrscr();
 
     printStatus();
-    PressAnyKeyLoop();
     VGA_clrscr();
-
-    PressAnyKeyLoop();
 
     log_info("Main", "This is an info msg!");
     log_warn("Main", "This is a warning msg!");

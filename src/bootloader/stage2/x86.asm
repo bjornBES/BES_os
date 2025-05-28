@@ -489,3 +489,26 @@ x86_PCIInitCheck:
 
     pop ebp
     ret
+
+;
+; void ASMCALL SetVGAMode(uint8_t mode);
+;
+global SetVGAMode
+SetVGAMode:
+    push    ebp
+    mov     ebp,    esp
+
+    x86_EnterRealMode
+
+    push    eax
+
+    xor     ax,     ax
+    mov     al,     [bp + 8]
+    int     0x10
+
+    pop     eax    
+
+    x86_EnterProtectedMode
+
+    pop     ebp
+    ret

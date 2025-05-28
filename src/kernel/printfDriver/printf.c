@@ -10,6 +10,9 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
+#include "debug.h"
+#include "limits.h"
+#include "hal/vfs.h"
 
 // 'ntoa' conversion buffer size, this must be big enough to hold one converted
 // numeric number including padded zeros (dynamically created on stack)
@@ -1025,7 +1028,7 @@ void format_string_loop(output_gadget_t *output, const char *format, va_list arg
         size_t width = 0U;
         if (isdigit(*format))
         {
-            width = (size_t)atou(format);
+            format = atou_return(format, &width);
         }
         else if (*format == '*')
         {
@@ -1296,7 +1299,7 @@ void format_string_loop(output_gadget_t *output, const char *format, va_list arg
             }
             else
             {
-                size_t l = strnlen_s(p, precision ? precision : PRINTF_MAX_POSSIBLE_BUFFER_SIZE);
+                size_t l = strnlen(p, precision ? precision : PRINTF_MAX_POSSIBLE_BUFFER_SIZE);
                 // pre padding
                 if (flags & FLAGS_PRECISION)
                 {
@@ -1410,4 +1413,24 @@ int vfctprintf(void (*out)(char c, void *extra_arg), void *extra_arg, const char
 {
     output_gadget_t gadget = function_gadget(out, extra_arg);
     return vsnprintf_impl(&gadget, format, arg);
+}
+
+output_gadget_t buffer_gadget(char *buffer, size_t buffer_size)
+{
+    size_t usable_buffer_size = (buffer_size > PRINTF_MAX_POSSIBLE_BUFFER_SIZE) ? PRINTF_MAX_POSSIBLE_BUFFER_SIZE : (size_t)buffer_size;
+    output_gadget_t result = discarding_gadget();
+    if (buffer != NULL)
+    {
+        result.buffer = buffer;
+        result.max_chars = usable_buffer_size;
+    }
+    return result;
+}
+
+output_gadget_t function_gadget()
+{
+    output_gadget_t result = discarding_gadget();
+    result.max_chars = PRINTF_MAX_POSSIBLE_BUFFER_SIZE;
+    result.file = VFS_FD_STDOUT;
+    return result;
 }

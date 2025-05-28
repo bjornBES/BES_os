@@ -35,5 +35,6 @@ typedef struct datetime {
     uint8_t second;
 }datetime;
 
-int is_leap_year(int year, int month);
+void rtc_read_datetime(datetime* datetime);
+int is_leap_year(int year);
 int get_weekday_from_date(datetime * dt);

@@ -5,12 +5,32 @@
 #define PCI_CONFIG_ADDRESS  0xCF8
 #define PCI_CONFIG_DATA     0xCFC
 
+// PCI config header
+#define PCI_VENDOR_ID 0x00
+#define PCI_DEVICE_ID 0x02
+#define PCI_COMMAND 0x04
+#define PCI_STATUS 0x06
+#define PCI_REVISION_ID 0x08
+#define PCI_PROG_IF 0x09
+#define PCI_SUBCLASS 0x0a
+#define PCI_CLASS 0x0b
+#define PCI_CACHE_LINE_SIZE 0x0c
+#define PCI_LATENCY_TIMER 0x0d
+#define PCI_HEADER_TYPE 0x0e
+#define PCI_BIST 0x0f
 #define PCI_BAR0 0x10
 #define PCI_BAR1 0x14
 #define PCI_BAR2 0x18
 #define PCI_BAR3 0x1C
 #define PCI_BAR4 0x20
 #define PCI_BAR5 0x24
+#define PCI_SECONDARY_BUS 0x09
+#define PCI_SYSTEM_VENDOR_ID 0x2C
+#define PCI_SYSTEM_ID 0x2E
+#define PCI_EXP_ROM_BASE_ADDR 0x30
+#define PCI_CAPABILITIES_PTR 0x34
+#define PCI_INTERRUPT_LINE 0x3C
+#define PCI_MIN_GRANT 0x3E
 
 #define PCI_MMIO_BAR 0x0
 #define PCI_IO_BAR 0x1
@@ -36,10 +56,81 @@
 struct __pci_driver;
 
 typedef struct {
-	uint32_t vendor;
-	uint32_t device;
-	uint32_t func;
-	struct __pci_driver *driver;
+	uint32_t BAR0;
+	uint32_t BAR1;
+	uint32_t BAR2;
+	uint32_t BAR3;
+	uint32_t BAR4;
+	uint32_t BAR5;
+	uint32_t CardbusCIS;
+	uint16_t SubsystemID;
+	uint16_t SubsystemVendorID;
+	uint32_t ROMBaseAddress;
+	uint8_t Reserved[3];
+	uint8_t CapabilitiesPointer;
+	uint32_t Reserved2;
+	uint8_t MaxLatency;
+	uint8_t MinGnt;
+	uint8_t InterruptPin;
+	uint8_t InterruptLine;
+} PCIHeader0;
+
+typedef struct {
+	uint32_t BAR1;
+	uint32_t BAR2;
+
+	uint8_t SecondaryLatencyTimer;
+	uint8_t SubordinateBusNumber;
+	uint8_t SecondaryBusNumber;
+	uint8_t PrimaryBusNumber;
+	uint16_t SecondaryStatus;
+	uint8_t IOLimit;
+	uint8_t IOBase;
+	uint16_t MemoryLimit;
+	uint16_t MemoryBase;
+	uint16_t PrefetchableMemoryLimit;
+	uint16_t PrefetchableMemoryBase;
+	uint32_t PrefetchableBaseUpper32;
+	uint32_t PrefetchableLimitUpper32;
+	uint16_t IOLimitUpper16;
+	uint16_t IOBaseUpper16;
+	uint8_t Reserved[3];
+	uint8_t CapabilitiesPtr;
+	uint32_t ROMBaseAddress;
+	uint16_t BridgeControlRegister;
+	uint8_t InterruptPin;
+	uint8_t InterruptLine;
+} PCIHeader1;
+
+typedef union {
+	PCIHeader0 header0;
+	PCIHeader1 header1;
+	uint8_t bytes[48];
+} PCIHeader;
+
+
+typedef struct {
+	uint16_t bus;
+	uint16_t slot;
+	uint16_t function;
+
+	uint16_t vendorID;
+	uint16_t deviceID;
+
+	uint16_t command;
+	uint16_t status;
+
+	uint8_t revision;
+	uint8_t progif;
+	uint8_t subclassID;
+	uint8_t classID;
+
+	uint8_t cacheLineSize;
+	uint8_t latencyTimer;
+	uint8_t headerType;
+	uint8_t BIST;
+
+	PCIHeader header;
 } pci_device;
 
 typedef struct {
@@ -71,5 +162,5 @@ void pciDisableInterrupts(uint32_t bus, uint32_t device, uint32_t function);
 uint32_t getStorageBAR(uint32_t bus, uint32_t device, uint32_t function, uint8_t barIndex);
 
 void pciScan(void);
-void pciScanDevice(uint32_t bus, uint32_t device, uint32_t function);
+void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t device, uint32_t function);
 uint8_t *get_pci_vendor_string(uint32_t vendor_id);

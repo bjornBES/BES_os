@@ -1,18 +1,24 @@
 #pragma once
-#include <stddef.h>
-#include <stdint.h>
+#include "defaultInclude.h"
+
+
+#define UNICODE_COMBINING_ACUTE 0x0301
+#define UNICODE_COMBINING_CARON 0x030C
+
+#ifdef __i686__
+#include "arch/i686/string_i686.h"
+#include "arch/i686/memory_i686.h"
+#endif
+int strcmp_debug(const char *a, const char *b);
+int strcasecmp(const char *a, const char *b);
+int strncasecmp(const char *a, const char *b, size_t count);
 
 typedef char* string;
 
-const char* strchr(const char* str, char chr);
-char* strcpy(char* dst, const char* src);
-uint32_t strlen(const char* str);
-size_t strnlen_s(const char *str, size_t maxsize);
-int strcmp(const char* a, const char* b);
 void itoa(char *buf, uint32_t n, int base);
 void atoi(char* str, int* a);
 size_t atou(const char* str);
-char* strcat(char *dest,const char *src);
+const char* atou_return(const char *str, size_t* result);
 
 uint32_t strcrl(string str, const char what, const char with);
 uint32_t str_begins_with(string str, string with);

@@ -8,7 +8,7 @@
 #include "proc.h"
 #include "debug.h"
 
-#include <arch/i686/vga_text.h>
+#include <drivers/VGA/vga.h>
 #include <arch/i686/e9.h>
 #include <stdio.h>
 
@@ -68,10 +68,10 @@ bool tryMountFS(device_t *dev, char *loc)
 		return false;
 	}
 	log_debug(MODULE, "after cheaking Mounting Points");
-	if (fatProbe(dev))
+	if (FAT_Probe(dev))
 	{
 		log_debug(MODULE, "FAT32 probed successly");
-		if (fatMount(dev, dev->fs->priv_data))
+		if (FAT_Mount(dev, dev->fs->priv_data))
 		{
 			MountPoint *m = (MountPoint *)malloc(sizeof(MountPoint), mPages[lastMountId]);
 			m->loc = loc;
@@ -88,16 +88,14 @@ bool tryMountFS(device_t *dev, char *loc)
 
 int __find_mount(char *filename, int *adjust)
 {
-	log_debug(MODULE, "filename %s", filename);
+	log_debug(MODULE, "filename %s string length %u", filename, strlen(filename) + 1);
 	Page origPage;
-	char *orig = (char *)malloc(strlen(filename) + 1, &origPage);
-	memset(orig, 0, strlen(filename) + 1);
+	char *orig = (char *)calloc(1, strlen(filename) + 1, &origPage);
 	memcpy(orig, filename, strlen(filename) + 1);
 	if (orig[strlen(orig)] == '/')
 	{
 		str_backspace(orig, '/');
 	}
-	log_debug(MODULE, "filename %s", orig);
 	while (1)
 	{
 		for (int i = 0; i < MAX_MOUNTS; i++)

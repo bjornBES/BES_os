@@ -1,8 +1,4 @@
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <stddef.h>
-
 #include "memory.h"
 #include "stdio.h"
 #include "debug.h"
@@ -12,7 +8,7 @@
 
 void printStatus()
 {
-	log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
+    log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
     dump_memory_status();
 }
 
@@ -38,7 +34,7 @@ void *malloc(size_t size, Page *page)
     // Find the first available page
     if (page != NULL)
     {
-        void* data = heap_alloc(page, size);
+        void *data = heap_alloc(page, size);
         // log_info(MODULE, "got page page: %p null? %s", page, page == 0 ? "TRUE" : "FALSE");
         return data;
     }
@@ -78,7 +74,7 @@ void free(void *ptr, Page *page)
 }
 
 // Function to allocate memory and zero it (calloc)
-void *calloc(size_t num, size_t size, Page* page)
+void *calloc(size_t num, size_t size, Page *page)
 {
     size_t total_size = num * size;
     void *ptr = malloc(total_size, page);
@@ -91,7 +87,7 @@ void *calloc(size_t num, size_t size, Page* page)
 }
 
 // Function to resize allocated memory (realloc)
-void *realloc(void *ptr, size_t size, Page* page)
+void *realloc(void *ptr, size_t size, Page *page)
 {
     if (!ptr)
     {
@@ -107,4 +103,64 @@ void *realloc(void *ptr, size_t size, Page* page)
     // Since we are not handling memory copying in this simple version,
     // this part would require more advanced management for full support.
     return malloc(size, page); // For now, just treat realloc as malloc.
+}
+
+void *mallocToPage0(size_t size)
+{
+    Page* page = &pages[0];
+    if (size == 0)
+    {
+        log_err(MODULE, "return NULL");
+        return NULL; // Return NULL for zero-size allocation
+    }
+    // log_info(MODULE, "is page null? %s", page == NULL ? "TRUE" : "FALSE");
+    if (page == NULL)
+    {
+        page = allocate_page(); // Allocate the page
+        if (page == NULL)
+        {
+            log_crit(MODULE, "OUT OF MEMORY");
+            return NULL; // No pages left
+        }
+    }
+    // log_info(MODULE, "got page page: %p null? %s", page, page == 0 ? "TRUE" : "FALSE");
+    // Find the first available page
+    if (page != NULL)
+    {
+        void *data = heap_alloc(page, size);
+        // log_info(MODULE, "got page page: %p null? %s", page, page == 0 ? "TRUE" : "FALSE");
+        return data;
+    }
+    log_crit(MODULE, "OUT OF MEMORY");
+    return NULL; // No pages left
+}
+
+void *mallocToPage(size_t size, int pageIndex)
+{
+    Page* page = &pages[pageIndex];
+    if (size == 0)
+    {
+        log_err(MODULE, "return NULL");
+        return NULL; // Return NULL for zero-size allocation
+    }
+    // log_info(MODULE, "is page null? %s", page == NULL ? "TRUE" : "FALSE");
+    if (page == NULL)
+    {
+        page = allocate_page(); // Allocate the page
+        if (page == NULL)
+        {
+            log_crit(MODULE, "OUT OF MEMORY");
+            return NULL; // No pages left
+        }
+    }
+    // log_info(MODULE, "got page page: %p null? %s", page, page == 0 ? "TRUE" : "FALSE");
+    // Find the first available page
+    if (page != NULL)
+    {
+        void *data = heap_alloc(page, size);
+        // log_info(MODULE, "got page page: %p null? %s", page, page == 0 ? "TRUE" : "FALSE");
+        return data;
+    }
+    log_crit(MODULE, "OUT OF MEMORY");
+    return NULL; // No pages left
 }

@@ -64,8 +64,12 @@ debug: debug_flags clean all
 	@echo "running debug"
 	bash debug.sh disk $(BUILD_DIR)/image.img
 
+debugnow:
+	bash debug.sh disk $(BUILD_DIR)/image.img
+
+
 load: $(BUILD_DIR)/image.img
-	@bash ./image/LoadImage.sh $(BUILD_DIR)/image.img
+	@bash ./scripts/image/LoadImage.sh $(BUILD_DIR)/image.img /dev/sdd
 
 #
 # Always

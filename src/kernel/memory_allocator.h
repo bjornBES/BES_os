@@ -1,9 +1,6 @@
 #pragma once
 
-#include <stddef.h>  // For size_t
-#include <stdint.h>
-#include <stdbool.h>
-#include <boot/bootparams.h>
+#include "defaultInclude.h"
 
 // Define the size of a single page (typically 4KB)
 #define PAGE_SIZE 4096

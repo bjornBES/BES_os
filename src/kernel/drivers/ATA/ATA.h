@@ -75,4 +75,4 @@ extern uint16_t ata_Device;
 
 void ATA_init();
 bool ATA_identify(IdentifyDeviceData *buffer);
-bool ATA_read(uint8_t *buf, uint32_t lba, uint32_t numsects, struct __device_t* drive);
+uint32_t ATA_read(void *buf, uint64_t lba, uint32_t numsects, struct __device_t* drive);

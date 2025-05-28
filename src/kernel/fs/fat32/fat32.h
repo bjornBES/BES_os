@@ -183,5 +183,5 @@ enum FAT_Attributes
     FAT_ATTRIBUTE_LFN               = FAT_ATTRIBUTE_READ_ONLY | FAT_ATTRIBUTE_HIDDEN | FAT_ATTRIBUTE_SYSTEM | FAT_ATTRIBUTE_VOLUME_ID
 };
 
-bool fatProbe(device_t* dev);
-bool fatMount(device_t *dev, void *priv);
+bool FAT_Probe(device_t* dev);
+bool FAT_Mount(device_t *dev, void *priv);

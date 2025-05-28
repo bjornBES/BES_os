@@ -9,6 +9,7 @@
 #include "ctype.h"
 
 #include "math.h"
+#include "drivers/Keyboard/keyboard.h"
 
 #define MODULE "FAT32"
 
@@ -26,21 +27,79 @@ FAT_Data *FatData = 0;
 Page *FATInitDataPage = NULL;
 Page *fat32PrivPage = NULL;
 
-bool fatReadSectors(uint8_t *buf, uint32_t sector, uint32_t length, device_t *dev, fatPrivData *priv)
+void getLFNBlock(FAT_LongFileEntry *entry, FAT_LFNBlock *block)
 {
-	log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
-	// log_debug(MODULE, "we want to read sector %d which is sectors [%d; %d]", sector, sector, sector + length);
-	// kprintf("  %d", block);
-	return dev->read(buf, sector, length, dev);
+	block->Order = entry->Order;
+	memcpy(block->Chars, entry->name1, 5 * sizeof(uint16_t));
+	memcpy(block->Chars + 5, entry->name2, 6 * sizeof(uint16_t));
+	memcpy(block->Chars + 11, entry->name3, 2 * sizeof(uint16_t));
 }
 
-bool fatWriteSectors(uint8_t *buf, uint32_t sector, uint32_t length, device_t *dev, fatPrivData *priv)
+// converts the name into the 8.3 FAT format
+void getShortName(char *name, char *shortName)
+{
+	memset(shortName, ' ', 12);
+	shortName[11] = '\0';
+
+	const char *ext = strchr(name, '.');
+	if (ext == NULL)
+	{
+		ext = name + 11;
+	}
+
+	for (int i = 0; i < 8 && name[i] && name + i < ext; i++)
+	{
+		shortName[i] = toupper(name[i]);
+	}
+
+	if (ext != name + 11)
+	{
+		for (int i = 0; i < 3 && ext[i + 1]; i++)
+		{
+			shortName[i + 8] = toupper(ext[i + 1]);
+		}
+	}
+}
+
+bool FAT_ReadSectors(void *buf, uint32_t sector, uint32_t length, device_t *dev, fatPrivData *priv)
+{
+	log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
+	return dev->read(buf, sector, length, dev);
+}
+bool FAT_WriteSectors(void *buf, uint32_t sector, uint32_t length, device_t *dev, fatPrivData *priv)
 {
 	log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
 	return dev->write(buf, sector, length, dev);
 }
 
-uint32_t GetFatEOF()
+uint32_t FAT_Read(void* buf, uint32_t sector, uint32_t byteCount, device_t *dev, fatPrivData *priv)
+{
+	uint8_t* result = (uint8_t*)buf;
+
+	uint32_t bytesRead = 0;
+	uint32_t count = 0;
+	while (byteCount > bytesRead)
+	{
+		uint32_t leftToRead = min(SECTOR_SIZE, byteCount - bytesRead);
+		uint32_t take = min(byteCount, leftToRead);
+
+		log_debug(MODULE, "bytesRead: %u - leftToRead: %u - take: %u - ", bytesRead, leftToRead, take);
+
+		FAT_ReadSectors(result, sector + count, 1, dev, priv);
+		result += take;
+		bytesRead += take;
+		count++;
+	}
+	
+	return bytesRead;
+}
+
+bool FAT_ReadEntry(FAT_FileEntry* dirEntry, uint32_t sector, device_t *dev, fatPrivData *priv)
+{
+	return FAT_Read(dirEntry, sector, sizeof(FAT_FileEntry), dev, priv) == sizeof(FAT_FileEntry);
+}
+
+uint32_t FAT_GetFatEOF()
 {
 	if (FatData->FATType == FAT12)
 	{
@@ -58,15 +117,15 @@ uint32_t GetFatEOF()
 	return 0;
 }
 
-void fatGetDir(FAT_DirectoryEntry *entry, FAT_Directory *dir, uint8_t *buffer, device_t *dev, fatPrivData *priv)
+void FAT_GetDir(FAT_DirectoryEntry *entry, FAT_Directory *dir, uint8_t *buffer, device_t *dev, fatPrivData *priv)
 {
 	log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
 	uint32_t firstSector = GETSECTORWC(entry->FirstClusterHigh, entry->FirstClusterLow);
-	fatReadSectors(buffer, firstSector, BOOTSECTOR.SectorsPerCluster, dev, priv);
+	FAT_ReadSectors(buffer, firstSector, BOOTSECTOR.SectorsPerCluster, dev, priv);
 	dir->entries = (FAT_FileEntry *)buffer;
 }
 
-uint32_t fatNextCluster(uint32_t currentCluster, device_t *dev)
+uint32_t FAT_NextCluster(uint32_t currentCluster, device_t *dev)
 {
 	uint32_t fatIndex;
 	if (FatData->FATType == FAT12)
@@ -81,7 +140,7 @@ uint32_t fatNextCluster(uint32_t currentCluster, device_t *dev)
 	{
 		fatIndex = currentCluster * 4;
 	}
-	
+
 	log_info(MODULE, "BytesPerSector %u", BOOTSECTOR.BytesPerSector);
 	log_info(MODULE, "fatIndex %u", fatIndex);
 	uint32_t fatIndexSector = fatIndex / BOOTSECTOR.BytesPerSector;
@@ -125,19 +184,19 @@ uint32_t fatNextCluster(uint32_t currentCluster, device_t *dev)
 	return nextCluster;
 }
 
-bool fatReadClusters(uint8_t *buf, uint32_t firstCluster, uint32_t size, device_t *dev, fatPrivData *priv)
+bool FAT_ReadClusters(uint8_t *buf, uint32_t firstCluster, uint32_t size, device_t *dev, fatPrivData *priv)
 {
-	uint32_t FatEOF = GetFatEOF();
+	uint32_t FatEOF = FAT_GetFatEOF();
 	uint32_t cluster = firstCluster;
 	uint32_t bytesRead = 0;
 	while (cluster < FatEOF && bytesRead < size)
 	{
 		uint32_t sector = GETSECTOR(cluster);
 
-		fatReadSectors(buf + bytesRead, sector, BOOTSECTOR.SectorsPerCluster, dev, priv);
+		FAT_ReadSectors(buf + bytesRead, sector, BOOTSECTOR.SectorsPerCluster, dev, priv);
 
 		bytesRead += priv->BytesPerCluster;
-		cluster = fatNextCluster(cluster, dev);
+		cluster = FAT_NextCluster(cluster, dev);
 	}
 	return true;
 }
@@ -149,15 +208,7 @@ int FAT_CompareLFNBlocks(const void *blockA, const void *blockB)
 	return ((int)a->Order) - ((int)b->Order);
 }
 
-void getLFNBlock(FAT_LongFileEntry *entry, FAT_LFNBlock *block)
-{
-	block->Order = entry->Order;
-	memcpy(block->Chars, entry->name1, 5 * sizeof(uint16_t));
-	memcpy(block->Chars + 5, entry->name2, 6 * sizeof(uint16_t));
-	memcpy(block->Chars + 11, entry->name3, 2 * sizeof(uint16_t));
-}
-
-void fatGetLfn(FAT_LongFileEntry *lfnEntries, int entryCount, char *output)
+void FAT_GetLfn(FAT_LongFileEntry *lfnEntries, int entryCount, char *output)
 {
 	log_debug(MODULE, "file %s:%u", __FILE__, __LINE__);
 	if (entryCount <= 0 || !lfnEntries || !output)
@@ -200,36 +251,10 @@ void fatGetLfn(FAT_LongFileEntry *lfnEntries, int entryCount, char *output)
 	return;
 }
 
-// converts the name into the 8.3 FAT format
-void getShortName(char *name, char *shortName)
-{
-	memset(shortName, ' ', 12);
-	shortName[11] = '\0';
-
-	const char *ext = strchr(name, '.');
-	if (ext == NULL)
-	{
-		ext = name + 11;
-	}
-
-	for (int i = 0; i < 8 && name[i] && name + i < ext; i++)
-	{
-		shortName[i] = toupper(name[i]);
-	}
-
-	if (ext != name + 11)
-	{
-		for (int i = 0; i < 3 && ext[i + 1]; i++)
-		{
-			shortName[i + 8] = toupper(ext[i + 1]);
-		}
-	}
-}
-
 uint32_t fat32GetRootCount(device_t *dev)
 {
 	uint32_t result = 0;
-	uint32_t currentFat = fatNextCluster(0, dev);
+	uint32_t currentFat = FAT_NextCluster(0, dev);
 
 	while (currentFat < FAT32_EOC)
 	{
@@ -237,13 +262,13 @@ uint32_t fat32GetRootCount(device_t *dev)
 
 		if (currentFat == 0)
 			break; // Error or end
-		currentFat = fatNextCluster(currentFat, dev);
+		currentFat = FAT_NextCluster(currentFat, dev);
 	}
 
 	return result;
 }
 
-bool fatReadDirectory(char *filename, FAT_Directory *dir, device_t *dev, fatPrivData *priv)
+bool FAT_ReadDirectory(char *filename, FAT_Directory *dir, device_t *dev, fatPrivData *priv)
 {
 	// Parse the buffer to get directory entries
 	uint32_t entryOffset = 0;
@@ -295,7 +320,7 @@ bool fatReadDirectory(char *filename, FAT_Directory *dir, device_t *dev, fatPriv
 					entryOffset += sizeof(FAT_DirectoryEntry);
 				}
 
-				fatGetLfn(NLFentries, LFNCount, name);
+				FAT_GetLfn(NLFentries, LFNCount, name);
 
 				entryOffset += sizeof(FAT_DirectoryEntry);
 				index++;
@@ -345,7 +370,7 @@ bool fatReadDirectory(char *filename, FAT_Directory *dir, device_t *dev, fatPriv
 	// If no match was found, return false or 0
 	return false;
 }
-bool fatReadRootDirectory(char *filename, device_t *dev, fatPrivData *priv)
+bool FAT_ReadRootDirectory(char *filename, device_t *dev, fatPrivData *priv)
 {
 	// Calculate the first sector of the root directory
 	uint32_t rootDirSector = FatData->RootDirSector;
@@ -354,23 +379,23 @@ bool fatReadRootDirectory(char *filename, device_t *dev, fatPrivData *priv)
 	// Read the first sector of the root directory (this contains the entries)
 	// log_debug(MODULE, "root size = %u", priv->RootDirSizeSec);
 	Page bufferPage;
-	Page buffer2Page;
 	uint8_t *buffer = (uint8_t *)malloc(priv->RootDirSizeSec * (BOOTSECTOR.BytesPerSector * BOOTSECTOR.SectorsPerCluster), &bufferPage);
-	uint8_t *buffer2 = (uint8_t *)malloc(BOOTSECTOR.BytesPerSector * BOOTSECTOR.SectorsPerCluster, &buffer2Page);
 	if (!buffer)
 	{
+		free(buffer, &bufferPage);
 		return false;
 	}
 	// log_debug(MODULE, "rootDirSector = %u", rootDirSector / priv->SectorsPerBlock); // for debuging things
-	fatReadSectors(buffer, rootDirSector, priv->RootDirSizeSec, dev, priv);
+	FAT_ReadSectors(buffer, rootDirSector, priv->RootDirSizeSec, dev, priv);
 	// log_debug(MODULE, "FatData = %p rootDirSector = %u", FatData, rootDirSector); // for debuging things
 
 	// Parse the buffer to get directory entries
 	uint32_t entryOffset = 0;
 	uint8_t index = 0;
+
 	FatData->RootDirectory.entries = (FAT_FileEntry *)buffer;
 	FAT_Directory *rootDir = &FatData->RootDirectory;
-
+	
 	while (entryOffset < rootDirSector * BOOTSECTOR.BytesPerSector)
 	{
 		FAT_DirectoryEntry entry = rootDir->entries[index].Entry;
@@ -379,60 +404,6 @@ bool fatReadRootDirectory(char *filename, device_t *dev, fatPrivData *priv)
 		if (entry.Name[0] == 0x00)
 		{
 			break;
-		}
-		// Check for long file names (LFN entries)
-		if (entry.Attributes == FAT_ATTRIBUTE_LFN)
-		{
-			FAT_LongFileEntry *LongEntry = &rootDir->entries[index].LongEntry;
-			uint32_t LFNCount = (uint32_t)LongEntry->Order & ~FAT_LFN_LAST;
-			FAT_LongFileEntry NLFentries[LFNCount];
-			for (size_t i = 0; i < LFNCount; i++)
-			{
-				NLFentries[i] = rootDir->entries[index].LongEntry;
-				FatData->RootDirectory.entryCount++;
-				index++;
-				entryOffset += sizeof(FAT_DirectoryEntry);
-			}
-
-			char longName[256];
-			fatGetLfn(NLFentries, LFNCount, longName);
-
-			entryOffset += sizeof(FAT_DirectoryEntry);
-			index++;
-
-			entry = rootDir->entries[index].Entry;
-
-			log_info(MODULE, "entry: %s %X", longName, entry.Attributes); // for debuging things
-
-			if (entry.Attributes & FAT_ATTRIBUTE_DIRECTORY)
-			{
-				Page dirPage;
-				FAT_Directory *dir = (FAT_Directory *)malloc(sizeof(FAT_Directory), &dirPage);
-				fatGetDir(&entry, dir, buffer2, dev, priv);
-				if (fatReadDirectory(filename, dir, dev, priv) == true)
-				{
-					free(dir, &dirPage);
-					return true;
-				}
-				free(dir, &dirPage);
-			}
-		}
-		else
-		{
-			log_info(MODULE, "entry: %s 0x%X", entry.Name, entry.Attributes); // for debuging things
-
-			if (entry.Attributes & FAT_ATTRIBUTE_DIRECTORY)
-			{
-				Page dirPage;
-				FAT_Directory *dir = (FAT_Directory *)malloc(sizeof(FAT_Directory), &dirPage);
-				fatGetDir(&entry, dir, buffer2, dev, priv);
-				if (fatReadDirectory(filename, dir, dev, priv) == true)
-				{
-					free(dir, &dirPage);
-					return true;
-				}
-				free(dir, &dirPage);
-			}
 		}
 
 		// Move to the next directory entry
@@ -445,14 +416,13 @@ bool fatReadRootDirectory(char *filename, device_t *dev, fatPrivData *priv)
 	}
 
 	free(buffer, &bufferPage);
-	free(buffer2, &buffer2Page);
 
 	if (filename && (uint32_t)filename != 1)
 		return false;
 	return true;
 }
 
-bool fatReadFile(char *fileName, uint8_t *buffer, device_t *dev, fatPrivData *priv)
+bool FAT_ReadFile(char *fileName, uint8_t *buffer, device_t *dev, fatPrivData *priv)
 {
 	if (!fileName || !buffer || !dev || !priv)
 	{
@@ -472,7 +442,7 @@ bool fatReadFile(char *fileName, uint8_t *buffer, device_t *dev, fatPrivData *pr
 		return false;
 	}
 
-	fatReadRootDirectory((char *)1, dev, priv);
+	FAT_ReadRootDirectory((char *)1, dev, priv);
 	if (FatData->RootDirectory.entryCount == 0)
 	{
 		log_crit(MODULE, "Root directory has no entries");
@@ -480,7 +450,12 @@ bool fatReadFile(char *fileName, uint8_t *buffer, device_t *dev, fatPrivData *pr
 	}
 
 	char *segment = strtok(fileName, "/");
-	log_debug(MODULE, "segment = %s", segment);
+	log_debug(MODULE, "segment = %s from %s", segment, fileName);
+	if (segment == NULL)
+	{
+		log_crit(MODULE, "Filepath is invalid");
+		return false;
+	}
 
 	FAT_FileEntry *entry = NULL;
 	FAT_Directory currentDir = FatData->RootDirectory;
@@ -492,19 +467,19 @@ bool fatReadFile(char *fileName, uint8_t *buffer, device_t *dev, fatPrivData *pr
 		log_debug(MODULE, "shortName = %s segment = %s", shortName, segment);
 
 		log_debug(MODULE, "currentDir count %u", currentDir.entryCount);
-		
+
 		for (int i = 0; i < currentDir.entryCount; i++)
 		{
 			FAT_FileEntry *dirEntry = &currentDir.entries[i];
 			log_debug(MODULE, "%u: %s 0x%X", i, dirEntry->Entry.Name, dirEntry->Entry.Attributes);
-			
+
 			if ((dirEntry->Entry.Attributes & FAT_ATTRIBUTE_LFN) == 0) // short name 8.3
 			{
 				char entryName[13] = {' '};
 				memcpy(entryName, dirEntry->Entry.Name, 11);
-			
+
 				log_debug(MODULE, "entry name: %s segment: %s", entryName, shortName);
-			
+
 				if (strcmp(shortName, entryName) == 0)
 				{
 					entry = dirEntry;
@@ -517,39 +492,42 @@ bool fatReadFile(char *fileName, uint8_t *buffer, device_t *dev, fatPrivData *pr
 			}
 		}
 
-		if (!entry) {
-            log_crit(MODULE, "File or directory not found: %s", segment);
-            return false;
-        }
+		if (!entry)
+		{
+			log_crit(MODULE, "File or directory not found: %s", segment);
+			return false;
+		}
 
-        // If this is the last segment, we've found the file
-        if (!strtok(NULL, "/")) {
-            break;
-        }
+		// If this is the last segment, we've found the file
+		if (!strtok(NULL, "/"))
+		{
+			break;
+		}
 
-        // Otherwise, move into the directory
-        if (!(entry->Entry.Attributes & FAT_ATTRIBUTE_DIRECTORY)) {
-            log_crit(MODULE, "%s is not a directory", segment);
-            return false;
-        }
+		// Otherwise, move into the directory
+		if (!(entry->Entry.Attributes & FAT_ATTRIBUTE_DIRECTORY))
+		{
+			log_crit(MODULE, "%s is not a directory", segment);
+			return false;
+		}
 		Page bufferPage;
-		uint8_t* buffer = (uint8_t*)malloc(priv->BytesPerCluster, &bufferPage);
-		fatGetDir(&entry->Entry, &currentDir, buffer, dev, priv);
-        segment = strtok(NULL, "/");
+		uint8_t *buffer = (uint8_t *)malloc(priv->BytesPerCluster, &bufferPage);
+		FAT_GetDir(&entry->Entry, &currentDir, buffer, dev, priv);
+		segment = strtok(NULL, "/");
 		free(buffer, &bufferPage);
 	}
-	
-    // Read file data
-    if (!(entry->Entry.Attributes & FAT_ATTRIBUTE_DIRECTORY)) 
+
+	// Read file data
+	if (!(entry->Entry.Attributes & FAT_ATTRIBUTE_DIRECTORY))
 	{
-        uint32_t firstCluster = GETCLUSTER(entry->Entry.FirstClusterHigh, entry->Entry.FirstClusterLow);
-        fatReadClusters(buffer, firstCluster, entry->Entry.Size, dev, priv);
-        return true;
-    }
+		uint32_t firstCluster = GETCLUSTER(entry->Entry.FirstClusterHigh, entry->Entry.FirstClusterLow);
+		FAT_ReadClusters(buffer, firstCluster, entry->Entry.Size, dev, priv);
+		return true;
+	}
 	return false;
 }
 
-bool fatProbe(device_t *dev)
+bool FAT_Probe(device_t *dev)
 {
 	log_info(MODULE, "Probing device %d", dev->id);
 	if (!dev->read)
@@ -665,21 +643,22 @@ bool fatProbe(device_t *dev)
 		fs->name = "FAT12";
 	}
 
-	fs->probe = (bool (*)(device_t *))fatProbe;
-	fs->mount = (bool (*)(device_t *, void *))fatMount;
-	fs->read = (bool (*)(char *, uint8_t *, device_t *, void *))fatReadFile;
+	fs->probe = (bool (*)(device_t *))FAT_Probe;
+	fs->mount = (bool (*)(device_t *, void *))FAT_Mount;
+	fs->read = (bool (*)(char *, uint8_t *, device_t *, void *))FAT_ReadFile;
 
 	fs->priv_data = (void *)priv;
 
 	dev->fs = fs;
+
 	return true;
 }
 
-bool fatMount(device_t *dev, void *privd)
+bool FAT_Mount(device_t *dev, void *privd)
 {
 	printf("Mounting fat32 on device %s (%d)\n", dev->name, dev->id);
 	fatPrivData *priv = privd;
-	if (fatReadRootDirectory((char *)1, dev, priv))
+	if (FAT_ReadRootDirectory((char *)1, dev, priv))
 		return 1;
 	return 0;
 }

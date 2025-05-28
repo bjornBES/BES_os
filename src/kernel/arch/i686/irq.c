@@ -2,7 +2,7 @@
 #include "pic.h"
 #include "i8259.h"
 #include "io.h"
-#include <stddef.h>
+#include "defaultInclude.h"
 #include <util/arrays.h>
 #include "stdio.h"
 #include <debug.h>
@@ -15,7 +15,6 @@ static const PICDriver *g_Driver = NULL;
 
 void i686_IRQ_Handler(Registers *regs)
 {
-    // log_debug("IRQ", "interrupt here %d", regs->interrupt);
     int irq = regs->interrupt - PIC_REMAP_OFFSET;
 
     if (g_IRQHandlers[irq] != NULL)

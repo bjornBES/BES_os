@@ -3,9 +3,12 @@
 #include "idt.h"
 #include "isr.h"
 #include "irq.h"
-#include "timer.h"
+#include "i8259.h"
 
 int timer_ticks = 0;
+
+#define MILISECOND_PER_PIT_TICK 2
+#define SECOUND_PER_PIT_TICK 1000 / MILISECOND_PER_PIT_TICK
 
 uint32_t read_pit_count(void)
 {
@@ -37,6 +40,43 @@ void set_pit_count(uint32_t count)
     i686_outb(Channel0, count & 0xFF);
     i686_outb(Channel0, (count & 0xFF00) >> 8);
     i686_EnableInterrupts();
+}
+
+void timer_handler(Registers *r)
+{
+    /* Increment our 'tick count' */
+    timer_ticks++;
+    // log_debug("TIMER", "One tick has passed\n");
+
+    /* Every 18 clocks (approximately 1 second), we will
+     *  display a message on the screen */
+    if (timer_ticks % SECOUND_PER_PIT_TICK == 0)
+    {
+        // log_debug("TIMER", "One second has passed\n");
+        // printf("One second has passed\n");
+    }
+    i8259_SendEndOfInterrupt(0);
+}
+
+void timer_wait(int ticks)
+{
+    timer_ticks = 0;
+    while (timer_ticks < ticks)
+    {
+        i686_HLT();
+    }
+}
+
+void sleep_ms(int ms)
+{
+    int ticks = ms / MILISECOND_PER_PIT_TICK; // Round up
+    timer_wait(ticks);
+}
+
+void sleep_sec(int sec)
+{
+    int ms = sec * 1000; // Fix integer division error
+    sleep_ms(ms);
 }
 
 void pit_init()

@@ -4,12 +4,13 @@ phys = 0x00100000;
 
 SECTIONS
 {
-    . = phys;
 
-    
+
+    . = phys;
     .text               : { __text_start = .;       *(.text)    }
     .data               : { __data_start = .;       *(.data)    }
     .rodata             : { __rodata_start = .;     *(.rodata)  }
+    .font               : { __font_start = .;       *(.font)    }
     .bss                : 
     { 
         __bss_start = .;        *(.bss)     

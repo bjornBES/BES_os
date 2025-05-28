@@ -341,5 +341,5 @@ typedef struct
 	uint16_t checksum;
 } __attribute__((packed)) sata_identify_packet;
 
-uint8_t ahci_read_sectors(void *buf, uint64_t start_sector, uint32_t count, device_t* device);
+uint32_t ahci_read_sectors(void *buf, uint64_t start_sector, uint32_t count, device_t* device);
 void AHCI_init(uint32_t bar5);

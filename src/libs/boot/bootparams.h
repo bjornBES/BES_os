@@ -74,7 +74,8 @@ typedef struct {
 
 typedef struct {
     uint8_t BootDevice;
-    MemoryInfo Memory;
+    uint8_t CurrentMode;
+	MemoryInfo Memory;
     VESAInfo VESA;
     PCIInfo PCI;
     

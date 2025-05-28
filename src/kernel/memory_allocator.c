@@ -31,7 +31,7 @@ void mm_init()
     memoryAllocated = 0;
     
     heap_start = (uint8_t*)&__end + MAX_VALUE;
-    memory_Start = (uint8_t*)&__end; //(uint8_t *)((uint32_t)memRegion.Begin);
+    memory_Start = (uint8_t*)&__end;
     memory_End = memory_Start + MAX_VALUE - 1;
     
     total_size = (size_t)((memory_End + 1) - memory_Start);
@@ -66,6 +66,9 @@ void mm_init()
     log_info(MODULE, "sizeof HeapBlock = %u", sizeof(HeapBlock));
     log_info(MODULE, "sizeof Page = %u", sizeof(Page));
     log_info(MODULE, "sizeof PageBitmap = %u", sizeof(PageBitmap));
+
+    // allocating page 0 for general stuff
+    allocate_page();
 }
 
 // Set a bit in the bitmap

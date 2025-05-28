@@ -2,27 +2,10 @@
 #include <stdint.h>
 #include <util/binary.h>
 
-typedef struct
-{
-    uint16_t BaseLow;
-    uint16_t SegmentSelector;
-    uint8_t Reserved;
-    uint8_t Flags;
-    uint16_t BaseHigh;
-} __attribute__((packed)) IDTEntry;
-
-typedef struct
-{
-    uint16_t Limit;
-    IDTEntry* Ptr;
-} __attribute__((packed)) IDTDescriptor;
-
+void __attribute__((cdecl)) i686_IDT_Load(IDTDescriptor* idtDescriptor);
 
 IDTEntry g_IDT[256];
-
 IDTDescriptor g_IDTDescriptor = { sizeof(g_IDT) - 1, g_IDT };
-
-void __attribute__((cdecl)) i686_IDT_Load(IDTDescriptor* idtDescriptor);
 
 void i686_IDT_SetGate(int interrupt, void* base, uint16_t segmentDescriptor, uint8_t flags)
 {
@@ -43,7 +26,11 @@ void i686_IDT_DisableGate(int interrupt)
     FLAG_UNSET(g_IDT[interrupt].Flags, IDT_FLAG_PRESENT);
 }
 
-void i686_IDT_Initialize()
+void IDT_Load()
 {
     i686_IDT_Load(&g_IDTDescriptor);
+}
+
+void i686_IDT_Initialize()
+{
 }

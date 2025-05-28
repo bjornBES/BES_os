@@ -37,10 +37,10 @@ def copyFile(source, destination):
     
 
 def GetSectorNumber(file, image, stage1_offset):
-    mount_fs(image, "/mnt", mountMethod)
-    copyFile(file, "/mnt")
+    mount_fs(image, "/mnt/BESOS", mountMethod)
+    copyFile(file, "/mnt/BESOS")
     
-    mntFilePath = os.path.join("/mnt", os.path.basename(file))
+    mntFilePath = os.path.join("/mnt/BESOS", os.path.basename(file))
     file_size : int = 0
     
     try:
@@ -50,11 +50,11 @@ def GetSectorNumber(file, image, stage1_offset):
         )
         file_size = int(file_size_text.stdout.strip())
     except subprocess.CalledProcessError as e:
-        unmount_fs("/mnt", mountMethod)
+        unmount_fs("/mnt/BESOS", mountMethod)
         print(f"Command failed with error: {e}")
         exit(e.returncode)
     
-    unmount_fs("/mnt", mountMethod)
+    unmount_fs("/mnt/BESOS", mountMethod)
     initial_sector : int = file_size // SECTOR_SIZE
     reserved_sectors : int = 0
     fat_size : int = 0

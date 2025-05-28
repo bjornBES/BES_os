@@ -3,7 +3,7 @@
         {
             "name": "GCC",
             "includePath": [
-                "${workspaceFolder}/**",
+                "${workspaceFolder}/src/libs",
                 "${workspaceFolder}/src/kernel",
                 "${workspaceFolder}/toolchain/gcc-build-11.2.0/gcc/include/"
             ],

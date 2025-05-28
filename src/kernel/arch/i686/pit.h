@@ -65,6 +65,8 @@ Bits         Usage
 uint32_t read_pit_count(void);
 void set_pit_count(uint32_t count);
 void pit_init();
+void sleep_ms(int ms);
+void sleep_sec(int sec);
 
 void setTick(uint32_t tick);
 uint32_t getTick();

@@ -3,15 +3,16 @@
 #include <stdarg.h>
 #include <hal/vfs.h>
 
-void fputc(char c, fd_t file);
-void fputs(const char* str, fd_t file);
-void vfprintf(fd_t file, const char* fmt, va_list args);
-void fprintf(fd_t file, const char* fmt, ...);
+char fputc(char c, fd_t file);
+int fputs(const char* str, fd_t file);
+int vfprintf(fd_t file, const char* fmt, va_list args);
+int fprintf(fd_t file, const char* fmt, ...);
 void fprint_buffer(fd_t file, const char* msg, const void* buffer, uint32_t count);
 int snprintf(char *s, size_t n, const char *format, ...);
+int sprintf(char *s, const char *format, ...);
 
-void putc(char c);
-void puts(const char* str);
+char putc(char c);
+int puts(const char* str);
 int printf(const char* fmt, ...);
 void print_buffer(const char* msg, const void* buffer, uint32_t count);
 

@@ -47,6 +47,13 @@ uint32_t pciReadDword(uint32_t bus, uint32_t slot, uint32_t function, uint32_t o
     return i686_ind(PCI_CONFIG_DATA);
 }
 
+uint32_t pciReadWord(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset)
+{
+    uint32_t address = getAddress(bus, slot, function, (offset & 0xFC));
+    i686_outd(PCI_CONFIG_ADDRESS, address);
+    return ((i686_ind(PCI_CONFIG_DATA) >> ((offset & 2) * 8)) & 0xFFFF);
+}
+
 void pciWriteDword(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset, uint32_t value)
 {
     uint32_t address = getAddress(bus, slot, function, offset);
@@ -111,23 +118,23 @@ uint32_t pciReadBar(uint32_t bus, uint32_t device, uint32_t function, uint8_t ba
 }
 uint16_t getVendorID(uint32_t bus, uint32_t device, uint32_t function)
 {
-    uint16_t r0 = pciReadDword(bus, device, function, 0);
+    uint16_t r0 = pciReadDword(bus, device, function, PCI_VENDOR_ID);
     return r0;
 }
 uint16_t getDeviceID(uint32_t bus, uint32_t device, uint32_t function)
 {
-    uint16_t r0 = pciReadDword(bus, device, function, 2);
+    uint16_t r0 = pciReadDword(bus, device, function, PCI_DEVICE_ID);
     return r0;
 }
 uint16_t getClassId(uint16_t bus, uint16_t device, uint16_t function)
 {
-    uint16_t r0 = pciReadDword(bus, device, function, 0xA);
-    return (r0 & ~0x00FF) >> 8;
+    uint16_t r0 = pciReadWord(bus, device, function, PCI_CLASS);
+    return r0;
 }
 uint16_t getSubClassId(uint16_t bus, uint16_t device, uint16_t function)
 {
-    uint16_t r0 = pciReadDword(bus, device, function, 0xA);
-    return (r0 & ~0xFF00);
+    uint16_t r0 = pciReadWord(bus, device, function, PCI_SUBCLASS);
+    return r0;
 }
 
 void pciScan(void)
@@ -155,8 +162,9 @@ void pciScan(void)
             {
                 continue;
             }
-            pciScanDevice(bus, device, 0);
-
+            pci_device *pdev = (pci_device *)malloc(sizeof(pci_device), &pdevPage);
+            pciScanDevice(pdev, bus, device, 0);
+            /*
             // multifunctional device
             if ((pciReadDword(bus, device, 0, 0x0C) & 0x00800000) == 0x00800000)
             {
@@ -170,53 +178,76 @@ void pciScan(void)
                     pciScanDevice(bus, device, function);
                 }
             }
+            */
         }
     }
 }
 
-void pciScanDevice(uint32_t bus, uint32_t device, uint32_t function)
+void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t function)
 {
-    uint32_t mmioPortBase;
-    uint16_t ioPortBase;
+    pciDevice->bus = bus;
+    pciDevice->slot = slot;
+    pciDevice->function = function;
 
-    // read base informations about device
-    uint16_t vendorID = (getVendorID(bus, device, function) & 0xFFFF);
-    uint16_t deviceID = (getVendorID(bus, device, function) >> 16);
+    pciDevice->vendorID = getVendorID(bus, slot, function);
+    pciDevice->deviceID = getDeviceID(bus, slot, function);
 
-    uint32_t fullDeviceId = pciReadDword(bus, device, function, 0);
+    pciDevice->command = pciReadDword(bus, slot, function, PCI_COMMAND);
+    pciDevice->status = pciReadDword(bus, slot, function, PCI_STATUS);
+
+    uint32_t reg2Data = pciReadDword(bus, slot, function, PCI_REVISION_ID);
+    pciDevice->classID = (reg2Data >> 24) & 0xFF;
+    pciDevice->subclassID = (reg2Data >> 16) & 0xFF;
+    pciDevice->progif = (reg2Data >> 8) & 0xFF;
+    pciDevice->revision = (reg2Data) & 0xFF;
+
+    uint32_t reg3Data = pciReadDword(bus, slot, function, PCI_CACHE_LINE_SIZE);
+    pciDevice->BIST = (reg3Data >> 24) & 0xFF;
+    pciDevice->headerType = (reg3Data >> 16) & 0xFF;
+    pciDevice->latencyTimer = (reg3Data >> 8) & 0xFF;
+    pciDevice->cacheLineSize = (reg3Data) & 0xFF;
+
+    uint32_t fullDeviceId = pciReadDword(bus, slot, function, 0);
     if (fullDeviceId == 0xFFFFFFFF)
     {
         return; // no device
     }
 
+    uint32_t headerBuffer[12];
+    if (pciDevice->headerType != 2)
+    {
+        // read the header
+        for (int i = 0; i < 12; i++)
+        {
+            headerBuffer[i] = pciReadDword(bus, slot, function, i);
+        }
+        memcpy(&pciDevice->header.bytes, headerBuffer, sizeof(PCIHeader));
+    }
+    else
+    {
+        memcpy(&pciDevice->header, headerBuffer, sizeof(PCIHeader0));
+    }
+
     // yes bad, to ignore warnings but the veriable will be used later
     // and also the lines to ignore the warnings.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-    uint32_t typeOfDevice = (pciReadDword(bus, device, function, 0x08) >> 8);
-    uint32_t classID = (typeOfDevice >> 16);
-    uint32_t subclassID = ((typeOfDevice >> 8) & 0xFF);
-    uint32_t progif = (typeOfDevice & 0xFF);
-    uint32_t deviceIrq = (pciReadDword(bus, device, function, 0x3C) & 0xFF);
-#pragma GCC diagnostic pop
 
-    log_debug(MODULE, "PCI Device Found: Bus %d, Device %d, Function %d, Vendor: 0x%X, Device: 0x%X, Class: 0x%X, Subclass: 0x%X",
-              bus, device, function, vendorID, deviceID, classID, subclassID);
+    log_debug(MODULE, "PCI Device Found: Bus %d, slot %d, Function %d, Vendor: 0x%X, Device: 0x%X, Class: 0x%X, Subclass: 0x%X",
+        pciDevice->bus, pciDevice->slot, pciDevice->function, pciDevice->vendorID, pciDevice->deviceID, pciDevice->classID, pciDevice->subclassID);
 
-    if (classID == 1)
+    if (pciDevice->classID == 1)
     {
         // IDE
-        if (subclassID == 0x1 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
+        if (pciDevice->subclassID == 0x1 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
         {
             log_debug(MODULE, "IDE controller");
-            pciEnableIOBusmastering(bus, device, function);
-            pciDisableInterrupts(bus, device, function);
+            pciEnableIOBusmastering(bus, slot, function);
+            pciDisableInterrupts(bus, slot, function);
 
-            uint32_t bar0 = pciReadBar(bus, device, function, 0);
-            uint32_t bar1 = pciReadBar(bus, device, function, 1);
-            uint32_t bar2 = pciReadBar(bus, device, function, 2);
-            uint32_t bar3 = pciReadBar(bus, device, function, 3);
-            uint32_t bar4 = pciReadBar(bus, device, function, 4);
+            uint32_t bar0 = pciDevice->header.header0.BAR0;
+            uint32_t bar1 = pciDevice->header.header0.BAR1;
+            uint32_t bar2 = pciDevice->header.header0.BAR2;
+            uint32_t bar3 = pciDevice->header.header0.BAR3;
+            uint32_t bar4 = pciDevice->header.header0.BAR4;
 
             if (!(bar0 & 0xFFFFFFFE))
             {
@@ -245,23 +276,23 @@ void pciScanDevice(uint32_t bus, uint32_t device, uint32_t function)
         }
 
         // FDD
-        if (subclassID == 0x2 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
+        if (pciDevice->subclassID == 0x2 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
         {
             log_debug(MODULE, "FDD controller");
-            pciEnableIOBusmastering(bus, device, function);
-            pciDisableInterrupts(bus, device, function);
+            pciEnableIOBusmastering(bus, slot, function);
+            pciDisableInterrupts(bus, slot, function);
         }
 
         // SATA controller
-        if (subclassID == 0x06 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
+        if (pciDevice->subclassID == 0x06 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
         {
-            if (progif == 0x01)
+            if (pciDevice->progif == 0x01)
             {
                 log_debug(MODULE, "AHCI controller");
-                pciEnableMMIOBusmastering(bus, device, function);
-                pciDisableInterrupts(bus, device, function);
+                pciEnableMMIOBusmastering(bus, slot, function);
+                pciDisableInterrupts(bus, slot, function);
 
-                uint32_t mmioBase = pciReadMMIOBar(bus, device, function, PCI_BAR5);
+                uint32_t mmioBase = pciReadMMIOBar(bus, slot, function, PCI_BAR5);
                 log_debug(MODULE, "AHCI MMIO Base: 0x%x", mmioBase);
                 AHCI_init(mmioBase);
 
@@ -271,52 +302,52 @@ void pciScanDevice(uint32_t bus, uint32_t device, uint32_t function)
     }
 
     // Network Controller
-    else if (classID == 0x02)
+    else if (pciDevice->classID == 0x02)
     {
         // Ethernet
-        if (subclassID == 0x0)
+        if (pciDevice->subclassID == 0x0)
         {
             log_debug(MODULE, "Ethernet Controller");
         }
     }
 
     // Display Controller
-    else if (classID == 0x03)
+    else if (pciDevice->classID == 0x03)
     {
         // VGA
-        if (subclassID == 0x0)
+        if (pciDevice->subclassID == 0x0)
         {
             log_debug(MODULE, "VGA controller");
         }
     }
 
     // Multimedia Controller
-    else if (classID == 0x04)
+    else if (pciDevice->classID == 0x04)
     {
         // Audio Device
-        if (subclassID == 0x3)
+        if (pciDevice->subclassID == 0x3)
         {
             log_debug(MODULE, "Audio Device");
         }
     }
 
     // Bridge
-    else if (classID == 0x06)
+    else if (pciDevice->classID == 0x06)
     {
         // Host
-        if (subclassID == 0x0)
+        if (pciDevice->subclassID == 0x0)
         {
             log_debug(MODULE, "Host Bridge");
         }
 
         // ISA
-        if (subclassID == 0x1)
+        if (pciDevice->subclassID == 0x1)
         {
             log_debug(MODULE, "ISA Bridge");
         }
 
         // Other
-        if (subclassID == 0x80)
+        if (pciDevice->subclassID == 0x80)
         {
             log_debug(MODULE, "Other");
         }
@@ -774,10 +805,10 @@ void pci_probe()
             uint16_t device = getDeviceID(bus, slot, 0);
             printf("bus: 0x%x slot: 0x%x vendor: 0x%x device: 0x%x\n", bus, slot, vendor, device);
             pci_device *pdev = (pci_device *)malloc(sizeof(pci_device), &pdevPage);
-            pdev->vendor = vendor;
-            pdev->device = device;
-            pdev->func = 0;
-            pdev->driver = 0;
+            pdev->vendorID = vendor;
+            pdev->deviceID = device;
+            pdev->function = 0;
+            pdev->slot = 0;
             add_pci_device(pdev);
         }
     }

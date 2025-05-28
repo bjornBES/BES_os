@@ -1,5 +1,5 @@
 TARGET_ASMFLAGS += -f elf
-TARGET_CFLAGS += -ffreestanding -nostdlib -I. -I $(SOURCE_DIR)/src/libs -I $(INCLUDE_DIR)
+TARGET_CFLAGS += -ffreestanding -nostdlib -I. -I $(SOURCE_DIR)/src/libs -I $(INCLUDE_DIR) -I $(TOOLCHAIN_INCLUDE_DIR)/include-fixed
 TARGET_LIBS += -lgcc
 TARGET_LINKFLAGS += -T linker.ld -nostdlib
 
@@ -14,10 +14,9 @@ SOURCES_C = $(shell find . -type f -name "*.c")
 
 OBJECTS_C = $(patsubst %.c, $(BUILD_DIRC)/%.obj, $(SOURCES_C))
 
-HEADERS_ASM = $(shell find . -type f -name "*.inc") \
+HEADERS_ASM = $(shell find . -type f -name "*.inc")
 
 SOURCES_ASM = $(shell find . -type f -name "*.asm")
-
 
 OBJECTS_ASM = $(patsubst %.asm, $(BUILD_DIRASM)/%.obj, $(SOURCES_ASM))
 
@@ -28,7 +27,8 @@ all: kernel
 kernel: $(BUILD_DIRKERNEL)/kernel.elf
 
 $(BUILD_DIRKERNEL)/kernel.elf: $(OBJECTS_ASM) $(OBJECTS_C)
-	@$(TARGET_LD) $(TARGET_LINKFLAGS) -D DEBUG=1 -Wl,-Map=$(BUILD_DIRKERNEL)/kernel.map -o $@ $^ $(TARGET_LIBS)
+	@bash ./link.sh $(TARGET_LD) $(TARGET_LINKFLAGS) -D DEBUG=1 -D=PAGING=$(PAGING_ENABLE) -Wl,-Map=$(BUILD_DIRKERNEL)/kernel.map -o $@ $^ $(TARGET_LIBS)
+#	@$(TARGET_LD) $(TARGET_LINKFLAGS) -D DEBUG=1 -D=PAGING=$(PAGING_ENABLE) -Wl,-Map=$(BUILD_DIRKERNEL)/kernel.map -o $@ $^ $(TARGET_LIBS)
 	@echo "--> Created:  kernel.elf"
 
 $(BUILD_DIRC)/%.obj: %.c $(HEADERS_C)
@@ -38,7 +38,7 @@ $(BUILD_DIRC)/%.obj: %.c $(HEADERS_C)
 
 $(BUILD_DIRASM)/%.obj: %.asm $(HEADERS_ASM)
 	@mkdir -p $(@D)
-	@$(TARGET_ASM) $(TARGET_ASMFLAGS) -o $@ $<
+	@$(TARGET_ASM) $(TARGET_ASMFLAGS) -DPAGING=$(PAGING_ENABLE) -o $@ $<
 	@echo "--> Compiled: " $<
 
 always:

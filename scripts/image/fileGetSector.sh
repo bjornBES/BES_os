@@ -9,10 +9,10 @@ fi
 file=$1
 image=$2
 
-sudo mount -o loop $image_file /mnt
+sudo mount -o loop $image_file /mnt/BESOS
 
 # Step 1: Get the size of the file
-file_size=$(stat --format="%s" /mnt/$file)
+file_size=$(stat --format="%s" /mnt/BESOS/$file)
 # echo "File size: $file_size bytes" > /dev/tty
 
 # Step 2: Get the sector size (assumed to be 512 bytes)

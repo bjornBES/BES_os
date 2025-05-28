@@ -17,8 +17,8 @@ typedef struct __device_t
     uint32_t id;
     struct __fs_t  *fs;
 	device_type dev_type;
-    bool (*read)(uint8_t* buffer, uint32_t offset , uint32_t len, struct __device_t* device);
-	bool (*write)(uint8_t *buffer, uint32_t offset, uint32_t len, struct __device_t* device);
+    uint32_t (*read)(void* buffer, uint64_t offset , uint32_t len, struct __device_t* device);
+	uint32_t (*write)(void *buffer, uint64_t offset, uint32_t len, struct __device_t* device);
 	void* priv;
 } device_t;
 

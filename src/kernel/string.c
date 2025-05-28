@@ -2,8 +2,6 @@
 #include "debug.h"
 #include "malloc.h"
 #include "memory.h"
-#include <stdint.h>
-#include <stddef.h>
 #include <ctype.h>
 
 const char *strchr(const char *str, char chr)
@@ -25,40 +23,41 @@ const char *strchr(const char *str, char chr)
 
     return NULL;
 }
+/*
 
 char *strcpy(char *dst, const char *src)
 {
-    char *origDst = dst;
+char *origDst = dst;
 
-    if (dst == NULL)
-        return NULL;
+if (dst == NULL)
+return NULL;
 
-    if (src == NULL)
-    {
-        *dst = '\0';
-        return dst;
-    }
+if (src == NULL)
+{
+*dst = '\0';
+return dst;
+}
 
-    while (*src)
-    {
-        *dst = *src;
-        ++src;
-        ++dst;
-    }
+while (*src)
+{
+*dst = *src;
+++src;
+++dst;
+}
 
-    *dst = '\0';
-    return origDst;
+*dst = '\0';
+return origDst;
 }
 
 uint32_t strlen(const char *str)
 {
-    size_t len = 0;
-    while (*str)
-    {
-        len++;
-        str++;
-    }
-    return len;
+size_t len = 0;
+while (*str)
+{
+len++;
+str++;
+}
+return len;
 }
 
 // internal secure strlen
@@ -67,12 +66,12 @@ uint32_t strlen(const char *str)
 // variables - hence the signature.
 size_t strnlen_s(const char *str, size_t maxsize)
 {
-  const char *s;
-  for (s = str; *s && maxsize--; ++s)
-    ;
-  return (size_t)(s - str);
+const char *s;
+for (s = str; *s && maxsize--; ++s)
+;
+return (size_t)(s - str);
 }
-
+*/
 int strcmp(const char *a, const char *b)
 {
     if (a == NULL && b == NULL)
@@ -88,6 +87,76 @@ int strcmp(const char *a, const char *b)
     }
     return (*a) - (*b);
 }
+int strcoll ( const char * str1, const char * str2 )
+{
+    return strcmp(str1, str2);
+}
+
+int strcasecmp(const char *a, const char *b)
+{
+    if (a == NULL && b == NULL)
+        return 0;
+
+    if (a == NULL || b == NULL)
+        return -1;
+
+    while (tolower(*a) && tolower(*b) && tolower(*a) == tolower(*b))
+    {
+        a++;
+        b++;
+    }
+    return (*a) - (*b);
+}
+int strncasecmp(const char *a, const char *b, size_t count)
+{
+    if (a == NULL && b == NULL)
+        return 0;
+
+    if (a == NULL || b == NULL)
+        return -1;
+
+    while (tolower(*a) && tolower(*b) && tolower(*a) == tolower(*b) && count != 0)
+    {
+        a++;
+        b++;
+        count--;
+    }
+    return (*a) - (*b);
+}
+
+int strcmp_debug(const char *a, const char *b)
+{
+    
+    log_debug("strcmp", "a = %p b = %p", a, b);
+    if (a == NULL && b == NULL)
+        return 0;
+
+    if (a == NULL || b == NULL)
+        return -1;
+
+    log_debug("strcmp", "a = %s a = %p", a, a);
+    log_debug("strcmp", "b = %s b = %p", b, b);
+    while (*a && *b && *a == *b)
+    {
+        a++;
+        b++;
+    }
+    return (*a) - (*b);
+}
+
+// strncmp("Hello", "HellW ", 4)
+
+/*
+char *strcat(char *dest, const char *src)
+{
+char *end = dest + strlen(dest);
+memcpy(end, src, strlen(src));
+end = end + strlen(src);
+*end = '\0';
+return dest;
+}
+*/
+
 void itoa(char *buf, uint32_t n, int base)
 {
     uint32_t tmp;
@@ -124,21 +193,25 @@ void atoi(char *str, int *a)
 // internal ASCII string to size_t conversion
 size_t atou(const char *str)
 {
-  size_t i = 0U;
-  while (isdigit(*str))
-  {
-    i = i * 10U + (size_t)(*((str)++) - '0');
-  }
-  return i;
+    size_t i = 0U;
+    while (isdigit(*str))
+    {
+        i = i * 10U + (size_t)(*((str)) - '0');
+        str++;
+    }
+    return i;
 }
-
-char *strcat(char *dest, const char *src)
+// internal ASCII string to size_t conversion
+const char* atou_return(const char *str, size_t* result)
 {
-    char *end = dest + strlen(dest);
-    memcpy(end, src, strlen(src));
-    end = end + strlen(src);
-    *end = '\0';
-    return dest;
+    size_t i = 0U;
+    while (isdigit(*str))
+    {
+        i = i * 10U + (size_t)(*((str)) - '0');
+        str++;
+    }
+    *result = i;
+    return str;
 }
 
 uint32_t strcrl(string str, const char what, const char with)

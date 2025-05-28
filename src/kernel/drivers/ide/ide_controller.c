@@ -3,7 +3,7 @@
 
 #include "arch/i686/io.h"
 #include "arch/i686/i8259.h"
-#include "arch/i686/timer.h"
+#include "arch/i686/pit.h"
 
 #include "debug.h"
 #include "malloc.h"
@@ -20,6 +20,7 @@
 
 ide_device ide_devices[4];
 IDEChannelRegisters channels[2];
+uint8_t ide_devices_count;
 
 bool ide_0x1F0_controller_present = 0;
 bool ide_0x170_controller_present = 0;
@@ -250,7 +251,7 @@ uint8_t ide_print_error(uint32_t drive, uint8_t err)
 void ideSelectDrive(uint8_t channel, uint8_t drive)
 {
     ide_write(channel, ATA_REG_HDDEVSEL, 0xA0 | (drive << 4)); // Select Drive.
-    sleepMs(1); // Wait 1ms for drive select to work.
+    sleep_ms(1); // Wait 1ms for drive select to work.
 }
 
 bool ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, uint32_t BAR4)
@@ -286,7 +287,7 @@ bool ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
 
             // (II) Send ATA Identify Command:
             ide_write(i, ATA_REG_COMMAND, ATA_CMD_IDENTIFY);
-            sleepMs(1); // This function should be implemented in your OS. which waits for 1 ms.
+            sleep_ms(1); // This function should be implemented in your OS. which waits for 1 ms.
             //  it is based on System Timer Device Driver.
 
             // (III) Polling:
@@ -338,7 +339,7 @@ bool ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
                 }
 
                 ide_write(i, ATA_REG_COMMAND, ATA_CMD_IDENTIFY_PACKET);
-                sleepMs(1);
+                sleep_ms(1);
             }
             // (V) Read Identification Space of the Device:
             // log_debug(MODULE, "read buffer");
@@ -376,6 +377,7 @@ bool ide_initialize(uint32_t BAR0, uint32_t BAR1, uint32_t BAR2, uint32_t BAR3, 
                 ide_devices[count].Model[k + 1] = ide_buf[ATA_IDENT_MODEL + k];
             }
             ide_devices[count].Model[40] = 0; // Terminate String.
+            ide_devices_count++;
 
             count++;
         }

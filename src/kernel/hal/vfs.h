@@ -1,7 +1,5 @@
 #pragma once
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
+#include "defaultInclude.h"
 #include "fs/disk.h"
 #include "drivers/device.h"
 

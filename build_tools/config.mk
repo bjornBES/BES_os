@@ -1,4 +1,4 @@
-export CFLAGS = -Wall -Werror -I /usr/local/i686-elf/include -I ./ -I $(SOURCE_DIR)/src/libs -Wno-error=unused-variable -Wno-error=unused-label -Wno-error=deprecated
+export CFLAGS = -Wall -Werror -I /usr/local/i686-elf/include -I ./ -I $(SOURCE_DIR)/src/libs -Wno-error=unused-variable -Wno-error=unused-function -Wno-error=unused-label -Wno-error=deprecated
 # the -Wno-error=unused-variable flag is temp
 export ASMFLAGS =
 export CC = gcc
@@ -32,7 +32,8 @@ export TARGET_LIBS =
 
 export SOURCE_DIR = $(abspath .)
 export BUILD_DIR = $(abspath build)/$(arch)_$(config)
-export INCLUDE_DIR = $(abspath include)
+export TOOLCHAIN_INCLUDE_DIR = $(TOOLCHAIN_DIR)/$(TARGET)/lib/gcc/$(TARGET)/$(GCC_VERSION)
+export INCLUDE_DIR = $(TOOLCHAIN_INCLUDE_DIR)/include
 export TOOLCHAIN_DIR = $(abspath toolchain)
 
 BINUTILS_VERSION = 2.37
@@ -40,3 +41,5 @@ BINUTILS_URL = https://ftp.gnu.org/gnu/binutils/binutils-$(BINUTILS_VERSION).tar
 
 GCC_VERSION = 11.2.0
 GCC_URL = https://ftp.gnu.org/gnu/gcc/gcc-$(GCC_VERSION)/gcc-$(GCC_VERSION).tar.xz
+
+export PAGING_ENABLE = 0

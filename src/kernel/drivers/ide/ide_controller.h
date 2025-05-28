@@ -121,6 +121,7 @@ typedef struct
 
 extern ide_device ide_devices[4];
 extern IDEChannelRegisters channels[2];
+extern uint8_t ide_devices_count;
 
 void ide_write(uint8_t channel, uint8_t reg, uint8_t data);
 uint8_t ide_read(uint8_t channel, uint8_t reg);

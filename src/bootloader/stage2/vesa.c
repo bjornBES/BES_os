@@ -5,28 +5,42 @@
 
 #include <stdbool.h>
 
-uint16_t VESAModes[] = {
+int16_t VESAModes[] = {
+    0x00,
+    0x01,
+    0x02,
     0x03,
-    0x10D,
-    0x10E,
-    0x10F,
-    0x101,
-    0x103,
-    0x105,
-    0x107,
-    0x110,
-    0x111,
-    0x112,
-    0x114,
-    0x115,
-    0x116,
-    0x117,
-    0x118,
-    0x119,
-    0x11A,
-    0x11B,
-    0x11C,
-    0,
+    0x04,
+    0x05,
+    0x06,
+    0x07,
+    0x0D,
+    0x0E,
+    0x0F,
+    0x10,
+    0x11,
+    0x12,
+    0x13,
+    // 0x10D,
+    // 0x10E,
+    // 0x10F,
+    // 0x101,
+    // 0x103,
+    // 0x105,
+    // 0x107,
+    // 0x110,
+    // 0x111,
+    // 0x112,
+    // 0x114,
+    // 0x115,
+    // 0x116,
+    // 0x117,
+    // 0x118,
+    // 0x119,
+    // 0x11A,
+    // 0x11B,
+    // 0x11C,
+    -1,
 };
 
 #define MAX_REGIONS 256
@@ -47,7 +61,7 @@ void Detect_VESA(VESAInfo* vesaInfo)
         
         g_VesaEntriesCount = 0;
         
-        while (ret > 0 && VESAModes[index] != 0)
+        while (ret > 0 && VESAModes[index] != -1)
         {
             ret = x86_GetVESAEntry(VESAModes[index], &g_VesaEntries[g_VesaEntriesCount]);
             g_VesaEntriesCount++;

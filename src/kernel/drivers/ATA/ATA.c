@@ -1,6 +1,6 @@
 #include "ATA.h"
 
-#include "arch/i686/vga_text.h"
+#include "drivers/VGA/vga.h"
 #include "arch/i686/io.h"
 #include "arch/i686/i8259.h"
 #include "arch/i686/idt.h"
@@ -19,8 +19,6 @@
 
 #include "hal/hal.h"
 #include "hal/vfs.h"
-
-#include "common.h"
 
 #include <stdint.h>
 
@@ -228,17 +226,20 @@ void ata_read_one(uint8_t *buf, uint32_t lba, uint32_t offset, device_t *device)
 	// set_task(1);
 }
 
-bool ATA_read(uint8_t *buf, uint32_t lba, uint32_t numsects, device_t *device)
+uint32_t ATA_read(void *buf, uint64_t lba, uint32_t numsects, device_t *device)
 {
+	uint8_t* result = (uint8_t*)buf;
 	uint32_t offset = 0;
 	log_info(MODULE, "Reading %u sectors from LBA %u", numsects, lba);
+	uint32_t sectorsReaded = 0;
 	for (int i = 0; i < numsects; i++)
 	{
 		log_debug(MODULE, "Reading LBA %u, offset %u", lba + i, offset);
-		ata_read_one(buf, lba + i, offset, device);
+		ata_read_one(result, lba + i, offset, device);
+		sectorsReaded++;
 		offset += 512;
 	}
-	return true;
+	return sectorsReaded;
 }
 
 void ATA_init()

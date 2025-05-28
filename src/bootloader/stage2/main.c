@@ -55,6 +55,9 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
         printf("ELF read failed, booting halted!\n");
         goto end;
     }
+    // SetVGAMode(0);
+    // g_BootParams.CurrentMode = 0;
+    /*
     uint8_t* kernel = (uint8_t*)kernelEntry - 0xb50;
     printf("Kernel address 0x%X", kernel);
     for (uint16_t i = 0; i < 512; i++)
@@ -68,6 +71,7 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
     }
     
     printf("Jumping to kernel at %p\r\n", kernelEntry);
+    */
     // execute kernel
     kernelEntry(&g_BootParams);
 

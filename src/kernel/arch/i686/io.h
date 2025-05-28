@@ -14,6 +14,13 @@ uint16_t ASMCALL i686_inw(uint16_t port);
 void ASMCALL i686_outd(uint16_t port, uint32_t value);
 uint32_t ASMCALL i686_ind(uint16_t port);
 
+#define OUTB(port, value) i686_outb(port, value)
+#define INB(port) i686_inb(port)
+#define OUTW(port, value) i686_outw(port, value)
+#define INW(port) i686_inw(port)
+#define OUTD(port, value) i686_outd(port, value)
+#define IND(port) i686_ind(port)
+
 void ASMCALL i686_SetStack(uint32_t address);
 
 uint8_t ASMCALL i686_EnableInterrupts();

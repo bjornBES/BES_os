@@ -38,7 +38,7 @@ ModeBPP GetBPP(vga_mode_t *vgaMode)
     return Unknown; // Default to 1BPP for unknown modes
 }
 
-void VGA_SetMode(uint16_t mode)
+void mode_SetMode(uint16_t mode)
 {
     VGA_currentMode = mode;
     vga_mode_t selectedMode = vga_modes[mode];

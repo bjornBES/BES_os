@@ -135,9 +135,13 @@ extern uint16_t ScreenHeight;
 extern ModeBPP VGA_ModeBPP;
 extern uint16_t ScreenPitch;
 
+void VGA_CursorScanLine(uint8_t start, uint8_t end);
 void VGA_clrscr();
 void VGA_setcursor(int x, int y);
 void VGA_getcursor(int *x, int *y);
 void VGA_putc(char c);
 void vga_initialize();
+void VGA_SetMode(uint16_t mode);
+void VGA_SetColor(uint32_t index, uint32_t color);
+uint32_t VGA_GetColor(uint32_t index, uint8_t *red, uint8_t *green, uint8_t *blue);
 void pre_vga_initialize(BootParams* bootParams, VESAInfo* VESAinfo);

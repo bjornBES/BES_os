@@ -195,6 +195,15 @@ void SwitchToVGAModes(VESAInfo *VESAinfo)
     }
 }
 
+void VGA_CursorScanLine(uint8_t start, uint8_t end)
+{
+    uint8_t CursorStartRegister = (ReadRegister(CRT_Controller_Registers, CRTC_Cursor_Start_Register) & 0b00100000) | (start & 0b00011111);
+    uint8_t CursorEndRegister = (ReadRegister(CRT_Controller_Registers, CRTC_Cursor_End_Register) & 0b01100000) | (end & 0b00011111);
+
+    WriteRegister(CRT_Controller_Registers, CRTC_Cursor_Start_Register, CursorStartRegister);
+    WriteRegister(CRT_Controller_Registers, CRTC_Cursor_End_Register, CursorEndRegister);
+}
+
 void VGA_clrscr()
 {
     log_debug(MODULE, "CurrentMode = %u", CurrentMode);
@@ -233,18 +242,53 @@ void VGA_SetPalette(uint32_t *palette, size_t count)
     for (size_t i = 0; i < count; i++)
     {
         uint32_t color = palette[i];
-        uint8_t red = (color >> 16) & 0xFF;
-        uint8_t green = (color >> 8) & 0xFF;
-        uint8_t blue = color & 0xFF;
-
-        red >>= 2;
-        green >>= 2;
-        blue >>= 2;
-
-        i686_outb(VGA_PALETTE_DATA, red);
-        i686_outb(VGA_PALETTE_DATA, green);
-        i686_outb(VGA_PALETTE_DATA, blue);
+        VGA_SetColor(i, color);
     }
+}
+void VGA_SetColor(uint32_t index, uint32_t color)
+{
+    if (index > 256)
+    {
+        index = 256; // Limit to 256 colors
+    }
+
+    i686_outb(VGA_PALETTE_INDEX, index); // Set palette index to 0
+
+    uint8_t red = (color >> 16) & 0xFF;
+    uint8_t green = (color >> 8) & 0xFF;
+    uint8_t blue = color & 0xFF;
+
+    red >>= 2;
+    green >>= 2;
+    blue >>= 2;
+
+    i686_outb(VGA_PALETTE_DATA, red);
+    i686_outb(VGA_PALETTE_DATA, green);
+    i686_outb(VGA_PALETTE_DATA, blue);
+}
+uint32_t VGA_GetColor(uint32_t index, uint8_t *red, uint8_t *green, uint8_t *blue)
+{
+    if (index > 256)
+    {
+        index = 256; // Limit to 256 colors
+    }
+
+    i686_outb(VGA_PALETTE_INDEX, index); // Set palette index to 0
+
+    uint8_t _red = (i686_inb(VGA_PALETTE_DATA) * 255 + 31) / 63;
+    uint8_t _green = (i686_inb(VGA_PALETTE_DATA) * 255 + 31) / 63;
+    uint8_t _blue = (i686_inb(VGA_PALETTE_DATA) * 255 + 31) / 63;
+
+    *red = _red;
+    *green = _green;
+    *blue = _blue;
+
+    return (_red << 16) | (_green << 8) | _blue;
+}
+
+void VGA_SetMode(uint16_t mode)
+{
+    mode_SetMode(mode);
 }
 
 void vga_initialize()
@@ -252,9 +296,9 @@ void vga_initialize()
     VGA_SetMode(2);
 }
 
-void pre_vga_initialize(BootParams* bootParams, VESAInfo* VESAinfo)
+void pre_vga_initialize(BootParams *bootParams, VESAInfo *VESAinfo)
 {
     SwitchToVGAModes(VESAinfo);
 
-    VGA_SetMode(bootParams->CurrentMode);    
+    VGA_SetMode(bootParams->CurrentMode);
 }

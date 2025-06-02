@@ -35,4 +35,4 @@ static const uint8_t VGA_MODE_13H_REGISTERS[] = {
     0x00
 };
 
-void VGA_SetMode(uint16_t mode);
+void mode_SetMode(uint16_t mode);

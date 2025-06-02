@@ -9,6 +9,7 @@
 #include "defaultInclude.h"
 #include "math.h"
 #include "stdio.h"
+#include "hal/vfs.h"
 #include "malloc.h"
 
 #ifdef __cplusplus

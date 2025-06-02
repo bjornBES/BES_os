@@ -122,6 +122,5 @@ struct stat
 #define S_ISLNK(mode) __S_ISTYPE((mode), __S_IFLNK)
 #endif
 
-int mkdir(const char* path, __mode_t mode);
 int stat(const char* path, struct stat* buf);
 int fstat(int fd, struct stat* buf);

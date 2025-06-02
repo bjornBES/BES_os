@@ -1,5 +1,3 @@
-/* PDCurses */
-
 #include "curspriv.h"
 
 int wscrl(WINDOW *win, int n)

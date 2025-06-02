@@ -1,4 +1,3 @@
-/* PDCurses */
 
 #include "curspriv.h"
 

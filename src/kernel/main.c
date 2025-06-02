@@ -346,7 +346,8 @@ void KernelStart(BootParams *bootParams)
         ASM_INT2();
         uint8_t *buffer = (uint8_t *)malloc(512, &bufferPage);
         VGA_clrscr();
-        VFS_Read("/test.txt", buffer);
+        fd_t file = VFS_Open("/test.txt");
+        VFS_Read(file, buffer, 512);
 
         VGA_clrscr();
 

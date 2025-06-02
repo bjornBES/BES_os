@@ -6,8 +6,7 @@ WINDOW *PDC_makenew(int nlines, int ncols, int begy, int begx)
 {
     WINDOW *win;
 
-    PDC_LOG("PDC_makenew() - called: lines %d cols %d begy %d begx %d\n",
-             nlines, ncols, begy, begx);
+    PDC_LOG("PDC_makenew() - called: lines %d cols %d begy %d begx %d\n", nlines, ncols, begy, begx);
 
     /* allocate the window structure itself */
 
@@ -176,6 +175,7 @@ int mvwin(WINDOW *win, int y, int x)
 
     return OK;
 }
+
 WINDOW *subwin(WINDOW *orig, int nlines, int ncols, int begy, int begx)
 {
     WINDOW *win;
@@ -486,3 +486,4 @@ void wsyncdown(WINDOW *win)
         }
     }
 }
+

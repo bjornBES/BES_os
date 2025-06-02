@@ -19,6 +19,7 @@ void sleep(uint32_t sec);
 int access(const char* name, int type);
 
 int rmdir(const char* name);
+int mkdir(const char* name, int mode);
 int chdir(const char* name);
 char* getcwd(const char* buf, size_t size);
 int unlink(const char* name);

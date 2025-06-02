@@ -6,24 +6,26 @@
 
 #include <stdlib.h>
 
-int pdc_adapter;        /* screen type */
-int pdc_scrnmode;       /* default screen mode */
-int pdc_font;           /* default font size */
-bool pdc_direct_video;  /* allow direct screen memory writes */
-bool pdc_bogus_adapter; /* TRUE if adapter has insane values */
-unsigned pdc_video_seg; /* video base segment */
-unsigned pdc_video_ofs; /* video base offset */
+int pdc_adapter;         /* screen type */
+int pdc_scrnmode;        /* default screen mode */
+int pdc_font;            /* default font size */
+bool pdc_direct_video;   /* allow direct screen memory writes */
+bool pdc_bogus_adapter;  /* TRUE if adapter has insane values */
+unsigned pdc_video_seg;  /* video base segment */
+unsigned pdc_video_ofs;  /* video base offset */
+
 
 static short realtocurs[16] =
-    {
-        COLOR_BLACK, COLOR_BLUE, COLOR_GREEN, COLOR_CYAN, COLOR_RED,
-        COLOR_MAGENTA, COLOR_YELLOW, COLOR_WHITE, COLOR_BLACK + 8,
-        COLOR_BLUE + 8, COLOR_GREEN + 8, COLOR_CYAN + 8, COLOR_RED + 8,
-        COLOR_MAGENTA + 8, COLOR_YELLOW + 8, COLOR_WHITE + 8};
+{
+    COLOR_BLACK, COLOR_BLUE, COLOR_GREEN, COLOR_CYAN, COLOR_RED,
+    COLOR_MAGENTA, COLOR_YELLOW, COLOR_WHITE, COLOR_BLACK + 8,
+    COLOR_BLUE + 8, COLOR_GREEN + 8, COLOR_CYAN + 8, COLOR_RED + 8,
+    COLOR_MAGENTA + 8, COLOR_YELLOW + 8, COLOR_WHITE + 8
+};
 
 short pdc_curstoreal[16];
 
-static bool sizeable = FALSE; /* TRUE if adapter is resizeable    */
+static bool sizeable = FALSE;   /* TRUE if adapter is resizeable    */
 
 static unsigned short *saved_screen = NULL;
 static int saved_lines = 0;
@@ -32,45 +34,9 @@ static int saved_cols = 0;
 static int saved_scrnmode[3];
 static int saved_font[3];
 
-/* Thanks to Jeff Duntemann, K16RA for providing the impetus
-   (through the Dr. Dobbs Journal, March 1989 issue) for getting
-   the routines below merged into Bjorn Larsson's PDCurses 1.3...
-    -- frotz@dri.com    900730 */
-
-/* _get_font() - Get the current font size */
-
 static int _get_font(void)
 {
-    int retval;
-
-    retval = getdosmemword(0x485);
-
-    /* Assume the MDS Genius is in 66 line mode. */
-
-    if ((retval == 0) && (pdc_adapter == _MDS_GENIUS))
-        retval = _FONT15;
-
-    switch (pdc_adapter)
-    {
-    case _MDA:
-        retval = 10; /* POINTS is not certain on MDA/Hercules */
-        break;
-
-    case _EGACOLOR:
-    case _EGAMONO:
-        switch (retval)
-        {
-        case _FONT8:
-        case _FONT14:
-            break;
-        default:
-            retval = _FONT14;
-        }
-        break;
-
-    case _CGA:
-        retval = _FONT8;
-    }
+    int retval = _FONT16;
 
     return retval;
 }
@@ -83,65 +49,6 @@ static int _get_font(void)
 
 static void _set_font(int size)
 {
-    PDCREGS regs;
-
-    if (pdc_bogus_adapter)
-        return;
-
-    switch (pdc_adapter)
-    {
-    case _CGA:
-    case _MDA:
-    case _MCGACOLOR:
-    case _MCGAMONO:
-    case _MDS_GENIUS:
-        break;
-
-    case _EGACOLOR:
-    case _EGAMONO:
-        if (sizeable && (pdc_font != size))
-        {
-            switch (size)
-            {
-            case _FONT8:
-                regs.W.ax = 0x1112;
-                regs.h.bl = 0x00;
-                PDCINT(0x10, regs);
-                break;
-            case _FONT14:
-                regs.W.ax = 0x1111;
-                regs.h.bl = 0x00;
-                PDCINT(0x10, regs);
-            }
-        }
-        break;
-
-    case _VGACOLOR:
-    case _VGAMONO:
-        if (sizeable && (pdc_font != size))
-        {
-            switch (size)
-            {
-            case _FONT8:
-                regs.W.ax = 0x1112;
-                regs.h.bl = 0x00;
-                PDCINT(0x10, regs);
-                break;
-            case _FONT14:
-                regs.W.ax = 0x1111;
-                regs.h.bl = 0x00;
-                PDCINT(0x10, regs);
-                break;
-            case _FONT16:
-                regs.W.ax = 0x1114;
-                regs.h.bl = 0x00;
-                PDCINT(0x10, regs);
-            }
-        }
-    }
-
-    curs_set(SP->visibility);
-
     pdc_font = _get_font();
 }
 
@@ -150,41 +57,14 @@ static void _set_font(int size)
 
 static void _set_80x25(void)
 {
-    PDCREGS regs;
-
-    switch (pdc_adapter)
-    {
-    case _CGA:
-    case _EGACOLOR:
-    case _EGAMONO:
-    case _VGACOLOR:
-    case _VGAMONO:
-    case _MCGACOLOR:
-    case _MCGAMONO:
-        regs.h.ah = 0x00;
-        regs.h.al = 0x03;
-        PDCINT(0x10, regs);
-        break;
-    case _MDA:
-        regs.h.ah = 0x00;
-        regs.h.al = 0x07;
-        PDCINT(0x10, regs);
-    }
+    // TODO
 }
 
 /* _get_scrn_mode() - Return the current BIOS video mode */
 
 static int _get_scrn_mode(void)
 {
-    /*
-    PDCREGS regs;
-    
-    regs.h.ah = 0x0f;
-    PDCINT(0x10, regs);
-    
-    return (int)regs.h.al;
-    */
-   return OK;
+    return (int)VGA_currentMode;
 }
 
 /* _set_scrn_mode() - Sets the BIOS Video Mode Number only if it is
@@ -194,7 +74,7 @@ static void _set_scrn_mode(int new_mode)
 {
     if (_get_scrn_mode() != new_mode)
     {
-        
+        VGA_SetMode(new_mode);
     }
 
     pdc_font = _get_font();
@@ -272,96 +152,18 @@ static int _query_adapter_type(void)
 {
     int retval = _NONE;
 
-    /* thanks to paganini@ax.apc.org for the GO32 fix */
-
-    short video_base = getdosmemword(0x463);
-
     PDC_LOG("_query_adapter_type() - called\n");
-
-    /* attempt to call VGA Identify Adapter Function */
-
-    if (retval == _NONE)
-    {
-        /* We know that the PS/2 video BIOS is alive and well. */
-
-        switch (7)
-        {
-        case 0:
-            retval = _NONE;
-            break;
-        case 1:
-            retval = _MDA;
-            break;
-        case 2:
-            retval = _CGA;
-            break;
-        case 4:
-            retval = _EGACOLOR;
-            sizeable = TRUE;
-            break;
-        case 5:
-            retval = _EGAMONO;
-            break;
-        case 26: /* ...alt. VGA BIOS... */
-        case 7:
             retval = _VGACOLOR;
             sizeable = TRUE;
-            break;
-        case 8:
-            retval = _VGAMONO;
-            break;
-        case 10:
-        case 13:
-            retval = _MCGACOLOR;
-            break;
-        case 12:
-            retval = _MCGAMONO;
-            break;
-        default:
-            retval = _CGA;
-        }
-    }
+    
 
-    if (video_base == 0x3d4)
-    {
-        pdc_video_seg = 0xb800;
-        switch (retval)
-        {
-        case _EGAMONO:
-            retval = _EGACOLOR;
-            break;
-        case _VGAMONO:
-            retval = _VGACOLOR;
-        }
-    }
-
-    if (video_base == 0x3b4)
-    {
-        pdc_video_seg = 0xb000;
-        switch (retval)
-        {
-        case _EGACOLOR:
-            retval = _EGAMONO;
-            break;
-        case _VGACOLOR:
-            retval = _VGAMONO;
-        }
-    }
-
-    if ((retval == _NONE)
-#ifndef CGA_DIRECT
-        || (retval == _CGA)
-#endif
-    )
+    if ((retval == _NONE))
         pdc_direct_video = FALSE;
 
     if ((unsigned)pdc_video_seg == 0xb000)
         SP->mono = TRUE;
     else
         SP->mono = FALSE;
-
-    /* Check for DESQview shadow buffer
-       thanks to paganini@ax.apc.org for the GO32 fix */
 
     if (!pdc_adapter)
         pdc_adapter = retval;
@@ -384,24 +186,24 @@ void PDC_scr_close(void)
     {
 #ifdef __DJGPP__
         dosmemput(saved_screen, saved_lines * saved_cols * 2,
-                  (unsigned long)_FAR_POINTER(pdc_video_seg,
-                                              pdc_video_ofs));
+            (unsigned long)_FAR_POINTER(pdc_video_seg,
+            pdc_video_ofs));
 #else
-#if (SMALL || MEDIUM)
+# if (SMALL || MEDIUM)
         segread(&segregs);
         ds = segregs.ds;
         movedata(ds, (int)saved_screen, pdc_video_seg, pdc_video_ofs,
-                 (saved_lines * saved_cols * 2));
-#else
+        (saved_lines * saved_cols * 2));
+# else
         memcpy((void *)_FAR_POINTER(pdc_video_seg, pdc_video_ofs),
-               (void *)saved_screen, (saved_lines * saved_cols * 2));
-#endif
+        (void *)saved_screen, (saved_lines * saved_cols * 2));
+# endif
 #endif
         free(saved_screen, &cursesPage);
         saved_screen = NULL;
     }
 
-    reset_shell_mode();
+    // reset_shell_mode();
 
     if (SP->visibility != 1)
         curs_set(1);
@@ -467,16 +269,16 @@ int PDC_scr_open(void)
         dosmemget((unsigned long)_FAR_POINTER(pdc_video_seg, pdc_video_ofs),
                   saved_lines * saved_cols * 2, saved_screen);
 #else
-#if SMALL || MEDIUM
+# if SMALL || MEDIUM
         segread(&segregs);
         ds = segregs.ds;
         movedata(pdc_video_seg, pdc_video_ofs, ds, (int)saved_screen,
                  (saved_lines * saved_cols * 2));
-#else
+# else
         memcpy((void *)saved_screen,
                (void *)_FAR_POINTER(pdc_video_seg, pdc_video_ofs),
                (saved_lines * saved_cols * 2));
-#endif
+# endif
 #endif
     }
 
@@ -490,7 +292,7 @@ int PDC_scr_open(void)
 int PDC_resize_screen(int nlines, int ncols)
 {
     PDC_LOG("PDC_resize_screen() - called. Lines: %d Cols: %d\n",
-            nlines, ncols);
+             nlines, ncols);
 
     /* Trash the stored value of orig_cursor -- it's only good if the
        video mode doesn't change */
@@ -509,10 +311,11 @@ int PDC_resize_screen(int nlines, int ncols)
     case _VGACOLOR:
         if (nlines > 28)
             _set_font(_FONT8);
-        else if (nlines > 25)
-            _set_font(_FONT14);
         else
-            _set_80x25();
+            if (nlines > 25)
+                _set_font(_FONT14);
+            else
+                _set_80x25();
     }
 
     PDC_set_blink(COLORS == 8);
@@ -522,12 +325,12 @@ int PDC_resize_screen(int nlines, int ncols)
 
 void PDC_reset_prog_mode(void)
 {
-    PDC_LOG("PDC_reset_prog_mode() - called.\n");
+        PDC_LOG("PDC_reset_prog_mode() - called.\n");
 }
 
 void PDC_reset_shell_mode(void)
 {
-    PDC_LOG("PDC_reset_shell_mode() - called.\n");
+        PDC_LOG("PDC_reset_shell_mode() - called.\n");
 }
 
 void PDC_restore_screen_mode(int i)
@@ -556,17 +359,7 @@ void PDC_save_screen_mode(int i)
 
 static short _egapal(short color)
 {
-    /*
-    PDCREGS regs;
-    
-    regs.W.ax = 0x1007;
-    regs.h.bl = pdc_curstoreal[color];
-    
-    PDCINT(0x10, regs);
-    
-    return regs.h.bh;
-    */
-   return OK;
+    return pdc_curstoreal[color];
 }
 
 bool PDC_can_change_color(void)
@@ -578,37 +371,18 @@ bool PDC_can_change_color(void)
 
 int PDC_color_content(short color, short *red, short *green, short *blue)
 {
-    /*
-    PDCREGS regs;
-    
-    regs.W.ax = 0x1015;
-    regs.h.bl = _egapal(color);
-    
-    PDCINT(0x10, regs);
-    
-    *red = DIVROUND((unsigned)(regs.h.dh) * 1000, 63);
-    *green = DIVROUND((unsigned)(regs.h.ch) * 1000, 63);
-    *blue = DIVROUND((unsigned)(regs.h.cl) * 1000, 63);
-    */
+    VGA_GetColor((uint32_t)_egapal(color), (uint8_t*)red, (uint8_t*)green, (uint8_t*)blue);
 
     return OK;
 }
 
 int PDC_init_color(short color, short red, short green, short blue)
 {
-    /*
-    PDCREGS regs;
-    
-    regs.h.dh = DIVROUND((unsigned)red * 63, 1000);
-    regs.h.ch = DIVROUND((unsigned)green * 63, 1000);
-    regs.h.cl = DIVROUND((unsigned)blue * 63, 1000);
-    
-    
-    regs.W.ax = 0x1010;
-    regs.W.bx = _egapal(color);
-    
-    PDCINT(0x10, regs);
-    */
+    /* Scale */
+
+    PDC_LOG("PDC_resize_screen() - called. index: %d color: %d RGB: (%d,%d,%d)\n", _egapal(color), color, red, green, blue);
+    uint32_t RGBColor = (red << 16) | (green << 8) | blue;
+    VGA_SetColor(_egapal(color), RGBColor);
 
     return OK;
 }

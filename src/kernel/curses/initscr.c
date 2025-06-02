@@ -1,7 +1,5 @@
 #include <stdlib.h>
 #include "curspriv.h"
-#include "stdio.h"
-#include "hal/vfs.h"
 
 char ttytype[128];
 
@@ -54,7 +52,7 @@ WINDOW *initscr(void)
     SP->delaytenths = 0;
     SP->line_color = -1;
     SP->lastscr = (WINDOW *)NULL;
-    SP->dbfp = NULL;
+    SP->dbfp = -1;
     SP->color_started = FALSE;
     SP->dirty = FALSE;
     SP->sel_start = -1;
@@ -183,7 +181,7 @@ bool isendwin(void)
     return SP ? !(SP->alive) : FALSE;
 }
 
-SCREEN *newterm(const char *type, fd_t *outfd, fd_t *infd)
+SCREEN *newterm(const char *type, fd_t outfd, fd_t infd)
 {
     PDC_LOG("newterm() - called\n");
 

@@ -461,3 +461,117 @@ void PDC_slk_initialize(void)
         touchwin(SP->slk_winptr);
     }
 }
+
+void PDC_slk_free(void)
+{
+    if (slk)
+    {
+        if (SP->slk_winptr)
+        {
+            delwin(SP->slk_winptr);
+            SP->slk_winptr = (WINDOW *)NULL;
+        }
+
+        free(slk, &cursesPage);
+        slk = (struct SLK *)NULL;
+
+        label_length = 0;
+        labels = 0;
+        label_fmt = 0;
+        label_line = 0;
+        hidden = FALSE;
+    }
+}
+
+int PDC_mouse_in_slk(int y, int x)
+{
+    int i;
+
+    PDC_LOG("PDC_mouse_in_slk() - called: y->%d x->%d\n", y, x);
+
+    /* If the line on which the mouse was clicked is NOT the last line
+       of the screen, we are not interested in it. */
+
+    if (!slk || !SP->slk_winptr || (y != SP->slk_winptr->_begy + label_line))
+        return 0;
+
+    for (i = 0; i < labels; i++)
+        if (x >= slk[i].start_col && x < (slk[i].start_col + label_length))
+            return i + 1;
+
+    return 0;
+}
+
+#ifdef PDC_WIDE
+int slk_wset(int labnum, const wchar_t *label, int justify)
+{
+    PDC_LOG("slk_wset() - called\n");
+
+    if (labnum < 1 || labnum > labels || justify < 0 || justify > 2)
+        return ERR;
+
+    labnum--;
+
+    if (!label || !(*label))
+    {
+        /* Clear the label */
+
+        *slk[labnum].label = 0;
+        slk[labnum].format = 0;
+        slk[labnum].len = 0;
+    }
+    else
+    {
+        int i, j = 0;
+
+        /* Skip leading spaces */
+
+        while (label[j] == L' ')
+            j++;
+
+        /* Copy it */
+
+        for (i = 0; i < label_length; i++)
+        {
+            chtype ch = label[i + j];
+
+            slk[labnum].label[i] = ch;
+
+            if (!ch)
+                break;
+        }
+
+        /* Drop trailing spaces */
+
+        while ((i + j) && (label[i + j - 1] == L' '))
+            i--;
+
+        slk[labnum].label[i] = 0;
+        slk[labnum].format = justify;
+        slk[labnum].len = i;
+    }
+
+    _drawone(labnum);
+
+    return OK;
+}
+
+wchar_t *slk_wlabel(int labnum)
+{
+    static wchar_t temp[33];
+    chtype *p;
+    int i;
+
+    PDC_LOG("slk_wlabel() - called\n");
+
+    if (labnum < 1 || labnum > labels)
+        return (wchar_t *)0;
+
+    for (i = 0, p = slk[labnum - 1].label; *p; i++)
+        temp[i] = *p++;
+
+    temp[i] = '\0';
+
+    return temp;
+}
+#endif

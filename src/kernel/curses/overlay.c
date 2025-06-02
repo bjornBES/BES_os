@@ -2,7 +2,6 @@
 
 #include "curspriv.h"
 
-
 /* Thanks to Andreas Otte <venn@@uni-paderborn.de> for the
    corrected overlay()/overwrite() behavior. */
 

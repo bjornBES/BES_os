@@ -33,6 +33,7 @@
 #ifdef __HUGE__
 */
 # define HUGE 1
+# define __FLAT__ 1
 // #endif
 
 extern short pdc_curstoreal[16];
@@ -55,7 +56,7 @@ extern unsigned pdc_video_ofs;
 # ifdef __TURBOC__
 #  define _FAR_POINTER(s,o) MK_FP(s,o)
 # else
-#  if defined(__WATCOMC__) && defined(__FLAT__)
+#  if defined(__FLAT__)
 #   define _FAR_POINTER(s,o) ((((int)(s)) << 4) + ((int)(o)))
 #  else
 #   define _FAR_POINTER(s,o) (((long)s << 16) | (long)o)
@@ -81,9 +82,6 @@ extern unsigned pdc_video_ofs;
     (*((unsigned char PDC_FAR *) _FAR_POINTER(0,offs)) = (x))
 # define setdosmemword(offs,x) \
     (*((unsigned short PDC_FAR *) _FAR_POINTER(0,offs)) = (x))
-
-#define PDCREGS union REGS
-#define PDCINT(vector, regs) int86(vector, &regs, &regs)
 
 /* Wide registers in REGS: w or x? */
 

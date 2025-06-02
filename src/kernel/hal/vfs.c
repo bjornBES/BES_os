@@ -15,11 +15,21 @@
 #define MAX_MOUNTS 16
 #define MODULE "VFS"
 
-Page* mountPointsPage;
+typedef struct
+{
+	vfs_node_t *node;
+	uint32_t offset;
+} file_descriptor_t;
+
+file_descriptor_t fd_table[MAX_FILE_HANDLES];
+
+Page *mountPointsPage;
 MountPoint **mountPoints = 0;
-Page** mPages;
-Page* mPagesPage;
+Page **mPages;
+Page *mPagesPage;
 int lastMountId = 0;
+
+vfs_node_t *vfs_root;
 
 int VFS_Write(fd_t file, uint8_t *data, size_t size)
 {
@@ -39,8 +49,74 @@ int VFS_Write(fd_t file, uint8_t *data, size_t size)
 		return size;
 
 	default:
+		if (file < 0 || file >= MAX_FILE_HANDLES || &fd_table[file] == NULL)
+		{
+			return -1;
+		}
+		// file_descriptor_t *node = &fd_table[file];
+		// return node->write(node, 0, size, buffer);
+	}
+	return -1;
+}
+
+int Sys_Read(file_descriptor_t *file, void *buffer, size_t size)
+{
+	if (file == NULL || buffer == NULL || size == 0)
+	{
 		return -1;
 	}
+
+	vfs_node_t *node = file->node;
+	if (node == NULL)
+	{
+		return -1; // Invalid file descriptor
+	}
+
+	if (node->type != FS_FILE)
+	{
+		return -1; // Not a file
+	}
+
+	MountPoint*	mountpoint = mountPoints[node->mountPoint];
+	if (mountpoint == NULL)
+	{
+		return -1; // Mount point not found
+	}
+	filesystemInfo_t *fs = mountpoint->dev->fs;
+	if (fs == NULL)
+	{
+		return -1; // Filesystem not mounted or read function not defined
+	}
+
+	if (fs->read == NULL)
+	{
+		return -1; // No read function defined
+	}
+
+	return fs->read(node->name, buffer, mountpoint->dev, fs->priv_data);
+}
+
+int VFS_Read(fd_t file, void *buffer, size_t size)
+{
+	switch (file)
+	{
+	case VFS_FD_STDIN:
+		return 0;
+	case VFS_FD_STDOUT:
+	case VFS_FD_STDERR:
+		return 0;
+	case VFS_FD_DEBUG:
+		return 0;
+
+	default:
+		if (file < 0 || file >= MAX_FILE_HANDLES || &fd_table[file] == NULL)
+		{
+			return -1;
+		}
+		file_descriptor_t *node = &fd_table[file];
+		return Sys_Read(node, buffer, size);
+	}
+	return -1;
 }
 
 device_t *checkMountPoint(char *loc)
@@ -86,6 +162,49 @@ bool tryMountFS(device_t *dev, char *loc)
 	return false;
 }
 
+vfs_node_t *VFS_findDir(vfs_node_t *current, char *token)
+{
+	log_debug(MODULE, "VFS_findDir: current = %p, token = %s", current, token);
+	if (!current || !token)
+	{
+		return NULL;
+	}
+	MountPoint* mountpoint = mountPoints[current->mountPoint];
+	if (!mountpoint)
+	{
+		return NULL;
+	}
+
+	filesystemInfo_t *fs = mountpoint->dev->fs;
+
+
+	return NULL;
+}
+
+vfs_node_t *vfs_resolve_path(char *path)
+{
+	log_debug(MODULE, "vfs_resolve_path: path = %s", path);
+	// path == "/dev/test.txt"
+	if (!path || path[0] != '/')
+		return NULL;
+
+	vfs_node_t *current = vfs_root;
+	char *token;
+	char path_copy[256];
+	strcpy(path_copy, path);
+
+	// path_copy = "/dev/test.txt"
+	token = strtok(path_copy, "/");
+	// token = dev
+	while (token && current)
+	{
+		current = VFS_findDir(current, token);
+		token = strtok(NULL, "/");
+	}
+
+	return current;
+}
+
 int __find_mount(char *filename, int *adjust)
 {
 	log_debug(MODULE, "filename %s string length %u", filename, strlen(filename) + 1);
@@ -114,22 +233,17 @@ int __find_mount(char *filename, int *adjust)
 			}
 		}
 		if (strcmp(orig, "/") == 0)
-		break;
+			break;
 		str_backspace(orig, '/');
 	}
 	free(orig, &origPage);
 	return false;
 }
 
-bool VFS_Read(char *filename, uint8_t *buffer)
+fd_t VFS_Open(char *path)
 {
-	int adjust = 0;
-	int i = __find_mount(filename, &adjust);
-	// log_debug(MODULE, "found mount %u", i);
-	filename += adjust;
-	// log_debug(MODULE, "Passing with adjust %d: %s\n", adjust, filename);
-	int rc = mountPoints[i]->dev->fs->read(filename, buffer, mountPoints[i]->dev, mountPoints[i]->dev->fs->priv_data);
-	return rc;
+	vfs_node_t *node = vfs_resolve_path(path);
+	return 0;
 }
 
 void VFS_init()

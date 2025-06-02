@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include "curspriv.h"
+#include "stdio.h"
+#include "hal/vfs.h"
 
 char ttytype[128];
 
@@ -33,7 +35,7 @@ WINDOW *initscr(void)
 
     if (PDC_scr_open() == ERR)
     {
-        fprintf(stderr, "initscr(): Unable to create SP\n");
+        fprintf(VFS_FD_STDERR, "initscr(): Unable to create SP\n");
         exit(8);
     }
 
@@ -65,7 +67,7 @@ WINDOW *initscr(void)
 
     if (LINES < 2 || COLS < 2)
     {
-        fprintf(stderr, "initscr(): LINES=%d COLS=%d: too small.\n",
+        fprintf(VFS_FD_STDERR, "initscr(): LINES=%d COLS=%d: too small.\n",
                 LINES, COLS);
         exit(4);
     }
@@ -73,14 +75,14 @@ WINDOW *initscr(void)
     curscr = newwin(LINES, COLS, 0, 0);
     if (!curscr)
     {
-        fprintf(stderr, "initscr(): Unable to create curscr.\n");
+        fprintf(VFS_FD_STDERR, "initscr(): Unable to create curscr.\n");
         exit(2);
     }
 
     SP->lastscr = newwin(LINES, COLS, 0, 0);
     if (!SP->lastscr)
     {
-        fprintf(stderr, "initscr(): Unable to create SP->lastscr.\n");
+        fprintf(VFS_FD_STDERR, "initscr(): Unable to create SP->lastscr.\n");
         exit(2);
     }
 
@@ -110,7 +112,7 @@ WINDOW *initscr(void)
     stdscr = newwin(LINES, COLS, SP->linesrippedoffontop, 0);
     if (!stdscr)
     {
-        fprintf(stderr, "initscr(): Unable to create stdscr.\n");
+        fprintf(VFS_FD_STDERR, "initscr(): Unable to create stdscr.\n");
         exit(1);
     }
 
@@ -181,7 +183,7 @@ bool isendwin(void)
     return SP ? !(SP->alive) : FALSE;
 }
 
-SCREEN *newterm(const char *type, FILE *outfd, FILE *infd)
+SCREEN *newterm(const char *type, fd_t *outfd, fd_t *infd)
 {
     PDC_LOG("newterm() - called\n");
 

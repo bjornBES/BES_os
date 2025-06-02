@@ -1,8 +1,8 @@
 #pragma once
 
 #include "defaultInclude.h"
-#include "linux/stdio2.h"
-
+#include "stdio.h"
+#include "hal/vfs.h"
 
 #define PDCURSES        1
 #define PDC_BUILD    3908
@@ -297,7 +297,7 @@ typedef struct
     short line_color;     /* color of line attributes - default -1 */
     attr_t termattrs;     /* attribute capabilities */
     WINDOW *lastscr;      /* the last screen image */
-    FILE *dbfp;           /* debug trace file pointer */
+    fd_t *dbfp;           /* debug trace file pointer */
     bool  color_started;  /* TRUE after start_color() */
     bool  dirty;          /* redraw on napms() after init_color() */
     int   sel_start;      /* start of selection (y * COLS + x) */
@@ -729,7 +729,7 @@ PDCEX  int     flushinp(void);
 PDCEX  chtype  getbkgd(WINDOW *);
 PDCEX  int     getnstr(char *, int);
 PDCEX  int     getstr(char *);
-PDCEX  WINDOW *getwin(FILE *);
+PDCEX  WINDOW *getwin(fd_t *);
 PDCEX  int     halfdelay(int);
 PDCEX  bool    has_colors(void);
 PDCEX  bool    has_ic(void);
@@ -811,7 +811,7 @@ PDCEX  int     mvwscanw(WINDOW *, int, int, const char *, ...);
 PDCEX  int     mvwvline(WINDOW *, int, int, chtype, int);
 PDCEX  int     napms(int);
 PDCEX  WINDOW *newpad(int, int);
-PDCEX  SCREEN *newterm(const char *, FILE *, FILE *);
+PDCEX  SCREEN *newterm(const char *, fd_t *, fd_t *);
 PDCEX  WINDOW *newwin(int, int, int, int);
 PDCEX  int     nl(void);
 PDCEX  int     nocbreak(void);
@@ -828,7 +828,7 @@ PDCEX  int     pechochar(WINDOW *, chtype);
 PDCEX  int     pnoutrefresh(WINDOW *, int, int, int, int, int, int);
 PDCEX  int     prefresh(WINDOW *, int, int, int, int, int, int);
 PDCEX  int     printw(const char *, ...);
-PDCEX  int     putwin(WINDOW *, FILE *);
+PDCEX  int     putwin(WINDOW *, fd_t *);
 PDCEX  void    qiflush(void);
 PDCEX  int     raw(void);
 PDCEX  int     redrawwin(WINDOW *);

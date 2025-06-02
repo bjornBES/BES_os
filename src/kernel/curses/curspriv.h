@@ -8,7 +8,7 @@
 #include "curses.h"
 #include "defaultInclude.h"
 #include "math.h"
-#include "linux/stdio2.h"
+#include "stdio.h"
 #include "malloc.h"
 
 #ifdef __cplusplus
@@ -94,7 +94,7 @@ size_t  PDC_wcstombs(char *, const wchar_t *, size_t);
 #ifdef PDCDEBUG
 # define PDC_LOG(x) if (SP && SP->dbfp) PDC_debug x
 #else
-# define PDC_LOG(...) fprintf(stddebug, __VA_ARGS__)
+# define PDC_LOG(...) fprintf(VFS_FD_DEBUG, __VA_ARGS__)
 #endif
 
 #define DIVROUND(num, divisor) ((num) + ((divisor) >> 1)) / (divisor)

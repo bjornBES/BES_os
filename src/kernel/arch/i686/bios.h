@@ -50,7 +50,3 @@ union {
 } Registers16;
 
 void BIOS_Init();
-void CallInt(uint8_t intNum, Registers16 *regsInput, Registers16 *regsOutput);
-void initregs(Registers16 *reg);
-void print_reg(Registers * reg);
-void print_reg16(Registers16 * reg);

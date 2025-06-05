@@ -29,6 +29,16 @@ void PrintDeviceOut()
 
 int addDevice(device_t *dev)
 {
+	if (dev == NULL)
+	{
+		log_err(MODULE, "Cannot add a NULL device");
+		return -1;
+	}
+
+	if (dev->id == 0xFFFFFFFF)
+	{
+		dev->id = lastid;
+	}
 	devices[lastid] = dev;
 	lastid++;
 	return lastid - 1;

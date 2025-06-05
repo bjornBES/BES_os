@@ -1,4 +1,5 @@
 #include "ATA.h"
+#include "drivers/ahci/ahci.h"
 
 #include "drivers/VGA/vga.h"
 #include "arch/i686/io.h"
@@ -12,6 +13,7 @@
 #include "stdio.h"
 #include "debug.h"
 #include "malloc.h"
+#include "unistd.h"
 
 #include "drivers/ide/ide_controller.h"
 
@@ -186,9 +188,9 @@ void ata_read_one(uint8_t *buf, uint32_t lba, uint32_t offset, device_t *device)
 
 	uint8_t cmd = (drive == ATA_MASTER ? 0xE0 : 0xF0);
 
-	log_err(MODULE, "drive = %X", drive);
+	log_info(MODULE, "drive = %X", drive);
 
-	log_err(MODULE, "channel = %X, drive = %X", channel, drive);
+	log_info(MODULE, "channel = %X, drive = %X", channel, drive);
 
 	i686_outb(channel + ATA_REG_HDDEVSEL, (cmd | (uint8_t)((lba >> 24 & 0x0F))));
 	i686_outb(channel + 1, 0x00);
@@ -197,12 +199,12 @@ void ata_read_one(uint8_t *buf, uint32_t lba, uint32_t offset, device_t *device)
 	i686_outb(channel + ATA_REG_LBA1, (uint8_t)((lba) >> 8));
 	i686_outb(channel + ATA_REG_LBA2, (uint8_t)((lba) >> 16));
 	i686_outb(channel + ATA_REG_COMMAND, ATA_CMD_READ_PIO);
-	log_warn(MODULE, "after sending command");
+
+	sleepms(1); // Wait for the command to be sent
 
 	ATA_CheakStatus(ATA_SR_DRQ);
 
 	ide_poll(channel);
-	log_warn(MODULE, "after polling");
 
 	uint16_t count = 0;
 	// set_task(0);
@@ -218,7 +220,7 @@ void ata_read_one(uint8_t *buf, uint32_t lba, uint32_t offset, device_t *device)
 		// log_debug(MODULE, "%X, %X", b1, b2);
 		count++;
 	}
-	log_warn(MODULE, "readed %u words", count);
+	log_info(MODULE, "readed %u words", count);
 
 	ide_400ns_delay(channel);
 
@@ -241,7 +243,7 @@ uint32_t ATA_read(void *buf, uint64_t lba, uint32_t numsects, device_t *device)
 	}
 	return sectorsReaded;
 }
-
+uint16_t ATA_DeviceIndex;
 void ATA_init()
 {
 	printf("Checking for ATA drives\n");
@@ -255,44 +257,42 @@ void ATA_init()
 
 	// log_info(MODULE, "IdentifyPage = 0x%p, Identify = 0x%p", &IdentifyPage, Identify);
 	// log_debug(MODULE, "After mallocing ATA_Identify %u, file %s:%u", IdentifyPage.prosses, __FILE__, __LINE__);
-	device_t *dev = (device_t *)malloc(sizeof(device_t), ATAPage);
-	ide_private_data *priv = (ide_private_data *)malloc(sizeof(ide_private_data), ATAPage);
-
-	// log_debug(MODULE, "After mallocing others, file %s:%u", __FILE__, __LINE__);
-	// log_debug(MODULE, "ATA Mod %s", ide_devices[0].Model);
-
-	priv->drive = (ATA_PRIMARY << 1) | ATA_MASTER;
-
-	char *temp = ide_devices[0].Model;
-
-	// log_warn(MODULE, "IdentifyPage.prosses: %u, file %s:%u", IdentifyPage.prosses, __FILE__, __LINE__);
-
-	dev->name = temp;
-	dev->id = 32;
-	dev->dev_type = DEVICE_BLOCK;
-	dev->priv = priv;
-	dev->read = ATA_read;
-	ata_Device = addDevice(dev);
-}
-
-bool ATA_identify(IdentifyDeviceData *buffer)
-{
-	ide_select_drive(ATA_PRIMARY, ATA_MASTER);
-
-	ide_write(ATA_PRIMARY, ATA_REG_SECCOUNT0, 0);
-	ide_write(ATA_PRIMARY, ATA_REG_LBA0, 0);
-	ide_write(ATA_PRIMARY, ATA_REG_LBA1, 0);
-	ide_write(ATA_PRIMARY, ATA_REG_LBA2, 0);
-	ide_write(ATA_PRIMARY, ATA_REG_COMMAND, ATA_CMD_IDENTIFY);
-
-	ATA_waitBusy();
-	if (ATA_CheakError(ATA_PRIMARY))
+	
+	for (size_t i = 0; i < ide_devices_count; i++)
 	{
-		printf("ERR set, device failure!\n");
-		panic();
-		return false;
-	}
+		device_t *dev = (device_t *)malloc(sizeof(device_t), ATAPage);
+		ide_private_data *priv = (ide_private_data *)malloc(sizeof(ide_private_data), ATAPage);
+		if (ide_devices[i].Reserved == 0)
+		{
+			continue; // Skip if the device is not reserved.
+		}
 
-	ide_read_buffer(ATA_PRIMARY, ATA_REG_DATA, (uint32_t)buffer, 128);
-	return true;
+		if (ide_devices[i].Type != IDE_ATA)
+		{
+			continue; // Skip if the device is not ATA.
+		}
+
+		ide_device ide_device = ide_devices[i];
+		log_info(MODULE, "Found %s Drive %dGB - %s",
+                   (const char *[]){"ATA", "ATAPI"}[ide_device.Type], /* Type */
+                   ide_device.Size / 1024 / 1024 / 2,                 /* Size */
+                   ide_device.Model);
+
+		// log_debug(MODULE, "After mallocing others, file %s:%u", __FILE__, __LINE__);
+		// log_debug(MODULE, "ATA Mod %s", ide_devices[0].Model);
+		
+		priv->drive = (ide_device.Channel << 1) | ide_device.Drive;
+		
+		char *temp = ide_device.Model;
+		
+		// log_warn(MODULE, "IdentifyPage.prosses: %u, file %s:%u", IdentifyPage.prosses, __FILE__, __LINE__);
+		
+		dev->name = temp;
+		dev->id = ATA_DeviceIndex + i;
+		dev->dev_type = DEVICE_BLOCK;
+		dev->priv = priv;
+		dev->read = ATA_read;
+		ata_Device = addDevice(dev);
+	}
 }
+

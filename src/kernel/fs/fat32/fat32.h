@@ -7,9 +7,6 @@
 #pragma once
 
 #define SECTOR_SIZE             512
-#define MAX_PATH_SIZE           256
-#define MAX_FILE_HANDLES        10
-#define ROOT_DIRECTORY_HANDLE   -1
 #define FAT_CACHE_SIZE          5
 #define DIR_ENTRY_SIZE          32
 #define FAT32_EOC               0x0FFFFFF8 // End of Cluster marker for FAT32
@@ -185,3 +182,4 @@ enum FAT_Attributes
 
 bool FAT_Probe(device_t* dev);
 bool FAT_Mount(device_t *dev, void *priv);
+bool FAT_GetRoot(void* node, device_t* dev, void *priv);

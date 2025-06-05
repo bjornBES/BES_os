@@ -72,7 +72,7 @@ typedef struct {
 } __attribute__((packed)) IdentifyDeviceData;
 
 extern uint16_t ata_Device;
+extern uint16_t ATA_DeviceIndex;
 
 void ATA_init();
-bool ATA_identify(IdentifyDeviceData *buffer);
-uint32_t ATA_read(void *buf, uint64_t lba, uint32_t numsects, struct __device_t* drive);
+uint32_t ATA_read(void *buf, uint64_t lba, uint32_t numsects, device_t *device);

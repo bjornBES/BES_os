@@ -32,6 +32,7 @@ typedef struct __fs_t {
 	bool (*writefile)(char *fn, uint8_t *buf, uint32_t len, device_t* dev, void *);
 	bool (*exist)(char *filename, device_t* dev,  void *);
 	bool (*mount)(device_t* dev, void *);
+	bool (*getRoot)(void*, device_t* dev, void *);
 	bool *priv_data;
 } filesystemInfo_t;
 

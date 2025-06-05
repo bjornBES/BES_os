@@ -268,8 +268,9 @@ uint32_t fat32GetRootCount(device_t *dev)
 	return result;
 }
 
-bool FAT_ReadDirectory(char *filename, FAT_Directory *dir, device_t *dev, fatPrivData *priv)
+bool FAT_ReadDirectory(char *filename, uint8_t *tempDir, device_t *dev, fatPrivData *priv)
 {
+	FAT_Directory* dir = (FAT_Directory *)tempDir;
 	// Parse the buffer to get directory entries
 	uint32_t entryOffset = 0;
 	uint16_t index = 0;
@@ -421,7 +422,6 @@ bool FAT_ReadRootDirectory(char *filename, device_t *dev, fatPrivData *priv)
 		return false;
 	return true;
 }
-
 bool FAT_ReadFile(char *fileName, uint8_t *buffer, device_t *dev, fatPrivData *priv)
 {
 	if (!fileName || !buffer || !dev || !priv)
@@ -432,7 +432,7 @@ bool FAT_ReadFile(char *fileName, uint8_t *buffer, device_t *dev, fatPrivData *p
 
 	if (fileName[0] != '/')
 	{
-		log_crit(MODULE, "Only absolute paths are supported");
+		log_crit(MODULE, "Only absolute paths are supported %s", fileName);
 		return false;
 	}
 
@@ -518,13 +518,117 @@ bool FAT_ReadFile(char *fileName, uint8_t *buffer, device_t *dev, fatPrivData *p
 	}
 
 	// Read file data
-	if (!(entry->Entry.Attributes & FAT_ATTRIBUTE_DIRECTORY))
+	if ((entry->Entry.Attributes & FAT_ATTRIBUTE_DIRECTORY) != FAT_ATTRIBUTE_DIRECTORY)
 	{
+		log_info(MODULE, "Reading file %s", entry->Entry.Name);
 		uint32_t firstCluster = GETCLUSTER(entry->Entry.FirstClusterHigh, entry->Entry.FirstClusterLow);
 		FAT_ReadClusters(buffer, firstCluster, entry->Entry.Size, dev, priv);
 		return true;
 	}
 	return false;
+}
+
+bool FAT_FindDirectory(char* path, device_t *dev, fatPrivData *priv)
+{
+	if (!path || !dev || !priv)
+	{
+		log_crit(MODULE, "Invalid arguments");
+		return false;
+	}
+
+	if (path[0] != '/')
+	{
+		log_crit(MODULE, "Only absolute paths are supported");
+		return false;
+	}
+
+	if (!path)
+	{
+		log_crit(MODULE, "fileName is null, Filepath is invalid");
+		return false;
+	}
+
+	FAT_ReadRootDirectory((char *)1, dev, priv);
+	if (FatData->RootDirectory.entryCount == 0)
+	{
+		log_crit(MODULE, "Root directory has no entries");
+		return false;
+	}
+
+	char *segment = strtok(path, "/");
+	log_debug(MODULE, "segment = %s from %s", segment, path);
+	if (segment == NULL)
+	{
+		log_crit(MODULE, "Filepath is invalid");
+		return false;
+	}
+
+	FAT_FileEntry *entry = NULL;
+	FAT_Directory currentDir = FatData->RootDirectory;
+
+	while (segment)
+	{
+		char shortName[13] = {' '};
+		getShortName(segment, shortName);
+		log_debug(MODULE, "shortName = %s segment = %s", shortName, segment);
+
+		log_debug(MODULE, "currentDir count %u", currentDir.entryCount);
+
+		for (int i = 0; i < currentDir.entryCount; i++)
+		{
+			FAT_FileEntry *dirEntry = &currentDir.entries[i];
+			log_debug(MODULE, "%u: %s 0x%X", i, dirEntry->Entry.Name, dirEntry->Entry.Attributes);
+
+			if ((dirEntry->Entry.Attributes & FAT_ATTRIBUTE_LFN) == 0) // short name 8.3
+			{
+				char entryName[13] = {' '};
+				memcpy(entryName, dirEntry->Entry.Name, 11);
+
+				log_debug(MODULE, "entry name: %s segment: %s", entryName, shortName);
+
+				if (strcmp(shortName, entryName) == 0)
+				{
+					entry = dirEntry;
+					log_info(MODULE, "Found %s", shortName);
+					break;
+				}
+			}
+			else
+			{
+			}
+		}
+
+		if (!entry)
+		{
+			log_crit(MODULE, "File or directory not found: %s", segment);
+			return false;
+		}
+
+		// If this is the last segment, we've found the file
+		if (!strtok(NULL, "/"))
+		{
+			break;
+		}
+
+		// Otherwise, move into the directory
+		if (!(entry->Entry.Attributes & FAT_ATTRIBUTE_DIRECTORY))
+		{
+			log_crit(MODULE, "%s is not a directory", segment);
+			return false;
+		}
+		Page bufferPage;
+		uint8_t *buffer = (uint8_t *)malloc(priv->BytesPerCluster, &bufferPage);
+		FAT_GetDir(&entry->Entry, &currentDir, buffer, dev, priv);
+		segment = strtok(NULL, "/");
+		free(buffer, &bufferPage);
+	}
+
+	// Read file data
+	if (!entry)
+	{
+		return false;
+	}
+	return true;
 }
 
 bool FAT_Probe(device_t *dev)
@@ -646,6 +750,8 @@ bool FAT_Probe(device_t *dev)
 	fs->probe = (bool (*)(device_t *))FAT_Probe;
 	fs->mount = (bool (*)(device_t *, void *))FAT_Mount;
 	fs->read = (bool (*)(char *, uint8_t *, device_t *, void *))FAT_ReadFile;
+	fs->read_dir = (bool (*)(char *, uint8_t *, device_t *, void *))FAT_ReadDirectory;
+	fs->find_dir = (bool (*)(char *, device_t *, void *))FAT_FindDirectory;
 
 	fs->priv_data = (void *)priv;
 
@@ -658,7 +764,32 @@ bool FAT_Mount(device_t *dev, void *privd)
 {
 	printf("Mounting fat32 on device %s (%d)\n", dev->name, dev->id);
 	fatPrivData *priv = privd;
+	
 	if (FAT_ReadRootDirectory((char *)1, dev, priv))
+	{
 		return 1;
+	}
 	return 0;
+}
+
+bool FAT_GetRoot(void* node, device_t* dev, void *privd)
+{
+	log_debug(MODULE, "node: %p, dev: %p, priv. %p", node, dev, privd);
+	if (!dev || !privd)
+	{
+		log_crit(MODULE, "Invalid arguments for FAT_GetRoot");
+		return false;
+	}
+	fatPrivData *priv = privd;
+
+	vfs_node_t *vfsNode = (vfs_node_t *)node;
+
+	vfsNode->permissions = VFS_DIR | VFS_READABLE | VFS_WRITABLE;
+	vfsNode->size = 0; // Size of the root directory is usually 0, as it contains entries for files and directories
+	vfsNode->inode = 0; // Inode for root directory is usually 0
+
+	// Set the name of the root directory
+	strcpy(vfsNode->name, "/");
+
+	return true;
 }

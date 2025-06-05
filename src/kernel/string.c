@@ -303,6 +303,7 @@ char *strtok(char *str, const char *delim)
     return token;
 }
 
+
 uint32_t str_begins_with(string str, string with)
 {
     uint32_t j = strlen(with);

@@ -16,6 +16,9 @@
 #include "ctype.h"
 #include "time.h"
 #include "unistd.h"
+#include "callInt.h"
+
+#include "syscall/systemcall.h"
 
 #include "fs/devfs/devfs.h"
 #include "fs/disk.h"
@@ -111,6 +114,8 @@ void Update()
     Page commandPage;
     char *inputBuffer = (char *)malloc(256, &bufferPage);
     char *command = (char *)malloc(64, &commandPage);
+    char* cmdPath = (char *)malloc(MAX_PATH_SIZE, &commandPage);
+    strcpy(cmdPath, "/ata0");
     uint32_t bufferSize = 4096;
     void *buffer = malloc(4096, &bufferPage);
     VGA_clrscr();
@@ -118,7 +123,7 @@ void Update()
     printf("This operating system is under construction.\n\n");
     while (true)
     {
-        printf("$");
+        printf("%s$", cmdPath);
         memset(inputBuffer, 0, 256);
         ReadLine(inputBuffer);
 
@@ -154,9 +159,60 @@ void Update()
         }
 
         log_debug("MAIN", "count = %u", count);
+
+        // Command layout
+        // device/bin/Command.cod [args]
+
         if (cmpCommand("clear", argv[0]) == true)
         {
             VGA_clrscr();
+        }
+        if (cmpCommand("int", argv[0]) == true)
+        {
+            if (count < 1)
+            {
+                printf("Usage: int <interrupt>\n");
+            }
+            int interrupt = 0;
+            atoi(argv[1], &interrupt);
+            IntRegisters regs;
+            initregs(&regs);
+            regs.eax = 0x55AA55AA; // just a test value
+            regs.ebx = 0x12345678; // just a test value
+            CallInt(interrupt, &regs);
+        }
+        if (cmpCommand("c-d", argv[0]) == true)
+        {
+            if (count < 1)
+            {
+                printf("Usage: change-device <device>\n");
+            }
+            char* path = argv[1];
+            if (path[0] != '/')
+            {
+                printf("Path must be absolute!\n");
+                continue;
+            }
+            strcpy(cmdPath, path);
+            log_debug("MAIN", "cmdPath = %s", cmdPath);
+            continue;
+        }
+        if (cmpCommand("read-file", argv[0]) == true)
+        {
+            if (count < 1)
+            {
+                printf("Usage: read <file>\n");
+            }
+            char* name = argv[1];
+            char* path = (char *)malloc(MAX_PATH_SIZE, &commandPage);
+            strcat(path, cmdPath);
+            strcat(path, "/");
+            strcat(path, name);
+            fd_t file = VFS_Open(path);
+            VFS_Read(file, buffer, bufferSize);
+            VFS_close(file);
+            free(path, &commandPage);
+            continue;
         }
         if (cmpCommand("read", argv[0]) == true)
         {
@@ -206,6 +262,34 @@ void Update()
             fd_t fd = VFS_FD_STDOUT;
             atoi(argv[1], &fd);
             fprintf(fd, "\nBufferSize = %u\n", bufferSize);
+        }
+        if (cmpCommand("mount", argv[0]) == true)
+        {
+            if (count < 2)
+            {
+                printf("Usage: mount <device> <loc>\n");
+            }
+            int device = 0;
+            atoi(argv[1], &device);
+            char *loc = argv[2];
+
+            device_t *dev = GetDeviceUsingId(device);
+            if (dev == NULL)
+            {
+                printf("Device %u not found!\n", device);
+                continue;
+            }
+
+            if (MountDevice(dev, loc))
+            {
+                printf("Mounted %s on %s\n", dev->name, loc);
+                log_info("MAIN", "Mounted %s on %s", dev->name, loc);
+            }
+            else
+            {
+                printf("Failed to mount %s on %s\n", dev->name, loc);
+                log_err("MAIN", "Failed to mount %s on %s", dev->name, loc);
+            }
         }
     }
 
@@ -277,6 +361,7 @@ void KernelInits()
 {
     _init();
     HAL_Initialize();
+    initSystemCall();
     i686_ISR_RegisterHandler(2, debug);
     mm_init();
 
@@ -294,8 +379,6 @@ void KernelStart(BootParams *bootParams)
     
     KernelInits();
     printf("KernelStart\n");
-
-    sleep(2);
 
     PrintMemoryRegions();
 
@@ -315,14 +398,14 @@ void KernelStart(BootParams *bootParams)
     VGA_setcursor(0, 6);
     printf("1234567890123456789012345678901234567890\n");
     printf("0000000001111111111222222222233333333334\n");
-    //VGA_clrscr();
+    VGA_clrscr();
     // printf("ABC");
-    PressAnyKeyLoop();
-
+    
     VFS_init();
     log_info("MAIN", "VFS done");
     ATA_init();
     log_info("MAIN", "ATA done");
+    PressAnyKeyLoop();
 
     if (ide_devices_count > 0)
     {
@@ -331,27 +414,37 @@ void KernelStart(BootParams *bootParams)
         device_t *dev = GetDevice(ata_Device);
         printStatus();
         Page bufferPage;
-        if (!tryMountFS(dev, "/"))
+        if (!MountDevice(dev, "/ata0"))
         {
-            printf("Unable to mount / on %s (%d)!\n", dev->name, dev->id);
-            log_crit("MAIN", "Unable to mount / on %s (%d)!\n", dev->name, dev->id);
+            printf("Unable to mount /ata0 on %s (%d)!\n", dev->name, dev->id);
+            log_crit("MAIN", "Unable to mount /ata0 on %s (%d)!\n", dev->name, dev->id);
             for (;;)
             {
                 ;
             }
         }
-        PrintDeviceOut();
 
         printStatus();
         ASM_INT2();
         uint8_t *buffer = (uint8_t *)malloc(512, &bufferPage);
         VGA_clrscr();
-        fd_t file = VFS_Open("/test.txt");
+
+        fd_t file = VFS_Open("/ata0/test.txt");
+        vfs_node_t *node = VFS_GetNode(file);
+        if (node == NULL)
+        {
+            printf("File not found or invalid file descriptor!\n");
+            log_err("MAIN", "File not found or invalid file descriptor!");
+            free(buffer, &bufferPage);
+            PressAnyKeyLoop();
+            return;
+        }
         VFS_Read(file, buffer, 512);
 
         VGA_clrscr();
 
-        printf("Data from test.txt");
+        printf("Data from test.txt\n");
+        printf("%s", buffer);
         for (uint16_t i = 0; i < 512; i++)
         {
             uint8_t word = buffer[(i)];
@@ -363,9 +456,11 @@ void KernelStart(BootParams *bootParams)
         }
         
         ASM_INT2();
+        VFS_close(file);
         free(buffer, &bufferPage);
     }
 
+    PressAnyKeyLoop();
     VGA_clrscr();
 
     printStatus();

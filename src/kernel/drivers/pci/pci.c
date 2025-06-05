@@ -237,7 +237,7 @@ void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t 
     if (pciDevice->classID == 1)
     {
         // IDE
-        if (pciDevice->subclassID == 0x1 && number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS)
+        if (pciDevice->subclassID == 0x1 /*&& number_of_storage_controllers < MAX_NUMBER_OF_STORAGE_CONTROLLERS*/)
         {
             log_debug(MODULE, "IDE controller");
             pciEnableIOBusmastering(bus, slot, function);

@@ -123,7 +123,8 @@
         "gmpdefault.h": "c",
         "pdcscrn.h": "c",
         "re": "c",
-        "pdcbesos.h": "c"
+        "pdcbesos.h": "c",
+        "systemcall.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

@@ -26,5 +26,6 @@ uint32_t str_backspace(string str, char c);
 uint32_t strcount(string str, char c);
 char* strtok(string str, const char* delim);
 
+
 uint16_t* utf16_to_codepoint(uint16_t* string, int* codepoint);
 char* codepoint_to_utf8(int codepoint, char* stringOutput);

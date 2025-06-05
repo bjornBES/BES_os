@@ -1,4 +1,6 @@
 #include "ahci.h"
+#include "drivers/ATA/ATA.h"
+
 #include "drivers/ide/ide_controller.h"
 #include "debug.h"
 #include "arch/i686/io.h"
@@ -181,6 +183,7 @@ void InitAbar(HBAData *abar, device_t* dev)
 				ahci_identify_device(ports[num_ports], &info);
 				ide_private_data* priv = dev->priv;
 				priv->drive = num_ports;
+				log_debug(MODULE, "Port %u initialized", num_ports);
 				char name[41] = {0};
 				for (int i = 0; i < 40; i += 2)
 				{
@@ -282,19 +285,21 @@ uint32_t ahci_read_sectors(void *buf, uint64_t start_sector, uint32_t count, dev
 	}
 	return 5;
 }
-
+uint16_t AHCI_DeviceIndex;
 void AHCI_init(uint32_t bar5)
 {
 	ports = (ahci_port *)malloc(sizeof(ahci_port) * 4, &ahciPages);
 	device_t *dev = (device_t *)malloc(sizeof(device_t), &ahciPages);
 	ide_private_data *priv = (ide_private_data *)malloc(sizeof(ide_private_data), &ahciPages);
-	
+
 	dev->priv = priv;
 	log_crit(MODULE, "ahciPages: %u", ahciPages.prosses);
 	
 	InitAbar((HBAData *)bar5, dev);
 
-	dev->id = 33;
+	dev->id = 32;
+	ATA_DeviceIndex = 33;
+	
 	dev->dev_type = DEVICE_BLOCK;	
 	dev->read = ahci_read_sectors;
 

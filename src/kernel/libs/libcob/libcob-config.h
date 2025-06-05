@@ -179,7 +179,7 @@
 // #define HAVE_FCNTL 1
 
 /* Define to 1 if you have the <fcntl.h> header file. */
-// #define HAVE_FCNTL_H 1
+#define HAVE_FCNTL_H 1
 
 /* Define to 1 if you have the `fdatasync' function. */
 #define HAVE_FDATASYNC 1
@@ -341,7 +341,7 @@
 // TODO! #define HAVE_STRERROR 1
 
 /* Define to 1 if you have the <strings.h> header file. */
-#define HAVE_STRINGS_H 1
+// #define HAVE_STRINGS_H 1
 
 /* Define to 1 if you have the <string.h> header file. */
 #define HAVE_STRING_H 1

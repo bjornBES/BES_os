@@ -96,7 +96,7 @@ mp_limb_t mpn_invert_3by2 (mp_limb_t, mp_limb_t);
   || defined (_ISO_STDIO_ISO_H)       /* Sun C++ */		\
   || defined (__STDIO_LOADED)         /* VMS */			\
   || defined (__DEFINED_FILE)         /* musl */
-size_t mpz_out_str (FILE *, int, const mpz_t);
+size_t mpz_out_str (fd_t , int, const mpz_t);
 #endif
 
 #if defined (__cplusplus)

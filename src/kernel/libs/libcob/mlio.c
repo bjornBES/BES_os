@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stddef.h>
 #include <ctype.h>
-#include "linux/stdio2.h"
+#include "stdio.h"
 
 /* include internal and external libcob definitions, forcing exports */
 #define COB_LIB_EXPIMP

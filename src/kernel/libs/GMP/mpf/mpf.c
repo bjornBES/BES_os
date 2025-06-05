@@ -3,7 +3,7 @@
 #include "libs/GMP/longlong.h"
 #include "ctype.h"
 #include "stdlib.h" /* for NULL */
-#include "linux/stdio2.h"
+#include "stdio.h"
 
 #include <string.h>
 
@@ -1461,7 +1461,7 @@ mp_bitcnt_t mpf_get_prec(mpf_srcptr x)
   return __GMPF_PREC_TO_BITS(x->_mp_prec);
 }
 
-size_t mpf_inp_str(mpf_ptr rop, FILE *stream, int base)
+size_t mpf_inp_str(mpf_ptr rop, fd_t stream, int base)
 {
   char *str;
   size_t alloc_size, str_size;
@@ -1939,7 +1939,7 @@ int mpf_cmp_ui(mpf_srcptr u, unsigned long int vval)
   return (usize > 0);
 }
 
-size_t mpf_out_str(FILE *stream, int base, size_t n_digits, mpf_srcptr op)
+size_t mpf_out_str(fd_t stream, int base, size_t n_digits, mpf_srcptr op)
 {
   char *str;
   mp_exp_t exp;

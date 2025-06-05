@@ -44,7 +44,7 @@ see https://www.gnu.org/licenses/.  */
 #include <assert.h>
 #include <ctype.h>
 #include <limits.h>
-#include <linux/stdio2.h>
+#include "stdio.h"
 #include <stdlib.h>
 #include <string.h>
 #include "libs/GMP/longlong.h"

@@ -1,7 +1,7 @@
 #include "libs/libcob/libcob-config.h"
 
 #include "stdlib.h"
-#include "linux/stdio2.h"
+#include "stdio.h"
 #include "stddef.h"
 #include "string.h"
 #include "ctype.h"

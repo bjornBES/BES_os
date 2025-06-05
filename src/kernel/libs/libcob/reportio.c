@@ -1,6 +1,6 @@
 #include "libs/libcob/libcob-config.h"
 
-#include "linux/stdio2.h"
+#include "stdio.h"
 #include "stdlib.h"
 #include "stddef.h"
 #include "string.h"

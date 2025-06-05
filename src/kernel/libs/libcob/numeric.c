@@ -25,7 +25,7 @@
 #define _GNU_SOURCE 1
 #endif
 
-#include <linux/stdio2.h>
+#include "stdio.h"
 #include <limits.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -432,7 +432,7 @@ void cob_decimal_set_llint(cob_decimal *d, const cob_s64_t n)
 /* Decimal print, note: currently (GC3.1) only called by display/dump
    code from termio.c (cob_display) via cob_print_ieeedec) */
 static void
-cob_decimal_print(cob_decimal *d, FILE *fp)
+cob_decimal_print(cob_decimal *d, fd_t fp)
 {
     int scale, len;
     char *mza;
@@ -2093,7 +2093,7 @@ void cob_decimal_set_field(cob_decimal *dec, cob_field *field)
 /* note: currently (GC3.1) only called by display/dump
    code from termio.c, with field type
    COB_TYPE_NUMERIC_FP_DEC64/COB_TYPE_NUMERIC_FP_DEC128 */
-void cob_print_ieeedec(const cob_field *f, FILE *fp)
+void cob_print_ieeedec(const cob_field *f, fd_t fp)
 {
     switch (COB_FIELD_TYPE(f))
     {
@@ -2135,7 +2135,7 @@ void cob_print_ieeedec(const cob_field *f, FILE *fp)
     cob_decimal_print(&cob_d3, fp);
 }
 
-void cob_print_realbin(const cob_field *f, FILE *fp, const int size)
+void cob_print_realbin(const cob_field *f, fd_t fp, const int size)
 {
     if (COB_FIELD_HAVE_SIGN(f))
     {

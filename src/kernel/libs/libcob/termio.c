@@ -1,6 +1,6 @@
 #include "libs/GMP/gmp-config.h"
 
-#include "linux/stdio2.h"
+#include "stdio.h"
 #include "stdlib.h"
 #include "stddef.h"
 #include "string.h"
@@ -41,7 +41,7 @@ static const cob_field_attr const_alpha_attr =
 /* DISPLAY */
 
 static void
-display_numeric(cob_field *f, FILE *fp)
+display_numeric(cob_field *f, fd_t fp)
 {
     const unsigned short digits = COB_FIELD_DIGITS(f);
     const signed short scale = COB_FIELD_SCALE(f);
@@ -81,7 +81,7 @@ display_numeric(cob_field *f, FILE *fp)
         const unsigned char *end = q + size;
         for (; q < end; ++q)
         {
-            if (putc(*q, fp) != *q)
+            if (fputc(*q, fp) != *q)
             {
                 break;
             }
@@ -90,7 +90,7 @@ display_numeric(cob_field *f, FILE *fp)
 }
 
 static void
-pretty_display_numeric(cob_field *f, FILE *fp)
+pretty_display_numeric(cob_field *f, fd_t fp)
 {
     unsigned short digits;
     const signed short scale = COB_FIELD_SCALE(f);
@@ -194,7 +194,7 @@ pretty_display_numeric(cob_field *f, FILE *fp)
             const unsigned char *end = q + size;
             for (; q < end; ++q)
             {
-                if (putc(*q, fp) != *q)
+                if (fputc(*q, fp) != *q)
                 {
                     break;
                 }
@@ -204,7 +204,7 @@ pretty_display_numeric(cob_field *f, FILE *fp)
 }
 
 static void
-display_alnum(const cob_field *f, FILE *fp)
+display_alnum(const cob_field *f, fd_t fp)
 {
     const unsigned char *end = f->data + f->size;
     unsigned char *p = f->data;
@@ -212,7 +212,7 @@ display_alnum(const cob_field *f, FILE *fp)
     while (p != end)
     {
         const int chr = *p++;
-        if (putc(chr, fp) != chr)
+        if (fputc(chr, fp) != chr)
         {
             break;
         }
@@ -244,7 +244,7 @@ clean_double(char *wrk)
     }
 }
 
-void cob_display_common(const cob_field *f, FILE *fp)
+void cob_display_common(const cob_field *f, fd_t fp)
 {
     if (f->size == 0)
     {
@@ -334,7 +334,7 @@ void cob_display_common(const cob_field *f, FILE *fp)
 
 void cob_display(const int to_device, const int newline, const int varcnt, ...)
 {
-    FILE *fp;
+    fd_t fp;
     int close_fp = 0;
     cob_u32_t disp_redirect = 0;
     va_list args;
@@ -378,7 +378,7 @@ void cob_display(const int to_device, const int newline, const int varcnt, ...)
                 mode = "ab";
             }
             fp = fopen(cobsetptr->cob_display_print_filename, mode);
-            if (fp == NULL)
+            if (fp == VFS_INVALID_FD)
             {
                 fp = stderr;
             }
@@ -444,7 +444,7 @@ void cob_display(const int to_device, const int newline, const int varcnt, ...)
                 mode = "wb";
             }
             fp = fopen(cobsetptr->cob_display_punch_filename, mode);
-            if (fp == NULL)
+            if (fp == VFS_INVALID_FD)
             {
                 cob_runtime_warning(_("cannot open %s (=%s)"),
                                     "COB_DISPLAY_PUNCH_FILE", cobsetptr->cob_display_punch_filename);
@@ -500,7 +500,7 @@ void cob_display(const int to_device, const int newline, const int varcnt, ...)
         }
         if (newline)
         {
-            putc('\n', fp);
+            fputc('\n', fp);
             fflush(fp);
         }
     }
@@ -536,7 +536,7 @@ is_field_display(cob_field *f)
 }
 
 static void
-display_alnum_dump(cob_field *f, FILE *fp, unsigned int indent, unsigned int max_width)
+display_alnum_dump(cob_field *f, fd_t fp, unsigned int indent, unsigned int max_width)
 {
     const unsigned int fsize = (unsigned int)f->size;
     unsigned int i, j, pos, len, colsize, bgn, duplen;
@@ -787,14 +787,14 @@ display_alnum_dump(cob_field *f, FILE *fp, unsigned int indent, unsigned int max
 
 /* Output for DUMP purposes */
 static int dump_null_adrs = 0;
-static void dump_pending_output(FILE *);
+static void dump_pending_output(fd_t );
 
 void cob_dump_output(const char *str)
 {
-    FILE *fp = cob_get_dump_file();
+    fd_t fp = cob_get_dump_file();
 
     /* explicit disabled dump */
-    if (fp == NULL)
+    if (fp == VFS_INVALID_FD)
     {
         return;
     }
@@ -807,11 +807,11 @@ void cob_dump_output(const char *str)
 /* Output file header for DUMP purposes */
 void cob_dump_file(const char *name, cob_file *fl)
 {
-    FILE *fp = cob_get_dump_file();
+    fd_t fp = cob_get_dump_file();
     const char *mode;
 
     /* explicit disabled dump */
-    if (fp == NULL)
+    if (fp == VFS_INVALID_FD)
     {
         return;
     }
@@ -921,7 +921,7 @@ static char pending_dump_name[VNAME_MAX + LVL_SIZE + 1] = "";
 static int dump_compat = 0;
 
 static void
-dump_pending_output(FILE *fp)
+dump_pending_output(fd_t fp)
 {
     if (pending_dump_name[0] == 0)
     {
@@ -949,7 +949,7 @@ dump_field_internal(const int level, const char *name,
         + indexes (max-size 7 + ",") */
     char vname[VNAME_MAX + 1];
     cob_field f[1];
-    FILE *fp = cob_get_dump_file();
+    fd_t fp = cob_get_dump_file();
 
     cob_u32_t subscript[COB_MAX_SUBSCRIPTS + 1];
 
@@ -1128,7 +1128,7 @@ void cob_dump_field(const int level, const char *name, cob_field *f_addr,
     va_list ap;
 
     /* check for explicit disabled dump */
-    if (cob_get_dump_file() == NULL)
+    if (cob_get_dump_file() == VFS_INVALID_FD)
     {
         return;
     }
@@ -1159,7 +1159,7 @@ void cob_dump_field_ext(const int level, const char *name, cob_field *f_addr,
     va_list ap;
 
     /* check for explicit disabled dump */
-    if (cob_get_dump_file() == NULL)
+    if (cob_get_dump_file() == VFS_INVALID_FD)
     {
         return;
     }

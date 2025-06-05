@@ -1,4 +1,24 @@
-#include "libcob-config.h"
+/*
+   Copyright (C) 2002-2012, 2014-2023 Free Software Foundation, Inc.
+   Written by Keisuke Nishida, Roger While, Simon Sobisch, Ron Norman
+
+   This file is part of GnuCOBOL.
+
+   The GnuCOBOL runtime library is free software: you can redistribute it
+   and/or modify it under the terms of the GNU Lesser General Public License
+   as published by the Free Software Foundation, either version 3 of the
+   License, or (at your option) any later version.
+
+   GnuCOBOL is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with GnuCOBOL.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#include "libs/libcob/libcob-config.h"
 
 #define _LFS64_LARGEFILE 1
 #define _LFS64_STDIO 1
@@ -11,26 +31,18 @@
 #define _APP32_64BIT_OFF_T 1
 #endif
 
-#include "linux/stdio2.h"
-#include "linux/fcntl.h"
-#include "types.h"
+#include <defaultInclude.h>
 
-#ifndef __OFF_T_TYPE__
-
-typedef long int off_t;
-
-#endif
-
-#include "stdlib.h"
-#include "stddef.h"
-#include "stdarg.h"
-#include "memory.h"
-#include "string.h"
-#include "ctype.h"
-#include "errno.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <stdarg.h>
+#include <string.h>
+#include <ctype.h>
+#include <errno.h>
 #include "time.h"
-#include "types.h"
-#include "stat.h"
+#include <types.h>
+#include <stat.h>
 #include <limits.h>
 
 #ifdef HAVE_UNISTD_H
@@ -439,7 +451,7 @@ struct queue_struct
 /* Sort temporary file structure */
 struct file_struct
 {
-    FILE *fp;
+    fd_t fp;
     size_t count; /* Count of blocks in temporary files */
 };
 
@@ -1348,7 +1360,7 @@ cob_sync(cob_file *f)
     {
         if (f->file)
         {
-            fflush((FILE *)f->file);
+            fflush((fd_t)f->file);
         }
         if (f->fd >= 0)
         {
@@ -1507,7 +1519,7 @@ errno_cob_sts(const int default_status)
     do                                                           \
     {                                                            \
         const int character = (int)(char_to_write);              \
-        if (unlikely(putc(character, fstream) != character))     \
+        if (unlikely(fputc(character, fstream) != character))    \
         {                                                        \
             return errno_cob_sts(COB_STATUS_30_PERMANENT_ERROR); \
         }                                                        \
@@ -1590,10 +1602,11 @@ linerr:
     return 1;
 }
 
-static int cob_linage_write_opt(cob_file *f, const int opt)
+static int
+cob_linage_write_opt(cob_file *f, const int opt)
 {
     cob_linage *lingptr;
-    FILE *fp = (FILE *)f->file;
+    fd_t fp = (fd_t)f->file;
     int i;
     int n;
 
@@ -1708,7 +1721,7 @@ cob_seq_write_opt(cob_file *f, const int opt)
 static int
 cob_file_write_opt(cob_file *f, const int opt)
 {
-    FILE *fp = (FILE *)f->file;
+    fd_t fp = (fd_t)f->file;
     int i;
 
     if (unlikely(f->flag_select_features & COB_SELECT_LINAGE))
@@ -1740,7 +1753,7 @@ cob_file_write_opt(cob_file *f, const int opt)
 
 /*
  * Open (record) Sequential and Relative files
- *  with just an 'fd' (No FILE *)
+ *  with just an 'fd' (No fd_t )
  */
 static int
 cob_fd_file_open(cob_file *f, char *filename,
@@ -2011,7 +2024,7 @@ cob_file_open(cob_file *f, char *filename,
 
 #else
 
-    FILE *fp;
+    fd_t fp;
     const char *fmode;
     cob_linage *lingptr;
     unsigned int nonexistent;
@@ -2171,6 +2184,10 @@ cob_file_open(cob_file *f, char *filename,
 
     if (fp)
     {
+        // == linux file discriptor ==
+        // stdin, stdout, stderr, ...
+        // outside code stdin is 0, stdout is 1, stderr is 2
+        // inside code stdin is ~0, stdout is ~1, stderr is ~2
         f->fd = fileno(fp);
     }
     else
@@ -2239,7 +2256,7 @@ cob_file_open(cob_file *f, char *filename,
         }
     }
 #endif
-    f->file = fp;
+    f->file = &fp;
     if (f->flag_optional && nonexistent)
     {
         return COB_STATUS_05_SUCCESS_OPTIONAL;
@@ -2270,7 +2287,7 @@ cob_file_close(cob_file *f, const int opt)
             if (f->flag_needs_nl && !(f->flag_select_features & COB_SELECT_LINAGE))
             {
                 f->flag_needs_nl = 0;
-                putc('\n', (FILE *)f->file);
+                fputc('\n', (fd_t)f->file);
             }
         }
         else if (f->flag_needs_nl)
@@ -2323,7 +2340,7 @@ cob_file_close(cob_file *f, const int opt)
         {
             if (f->file)
             {
-                fclose((FILE *)f->file);
+                fclose((fd_t)f->file);
                 f->file = NULL;
 #ifdef _WIN32
                 /* at least on MSVC that closes the underlying file descriptor, too */
@@ -2381,7 +2398,8 @@ open_next(cob_file *f)
         close(f->fd);
         if (f->file)
         {
-            fclose(f->file);
+            fd_t file = *(fd_t*)f->file;
+            fclose(file);
         }
 #endif
         if (f->open_mode == COB_OPEN_I_O)
@@ -2750,7 +2768,7 @@ sequential_rewrite(cob_file *f, const int opt)
 static int
 lineseq_read(cob_file *f, const int read_opts)
 {
-    FILE *fp;
+    fd_t fp;
     unsigned char *dataptr;
     size_t i = 0;
     int n;
@@ -2783,7 +2801,7 @@ lineseq_read(cob_file *f, const int read_opts)
 
     dataptr = f->record->data;
 again:
-    fp = (FILE *)f->file;
+    fp = (fd_t)f->file;
     /* save last position at start of line; needed for REWRITE (I-O only) */
     if (f->open_mode == COB_OPEN_I_O)
     {
@@ -3013,7 +3031,7 @@ lineseq_size(cob_file *f)
 static int
 lineseq_write(cob_file *f, const int opt)
 {
-    FILE *fp = (FILE *)f->file;
+    fd_t fp = (fd_t)f->file;
     const size_t size = f->record->size;
     int ret;
 
@@ -3150,7 +3168,7 @@ lineseq_write(cob_file *f, const int opt)
 static int
 lineseq_rewrite(cob_file *f, const int opt)
 {
-    FILE *fp = (FILE *)f->file;
+    fd_t fp = (fd_t)f->file;
     const size_t size = f->record->size;
     size_t psize, slotlen;
     off_t curroff;
@@ -3683,10 +3701,7 @@ static int
 relative_rewrite(cob_file *f, const int opt)
 {
     off_t off;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-    size_t relsize = 0;
-#pragma GCC diagnostic pop
+    size_t relsize;
     int relnum;
 #ifdef WITH_SEQRA_EXTFH
     int extfh_ret;
@@ -3730,10 +3745,7 @@ static int
 relative_delete(cob_file *f)
 {
     off_t off;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-    size_t relsize = 0;
-#pragma GCC diagnostic pop
+    size_t relsize;
     int relnum;
 #ifdef WITH_SEQRA_EXTFH
     int extfh_ret;
@@ -3764,8 +3776,7 @@ relative_delete(cob_file *f)
 
     f->record->size = 0;
     COB_CHECKED_WRITE(f->fd, &f->record->size, sizeof(f->record->size));
-    off_t off_t_record_max = (off_t)f->record_max;
-    lseek(f->fd, off_t_record_max, SEEK_CUR);
+    lseek(f->fd, (off_t)f->record_max, SEEK_CUR);
     return COB_STATUS_00_SUCCESS;
 }
 
@@ -6487,8 +6498,7 @@ indexed_write(cob_file *f, const int opt)
 
 /* DELETE record from the INDEXED file  */
 
-static int
-indexed_delete(cob_file *f)
+static int indexed_delete(cob_file *f)
 {
 #ifdef WITH_INDEX_EXTFH
 
@@ -6551,8 +6561,7 @@ indexed_delete(cob_file *f)
 
 /* REWRITE record to the INDEXED file  */
 
-static int
-indexed_rewrite(cob_file *f, const int opt)
+static int indexed_rewrite(cob_file *f, const int opt)
 {
 #ifdef WITH_INDEX_EXTFH
 
@@ -7087,7 +7096,7 @@ void cob_open(cob_file *f, const int mode, const int sharing, cob_field *fnstatu
             save_status(f, fnstatus, COB_STATUS_30_PERMANENT_ERROR);
             return;
         }
-        f->file = stdin;
+        f->file = (void*)&stdin;
         f->fd = fileno(stdin);
         f->open_mode = mode;
         save_status(f, fnstatus, COB_STATUS_00_SUCCESS);
@@ -7100,7 +7109,7 @@ void cob_open(cob_file *f, const int mode, const int sharing, cob_field *fnstatu
             save_status(f, fnstatus, COB_STATUS_30_PERMANENT_ERROR);
             return;
         }
-        f->file = stdout;
+        f->file = (void*)&stdout;
         f->fd = fileno(stdout);
         f->open_mode = mode;
         save_status(f, fnstatus, COB_STATUS_00_SUCCESS);
@@ -8144,13 +8153,12 @@ int cob_sys_create_file(unsigned char *file_name, unsigned char *file_access,
         cob_runtime_warning(_("call to CBL_CREATE_FILE with wrong file_dev: %d"), *file_dev);
     }
 
-    return open_cbl_file(file_name, file_access, file_handle, O_CREAT | O_TRUNC);
+    int ret = open_cbl_file(file_name, file_access, file_handle, O_CREAT | O_TRUNC);
+    return ret;
 }
 
-/* entry point and processing for library routine CBL_READ_FILE */
-int cob_sys_read_file(unsigned char *file_handle, unsigned char *file_offset,
-                      unsigned char *file_len, unsigned char *flags,
-                      unsigned char *buf)
+/* entry point and processing for library routine CBL_READ_fd_t */
+int cob_sys_read_file(unsigned char *file_handle, unsigned char *file_offset, unsigned char *file_len, unsigned char *flags, unsigned char *buf)
 {
     cob_s64_t off;
     int fd;
@@ -8201,10 +8209,8 @@ int cob_sys_read_file(unsigned char *file_handle, unsigned char *file_offset,
     return COB_STATUS_00_SUCCESS;
 }
 
-/* entry point and processing for library routine CBL_WRITE_FILE */
-int cob_sys_write_file(unsigned char *file_handle, unsigned char *file_offset,
-                       unsigned char *file_len, unsigned char *flags,
-                       unsigned char *buf)
+/* entry point and processing for library routine CBL_WRITE_fd_t */
+int cob_sys_write_file(unsigned char *file_handle, unsigned char *file_offset, unsigned char *file_len, unsigned char *flags, unsigned char *buf)
 {
     cob_s64_t off;
     int fd;
@@ -8234,7 +8240,7 @@ int cob_sys_write_file(unsigned char *file_handle, unsigned char *file_offset,
     return COB_STATUS_00_SUCCESS;
 }
 
-/* entry point and processing for library routine CBL_CLOSE_FILE */
+/* entry point and processing for library routine CBL_CLOSE_fd_t */
 int cob_sys_close_file(unsigned char *file_handle)
 {
     int fd;
@@ -8245,8 +8251,7 @@ int cob_sys_close_file(unsigned char *file_handle)
     return close(fd);
 }
 
-/* entry point and processing for library routine CBL_FLUSH_FILE
-   (flush bytestream file handle, got from CBL_OPEN_FILE) */
+/* entry point and processing for library routine CBL_FLUSH_FILE (flush bytestream file handle, got from CBL_OPEN_FILE) */
 int cob_sys_flush_file(unsigned char *file_handle)
 {
     int fd;
@@ -8360,7 +8365,7 @@ int cob_sys_copy_file(unsigned char *fname1, unsigned char *fname2)
 /* entry point and processing for library routine CBL_CHECK_FILE_EXIST */
 int cob_sys_check_file_exist(unsigned char *file_name, unsigned char *file_info)
 {
-    struct tm *tm = NULL;
+    struct tm *tm  = NULL;
     cob_s64_t sz;
     struct stat st;
     short y;
@@ -8429,7 +8434,7 @@ int cob_sys_check_file_exist(unsigned char *file_name, unsigned char *file_info)
     return 0;
 }
 
-/* entry point and processing for library routine CBL_RENAME_FILE */
+/* entry point and processing for library routine CBL_RENAME_fd_t */
 int cob_sys_rename_file(unsigned char *fname1, unsigned char *fname2)
 {
     char localbuff[COB_FILE_BUFF];
@@ -8476,8 +8481,7 @@ int cob_sys_rename_file(unsigned char *fname1, unsigned char *fname2)
 }
 
 /* entry point and processing for library routine CBL_GET_CURRENT_DIR */
-int cob_sys_get_current_dir(const int flags, const int dir_length,
-                            unsigned char *dir)
+int cob_sys_get_current_dir(const int flags, const int dir_length, unsigned char *dir)
 {
     char *dirname;
     int dir_size;
@@ -8782,7 +8786,8 @@ sort_cmps(const unsigned char *s1, const unsigned char *s2, const size_t size,
     return 0;
 }
 
-static COB_INLINE void unique_copy(unsigned char *s1, const unsigned char *s2)
+static COB_INLINE void
+unique_copy(unsigned char *s1, const unsigned char *s2)
 {
     size_t size = sizeof(size_t);
     do
@@ -8889,27 +8894,22 @@ cob_new_item(struct cobsort *hp, const size_t size)
     return q;
 }
 
-FILE *
-cob_create_tmpfile(const char *ext)
+fd_t cob_create_tmpfile(const char *ext)
 {
-    FILE *fp;
+    fd_t fp;
     char *filename;
     int fd;
 
     filename = cob_malloc((size_t)COB_FILE_BUFF);
     cob_temp_name(filename, ext);
     cob_incr_temp_iteration();
-#ifdef _WIN32
-    fd = open(filename,
-              _O_CREAT | _O_TRUNC | _O_RDWR | _O_BINARY | _O_TEMPORARY,
-              _S_IREAD | _S_IWRITE);
-#else
+
     fd = open(filename, O_CREAT | O_TRUNC | O_RDWR | O_BINARY, COB_FILE_MODE);
-#endif
+
     if (fd == -1)
     {
         cob_free(filename);
-        return NULL;
+        return VFS_INVALID_FD;
     }
     (void)unlink(filename);
     fp = fdopen(fd, "w+b");
@@ -8921,10 +8921,9 @@ cob_create_tmpfile(const char *ext)
     return fp;
 }
 
-static int
-cob_get_sort_tempfile(struct cobsort *hp, const int n)
+static int cob_get_sort_tempfile(struct cobsort *hp, const int n)
 {
-    if (hp->file[n].fp == NULL)
+    if (hp->file[n].fp == VFS_INVALID_FD)
     {
         hp->file[n].fp = cob_create_tmpfile(NULL);
 #if 0 /* error to be handled by the caller */
@@ -8939,7 +8938,7 @@ cob_get_sort_tempfile(struct cobsort *hp, const int n)
         rewind(hp->file[n].fp);
     }
     hp->file[n].count = 0;
-    return hp->file[n].fp == NULL;
+    return hp->file[n].fp == VFS_INVALID_FD;
 }
 
 static int
@@ -9013,7 +9012,7 @@ cob_sort_queues(struct cobsort *hp)
 static int
 cob_read_item(struct cobsort *hp, const int n)
 {
-    FILE *fp = hp->file[n].fp;
+    fd_t fp = hp->file[n].fp;
 
     if (getc(fp) != 0)
     {
@@ -9036,7 +9035,7 @@ cob_read_item(struct cobsort *hp, const int n)
 static int
 cob_write_block(struct cobsort *hp, const int n)
 {
-    FILE *fp = hp->file[hp->destination_file].fp;
+    fd_t fp = hp->file[hp->destination_file].fp;
 
     for (;;)
     {
@@ -9059,7 +9058,7 @@ cob_write_block(struct cobsort *hp, const int n)
     hp->queue[n].count = 0;
     hp->file[hp->destination_file].count++;
     /* LCOV_EXCL_START */
-    if (unlikely(putc(1, fp) != 1))
+    if (unlikely(fputc(1, fp) != 1))
     {
         return 1;
     }
@@ -9193,7 +9192,7 @@ cob_file_sort_process(struct cobsort *hp)
             }
             hp->file[destination].count++;
             /* LCOV_EXCL_START */
-            if (unlikely(putc(1, hp->file[destination].fp) != 1))
+            if (unlikely(fputc(1, hp->file[destination].fp) != 1))
             {
                 return COBSORTFILEERR;
             }
@@ -9732,7 +9731,7 @@ void cob_file_sort_close(cob_file *f)
         cob_free_list(hp);
         for (i = 0; i < 4; ++i)
         {
-            if (hp->file[i].fp != NULL)
+            if (hp->file[i].fp != VFS_INVALID_FD)
             {
                 fclose(hp->file[i].fp);
             }

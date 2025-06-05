@@ -210,7 +210,7 @@ void Update()
             strcat(path, name);
             fd_t file = VFS_Open(path);
             VFS_Read(file, buffer, bufferSize);
-            VFS_close(file);
+            VFS_Close(file);
             free(path, &commandPage);
             continue;
         }
@@ -456,7 +456,7 @@ void KernelStart(BootParams *bootParams)
         }
         
         ASM_INT2();
-        VFS_close(file);
+        VFS_Close(file);
         free(buffer, &bufferPage);
     }
 

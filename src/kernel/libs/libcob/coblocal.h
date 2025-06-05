@@ -4,7 +4,8 @@
    exported to user space
 */
 
-#include "linux/stdio2.h"
+#include "stdio.h"
+typedef fd_t FILE;
 
 #ifdef HAVE_STRINGS_H
 #include "string.h"
@@ -328,18 +329,18 @@ struct __cob_settings
 	char *cob_display_print_filename; /* File name for DISPLAY UPON PRINTER */
 
 	char *cob_display_punch_filename; /* File name for DISPLAY UPON SYSPUNCH/SYSPCH */
-	FILE *cob_display_punch_file;	  /* possibly external FILE* to write DISPLAY UPON SYSPUNCH information to
+	fd_t cob_display_punch_file;	  /* possibly external FILE* to write DISPLAY UPON SYSPUNCH information to
 										 cob_display_punch_filename is used to open the file
 										 on first DISPLAY UPON SYSPCH statement and closed
 										 on runtime exit */
 
 	/* common.c */
-	char external_trace_file;	  /* use external FILE * for TRACE[ALL] */
-	FILE *cob_trace_file;		  /* FILE* to write TRACE[ALL] information to */
-	FILE *cob_display_print_file; /* external FILE* to write DISPLAY UPON PRINTER information to
+	char external_trace_file;	  /* use external fd_t  for TRACE[ALL] */
+	fd_t cob_trace_file;		  /* FILE* to write TRACE[ALL] information to */
+	fd_t cob_display_print_file; /* external FILE* to write DISPLAY UPON PRINTER information to
 									 if not external cob_display_print_filename is always opened
 									 before each DISPLAY UPON PRINTER and closed afterwards */
-	FILE *cob_dump_file;		  /* FILE* to write DUMP information to */
+	fd_t cob_dump_file;		  /* FILE* to write DUMP information to */
 
 	char *cob_dump_filename;		/* Place to write dump of variables */
 	int cob_dump_width;				/* Max line width for dump */
@@ -453,7 +454,7 @@ void cob_exit_intrinsic(void);
 void cob_exit_strings(void);
 void cob_exit_mlio(void);
 
-FILE *cob_create_tmpfile(const char *);
+fd_t cob_create_tmpfile(const char *);
 int cob_check_numval_f(const cob_field *);
 
 int cob_real_get_sign(cob_field *, const int);
@@ -470,9 +471,9 @@ void cob_decimal_move_temp(cob_field *, cob_field *);
 void cob_move_display_to_packed(cob_field *, cob_field *);
 void cob_move_packed_to_display(cob_field *, cob_field *);
 
-void cob_display_common(const cob_field *, FILE *);
-void cob_print_ieeedec(const cob_field *, FILE *);
-void cob_print_realbin(const cob_field *, FILE *,
+void cob_display_common(const cob_field *, fd_t );
+void cob_print_ieeedec(const cob_field *, fd_t );
+void cob_print_realbin(const cob_field *, fd_t ,
 								  const int);
 
 void cob_screen_set_mode(const cob_u32_t);
@@ -535,7 +536,7 @@ int cob_debug_dump(void *mem, int len);
 /* Note: no definition for DEBUG_ISON_TRACE, DEBUG_ISON_WARN, DEBUG_ISON
 		 as these parts should be surrounded by #ifdef COB_DEBUG_LOG */
 #endif
-FILE *cob_get_dump_file(void);
+fd_t cob_get_dump_file(void);
 
 char *cob_strcat(char *, char *, int);
 char *cob_strjoin(char **, int, char *);

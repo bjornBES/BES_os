@@ -32,7 +32,7 @@ You should have received copies of the GNU General Public License and the
 GNU Lesser General Public License along with the GNU MP Library.  If not,
 see https://www.gnu.org/licenses/.  */
 
-#include <linux/stdio2.h>   /* for NULL */
+#include "stdio.h"   /* for NULL */
 
 #include "libs/GMP/gmpdefault.h"
 #include "libs/GMP/gmp-impl.h"

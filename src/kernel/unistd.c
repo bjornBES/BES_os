@@ -35,7 +35,3 @@ int unlink(const char* name)
 {
     return 0; //?
 }
-off_t lseek(int fd, off_t offset, int whence)
-{
-    return 0; //?
-}

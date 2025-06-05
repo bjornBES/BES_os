@@ -406,6 +406,67 @@ fd_t vfs_findFileDiscriptor()
 	return -1; // No available file descriptor found
 }
 
+int VFS_GetOffset(fd_t file)
+{
+	file_descriptor_t *fd = &fd_table[file];
+	if (file < 0 || file >= MAX_FILE_HANDLES || fd == NULL)
+	{
+		log_err(MODULE, "Invalid file descriptor: %d", file);
+		return -1; // Invalid file descriptor
+	}
+	if (!fd->opened)
+	{
+		log_err(MODULE, "File descriptor %d is not opened", file);
+		return -1; // File descriptor is not opened
+	}
+
+	return fd->offset; // Return the current offset
+}
+
+int VFS_GetSize(fd_t file)
+{
+	file_descriptor_t *fd = &fd_table[file];
+	if (file < 0 || file >= MAX_FILE_HANDLES || fd == NULL)
+	{
+		log_err(MODULE, "Invalid file descriptor: %d", file);
+		return -1; // Invalid file descriptor
+	}
+	if (!fd->opened)
+	{
+		log_err(MODULE, "File descriptor %d is not opened", file);
+		return -1; // File descriptor is not opened
+	}
+
+	vfs_node_t *node = fd->node;
+	if (node == NULL)
+	{
+		log_err(MODULE, "File descriptor %d has no associated node", file);
+		return -1; // No associated node
+	}
+
+	return node->size; // Return the size of the file
+}
+
+bool VFS_Seek(fd_t file, uint64_t offset)
+{
+	file_descriptor_t *fd = &fd_table[file];
+	if (file < 0 || file >= MAX_FILE_HANDLES || fd == NULL)
+	{
+		log_err(MODULE, "Invalid file descriptor: %d", file);
+		return false; // Invalid file descriptor
+	}
+	if (!fd->opened)
+	{
+		log_err(MODULE, "File descriptor %d is not opened", file);
+		return false; // File descriptor is not opened
+	}
+
+	fd->offset = offset; // Set the new offset
+	// TODO check if offset is valid for the file
+
+	return true; // Seek operation successful
+}
+
 fd_t VFS_Open(char *path)
 {
 	vfs_node_t *node = (vfs_node_t *)malloc(sizeof(vfs_node_t), fdTablePage);
@@ -433,19 +494,20 @@ fd_t VFS_Open(char *path)
 	return fd;
 }
 
-void VFS_close(fd_t file)
+bool VFS_Close(fd_t file)
 {
 	if (file < 0 || file >= MAX_FILE_HANDLES)
 	{
 		log_err(MODULE, "Invalid file descriptor: %d", file);
-		return; // Invalid file descriptor
+		return false; // Invalid file descriptor
 	}
 	if (!fd_table[file].opened)
 	{
 		log_err(MODULE, "File descriptor %d is not opened", file);
-		return; // File descriptor is not opened
+		return false; // File descriptor is not opened
 	}
 	fd_table[file].opened = false; // Mark the file descriptor as closed
+	return true; // Close operation successful
 }
 
 vfs_node_t *VFS_GetNode(fd_t file)

@@ -15,6 +15,8 @@ typedef int fd_t;
 #define VFS_FD_STDERR (fd_t) 2
 #define VFS_FD_DEBUG (fd_t) 3
 
+#define VFS_INVALID_FD (fd_t) -1
+
 
 
 int VFS_Write(fd_t file, uint8_t *data, size_t size);
@@ -55,8 +57,12 @@ typedef struct MountPoint_t
     vfs_node_t *root_node;
 } MountPoint;
 
+bool VFS_Seek(fd_t file, uint64_t offset);
+int VFS_GetOffset(fd_t file);
+int VFS_GetSize(fd_t file);
+
 fd_t VFS_Open(char* path);
-void VFS_close(fd_t file);
+bool VFS_Close(fd_t file);
 // vfs_node_t *VFS_finddir(fd_t file, void* buffer, uint);
 // vfs_node_t *VFS_readdir(fd_t file, void* buffer, uint);
 

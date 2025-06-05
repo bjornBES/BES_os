@@ -1,6 +1,6 @@
 #include "libs/GMP/gmp-config.h"
 
-#include "linux/stdio2.h"
+#include "stdio.h"
 #include <limits.h>
 #include "stdlib.h"
 #include "stddef.h"

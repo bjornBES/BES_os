@@ -4,7 +4,7 @@
 #define _GNU_SOURCE 1
 #endif
 
-#include "linux/stdio2.h"
+#include "stdio.h"
 #include "stdlib.h"
 #include "stddef.h"
 #include "stdarg.h"
@@ -19,7 +19,7 @@
 #ifdef HAVE_FMEMOPEN
 #if defined(HAVE_DECL_FMEMOPEN) && HAVE_DECL_FMEMOPEN == 0
 /* function available and working, declaration missing on AIX... */
-FILE *fmemopen(void *buf, size_t size, const char *mode);
+fd_t fmemopen(void *buf, size_t size, const char *mode);
 #endif
 #endif
 
@@ -2143,7 +2143,7 @@ const char *cob_get_field_str(const cob_field *f, char *buffer, size_t size)
         return "";
     }
     {
-        FILE *fp;
+        fd_t fp;
 #ifdef HAVE_FMEMOPEN
         fp = fmemopen(buffer, size, "w");
 #else

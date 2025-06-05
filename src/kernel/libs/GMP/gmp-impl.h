@@ -1490,7 +1490,7 @@ int mpz_lucas_mod(mpz_ptr, mpz_ptr, long, mp_bitcnt_t, mpz_srcptr, mpz_ptr, mpz_
 mp_size_t mpz_abs_sub(mpz_ptr r, mpz_srcptr a, mpz_srcptr b);
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpz_inp_str_nowhite(mpz_ptr, FILE *, int, int, size_t);
+size_t mpz_inp_str_nowhite(mpz_ptr, fd_t , int, int, size_t);
 #endif
 
 int mpn_divisible_p(mp_srcptr, mp_size_t, mp_srcptr, mp_size_t);

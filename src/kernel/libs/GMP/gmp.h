@@ -77,7 +77,7 @@ int gmp_asprintf(char **, const char *, ...);
 
 #define gmp_fprintf __gmp_fprintf
 #ifdef _GMP_H_HAVE_FILE
-int gmp_fprintf(FILE *, const char *, ...);
+int gmp_fprintf(fd_t , const char *, ...);
 #endif
 
 #define gmp_obstack_printf __gmp_obstack_printf
@@ -106,7 +106,7 @@ int gmp_vasprintf(char **, const char *, va_list);
 
 #define gmp_vfprintf __gmp_vfprintf
 #if defined(_GMP_H_HAVE_FILE) && defined(_GMP_H_HAVE_VA_LIST)
-int gmp_vfprintf(FILE *, const char *, va_list);
+int gmp_vfprintf(fd_t , const char *, va_list);
 #endif
 
 #define gmp_vprintf __gmp_vprintf
@@ -128,7 +128,7 @@ int gmp_vsprintf(char *, const char *, va_list);
 
 #define gmp_fscanf __gmp_fscanf
 #ifdef _GMP_H_HAVE_FILE
-int gmp_fscanf(FILE *, const char *, ...);
+int gmp_fscanf(fd_t , const char *, ...);
 #endif
 
 #define gmp_scanf __gmp_scanf
@@ -139,7 +139,7 @@ int gmp_sscanf(const char *, const char *, ...);
 
 #define gmp_vfscanf __gmp_vfscanf
 #if defined(_GMP_H_HAVE_FILE) && defined(_GMP_H_HAVE_VA_LIST)
-int gmp_vfscanf(FILE *, const char *, va_list);
+int gmp_vfscanf(fd_t , const char *, va_list);
 #endif
 
 #define gmp_vscanf __gmp_vscanf
@@ -332,11 +332,11 @@ int mpz_init_set_str(mpz_ptr, const char *, int);
 void mpz_init_set_ui(mpz_ptr, unsigned long int);
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpz_inp_raw(mpz_ptr, FILE *);
+size_t mpz_inp_raw(mpz_ptr, fd_t );
 #endif
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpz_inp_str(mpz_ptr, FILE *, int);
+size_t mpz_inp_str(mpz_ptr, fd_t , int);
 #endif
 
 int mpz_invert(mpz_ptr, mpz_srcptr, mpz_srcptr);
@@ -386,11 +386,11 @@ void mpz_neg(mpz_ptr, mpz_srcptr);
 void mpz_nextprime(mpz_ptr, mpz_srcptr);
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpz_out_raw(FILE *, mpz_srcptr);
+size_t mpz_out_raw(fd_t , mpz_srcptr);
 #endif
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpz_out_str(FILE *, int, mpz_srcptr);
+size_t mpz_out_str(fd_t , int, mpz_srcptr);
 #endif
 
 int mpz_perfect_power_p(mpz_srcptr);
@@ -554,7 +554,7 @@ void mpq_init(mpq_ptr);
 void mpq_inits(mpq_ptr, ...);
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpq_inp_str(mpq_ptr, FILE *, int);
+size_t mpq_inp_str(mpq_ptr, fd_t , int);
 #endif
 
 void mpq_inv(mpq_ptr, mpq_srcptr);
@@ -568,7 +568,7 @@ void mpq_neg(mpq_ptr, mpq_srcptr);
 #endif
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpq_out_str(FILE *, int, mpq_srcptr);
+size_t mpq_out_str(fd_t , int, mpq_srcptr);
 #endif
 
 void mpq_set(mpq_ptr, mpq_srcptr);
@@ -671,7 +671,7 @@ int mpf_init_set_str(mpf_ptr, const char *, int);
 void mpf_init_set_ui(mpf_ptr, unsigned long int);
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpf_inp_str(mpf_ptr, FILE *, int);
+size_t mpf_inp_str(mpf_ptr, fd_t , int);
 #endif
 
 int mpf_integer_p(mpf_srcptr);
@@ -685,7 +685,7 @@ void mpf_mul_ui(mpf_ptr, mpf_srcptr, unsigned long int);
 void mpf_neg(mpf_ptr, mpf_srcptr);
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpf_out_str(FILE *, int, size_t, mpf_srcptr);
+size_t mpf_out_str(fd_t , int, size_t, mpf_srcptr);
 #endif
 
 void mpf_pow_ui(mpf_ptr, mpf_srcptr, unsigned long int);

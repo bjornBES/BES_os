@@ -124,7 +124,12 @@
         "pdcscrn.h": "c",
         "re": "c",
         "pdcbesos.h": "c",
-        "systemcall.h": "c"
+        "systemcall.h": "c",
+        "signal-defs.h": "c",
+        "longlong.h": "c",
+        "signal.h": "c",
+        "defaultincs.h": "c",
+        "rsh1sub_n.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

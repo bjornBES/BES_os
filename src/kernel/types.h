@@ -2,6 +2,7 @@
 
 #include "wordsize.h"
 #include "time64.h"
+#include <stdint.h>
 
 /* The machine-dependent file <bits/typesizes.h> defines __*_T_TYPE
    macros for each of the OS types we define below.  The definitions
@@ -9,13 +10,13 @@
    We define __S<SIZE>_TYPE and __U<SIZE>_TYPE for the signed and unsigned
    variants of each of the following integer types on this machine.
 
-	16		-- "natural" 16-bit type (always short)
-	32		-- "natural" 32-bit type (always int)
-	64		-- "natural" 64-bit type (long or long long)
-	LONG32		-- 32-bit type, traditionally long
-	QUAD		-- 64-bit type, traditionally long long
-	WORD		-- natural type of __WORDSIZE bits (int or long)
-	LONGWORD	-- type of __WORDSIZE bits, traditionally long
+   16		-- "natural" 16-bit type (always short)
+   32		-- "natural" 32-bit type (always int)
+   64		-- "natural" 64-bit type (long or long long)
+   LONG32		-- 32-bit type, traditionally long
+   QUAD		-- 64-bit type, traditionally long long
+   WORD		-- natural type of __WORDSIZE bits (int or long)
+   LONGWORD	-- type of __WORDSIZE bits, traditionally long
 
    We distinguish WORD/LONGWORD, 32/LONG32, and 64/QUAD so that the
    conventional uses of `long' or `long long' type modifiers match the
@@ -32,64 +33,64 @@
    we support: long long is always 64 bits, long is always word/address size,
    and int is always 32 bits.  */
 
-#define	__S16_TYPE		short int
-#define __U16_TYPE		unsigned short int
-#define	__S32_TYPE		int
-#define __U32_TYPE		unsigned int
-#define __SLONGWORD_TYPE	long int
-#define __ULONGWORD_TYPE	unsigned long int
+#define __S16_TYPE short int
+#define __U16_TYPE unsigned short int
+#define __S32_TYPE int
+#define __U32_TYPE unsigned int
+#define __SLONGWORD_TYPE long int
+#define __ULONGWORD_TYPE unsigned long int
 #if __WORDSIZE == 32
-# define __SQUAD_TYPE		int64_t
-# define __UQUAD_TYPE		uint64_t
-# define __SWORD_TYPE		int
-# define __UWORD_TYPE		unsigned int
-# define __SLONG32_TYPE		long int
-# define __ULONG32_TYPE		unsigned long int
-# define __S64_TYPE		   int64_t
-# define __U64_TYPE		   uint64_t
+#define __SQUAD_TYPE int64_t
+#define __UQUAD_TYPE uint64_t
+#define __SWORD_TYPE int
+#define __UWORD_TYPE unsigned int
+#define __SLONG32_TYPE long int
+#define __ULONG32_TYPE unsigned long int
+#define __S64_TYPE int64_t
+#define __U64_TYPE uint64_t
 /* We want __extension__ before typedef's that use nonstandard base types
    such as `long long' in C89 mode.  */
-# define __STD_TYPE		typedef
+#define __STD_TYPE typedef
 #elif __WORDSIZE == 64
-# define __SQUAD_TYPE		long int
-# define __UQUAD_TYPE		unsigned long int
-# define __SWORD_TYPE		long int
-# define __UWORD_TYPE		unsigned long int
-# define __SLONG32_TYPE		int
-# define __ULONG32_TYPE		unsigned int
-# define __S64_TYPE		long int
-# define __U64_TYPE		unsigned long int
+#define __SQUAD_TYPE long int
+#define __UQUAD_TYPE unsigned long int
+#define __SWORD_TYPE long int
+#define __UWORD_TYPE unsigned long int
+#define __SLONG32_TYPE int
+#define __ULONG32_TYPE unsigned int
+#define __S64_TYPE long int
+#define __U64_TYPE unsigned long int
 /* No need to mark the typedef with __extension__.   */
-# define __STD_TYPE		typedef
+#define __STD_TYPE typedef
 #else
-# error ""
+#error ""
 #endif
 
 #include "typesizes.h"
 #include "timesize.h"
 
-__STD_TYPE __DEV_T_TYPE __dev_t;	/* Type of device numbers.  */
-__STD_TYPE __UID_T_TYPE __uid_t;	/* Type of user identifications.  */
-__STD_TYPE __GID_T_TYPE __gid_t;	/* Type of group identifications.  */
-__STD_TYPE __INO_T_TYPE __ino_t;	/* Type of file serial numbers.  */
-__STD_TYPE __INO64_T_TYPE __ino64_t;	/* Type of file serial numbers (LFS).*/
-__STD_TYPE __MODE_T_TYPE __mode_t;	/* Type of file attribute bitmasks.  */
-__STD_TYPE __NLINK_T_TYPE __nlink_t;	/* Type of file link counts.  */
-__STD_TYPE __OFF_T_TYPE __off_t;	/* Type of file sizes and offsets.  */
-__STD_TYPE __OFF64_T_TYPE __off64_t;	/* Type of file sizes and offsets (LFS).  */
-__STD_TYPE __PID_T_TYPE __pid_t;	/* Type of process identifications.  */
-__STD_TYPE __FSID_T_TYPE __fsid_t;	/* Type of file system IDs.  */
-__STD_TYPE __CLOCK_T_TYPE __clock_t;	/* Type of CPU usage counts.  */
-__STD_TYPE __RLIM_T_TYPE __rlim_t;	/* Type for resource measurement.  */
-__STD_TYPE __RLIM64_T_TYPE __rlim64_t;	/* Type for resource measurement (LFS).  */
-__STD_TYPE __ID_T_TYPE __id_t;		/* General type for IDs.  */
-__STD_TYPE __TIME_T_TYPE __time_t;	/* Seconds since the Epoch.  */
-__STD_TYPE __USECONDS_T_TYPE __useconds_t; /* Count of microseconds.  */
+__STD_TYPE __DEV_T_TYPE __dev_t;             /* Type of device numbers.  */
+__STD_TYPE __UID_T_TYPE __uid_t;             /* Type of user identifications.  */
+__STD_TYPE __GID_T_TYPE __gid_t;             /* Type of group identifications.  */
+__STD_TYPE __INO_T_TYPE __ino_t;             /* Type of file serial numbers.  */
+__STD_TYPE __INO64_T_TYPE __ino64_t;         /* Type of file serial numbers (LFS).*/
+__STD_TYPE __MODE_T_TYPE __mode_t;           /* Type of file attribute bitmasks.  */
+__STD_TYPE __NLINK_T_TYPE __nlink_t;         /* Type of file link counts.  */
+__STD_TYPE __OFF_T_TYPE __off_t;             /* Type of file sizes and offsets.  */
+__STD_TYPE __OFF64_T_TYPE __off64_t;         /* Type of file sizes and offsets (LFS).  */
+__STD_TYPE __PID_T_TYPE pid_t;               /* Type of process identifications.  */
+__STD_TYPE __FSID_T_TYPE __fsid_t;           /* Type of file system IDs.  */
+__STD_TYPE __CLOCK_T_TYPE __clock_t;         /* Type of CPU usage counts.  */
+__STD_TYPE __RLIM_T_TYPE __rlim_t;           /* Type for resource measurement.  */
+__STD_TYPE __RLIM64_T_TYPE __rlim64_t;       /* Type for resource measurement (LFS).  */
+__STD_TYPE __ID_T_TYPE __id_t;               /* General type for IDs.  */
+__STD_TYPE __TIME_T_TYPE __time_t;           /* Seconds since the Epoch.  */
+__STD_TYPE __USECONDS_T_TYPE __useconds_t;   /* Count of microseconds.  */
 __STD_TYPE __SUSECONDS_T_TYPE __suseconds_t; /* Signed count of microseconds.  */
 __STD_TYPE __SUSECONDS64_T_TYPE __suseconds64_t;
 
-__STD_TYPE __DADDR_T_TYPE __daddr_t;	/* The type of a disk address.  */
-__STD_TYPE __KEY_T_TYPE __key_t;	/* Type of an IPC key.  */
+__STD_TYPE __DADDR_T_TYPE __daddr_t; /* The type of a disk address.  */
+__STD_TYPE __KEY_T_TYPE __key_t;     /* Type of an IPC key.  */
 
 /* Clock ID used in clock and timer functions.  */
 __STD_TYPE __CLOCKID_T_TYPE __clockid_t;
@@ -126,7 +127,7 @@ __STD_TYPE __SYSCALL_ULONG_TYPE __syscall_ulong_t;
 
 /* These few don't really vary by system, they always correspond
    to one of the other defined types.  */
-typedef __off64_t __loff_t;	/* Type of file sizes and offsets (LFS).  */
+typedef __off64_t __loff_t; /* Type of file sizes and offsets (LFS).  */
 typedef char *__caddr_t;
 
 /* Duplicates info from stdint.h but this is used in unistd.h.  */
@@ -144,7 +145,7 @@ typedef int __sig_atomic_t;
    narrow only for consistency with the old way of widening too-narrow
    types.  User code should never use __time64_t.  */
 #if __TIMESIZE == 64 && defined __LIBC
-# define __time64_t __time_t
+#define __time64_t __time_t
 #elif __TIMESIZE != 64
 __STD_TYPE __TIME64_T_TYPE __time64_t;
 #endif

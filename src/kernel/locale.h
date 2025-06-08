@@ -43,5 +43,3 @@ struct lconv {
 struct lconv *localeconv(void);
 char *setlocale(int, const char *);
 extern struct lconv _Locale;
-		/* macro overrides */
-#define localeconv()	(&_Locale)

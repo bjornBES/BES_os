@@ -175,8 +175,8 @@ typedef struct
 #define BUTTON_MODIFIER_CONTROL 0x08000000L /* PDCurses */
 #define BUTTON_MODIFIER_ALT     0x10000000L /* PDCurses */
 
-#define ALL_MOUSE_EVENTS        0x1fffffffL
-#define REPORT_MOUSE_POSITION   0x20000000L
+#define ALL_MOUSE_EVENTS        (mmask_t)0x1fffffffL
+#define REPORT_MOUSE_POSITION   (mmask_t)0x20000000L
 
 /* ncurses mouse interface */
 
@@ -1042,3 +1042,35 @@ PDCEX  int     sb_refresh(void);
 #define COLOR_PAIR(n)      (((chtype)(n) << PDC_COLOR_SHIFT) & A_COLOR)
 #define PAIR_NUMBER(n)     (((n) & A_COLOR) >> PDC_COLOR_SHIFT)
 
+/* These will _only_ work as macros */
+
+#define getbegyx(w, y, x)  (y = getbegy(w), x = getbegx(w))
+#define getmaxyx(w, y, x)  (y = getmaxy(w), x = getmaxx(w))
+#define getparyx(w, y, x)  (y = getpary(w), x = getparx(w))
+#define getyx(w, y, x)     (y = getcury(w), x = getcurx(w))
+
+#define getsyx(y, x)       { if (curscr->_leaveit) (y)=(x)=-1; \
+                             else getyx(curscr,(y),(x)); }
+
+#ifdef NCURSES_MOUSE_VERSION
+# define getmouse(x) nc_getmouse(x)
+#endif
+
+/* Deprecated */
+
+#define PDC_save_key_modifiers(x)  (OK)
+#define PDC_get_input_fd()         0
+
+/* return codes from PDC_getclipboard() and PDC_setclipboard() calls */
+
+#define PDC_CLIP_SUCCESS         0
+#define PDC_CLIP_ACCESS_ERROR    1
+#define PDC_CLIP_EMPTY           2
+#define PDC_CLIP_MEMORY_ERROR    3
+
+/* PDCurses key modifier masks */
+
+#define PDC_KEY_MODIFIER_SHIFT   1
+#define PDC_KEY_MODIFIER_CONTROL 2
+#define PDC_KEY_MODIFIER_ALT     4
+#define PDC_KEY_MODIFIER_NUMLOCK 8

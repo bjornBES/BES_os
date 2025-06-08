@@ -16,11 +16,6 @@ int fdatasync (int fildes);
 void sleepms(uint32_t ms);
 void sleep(uint32_t sec);
 
-int access(const char* name, int type);
+char* getlogin(void);
 
-int rmdir(const char* name);
-int mkdir(const char* name, int mode);
-int chdir(const char* name);
-char* getcwd(const char* buf, size_t size);
-int unlink(const char* name);
-off_t lseek(int fd, off_t offset, int whence);
+int system(const char* command);

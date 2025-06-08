@@ -3,6 +3,7 @@
 #include "memory.h"
 
 #include <string.h>
+#include <stddef.h>
 
 #define MODULE "ALLOC"
 

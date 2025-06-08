@@ -126,6 +126,54 @@ int setenv(const char *var, const char *val)
     return true;
 }
 
+int setenvOW(const char* var, const char* val, int overwrite)
+{
+    int i;
+    char *ep;
+    size_t varlen, vallen;
+
+    varlen = strlen(var);
+    vallen = strlen(val);
+    ep = malloc(varlen + vallen + 2, stdlibPage);
+
+    if (!ep)
+    {
+        return false;
+    }
+
+    sprintf(ep, "%s=%s", var, val);
+
+    for (i = 0; i < __nenv; i++)
+    {
+        if (__env[i] && ((strncmp(__env[i], var, varlen) == 0) && ((__env[i][varlen] == '\0') || (__env[i][varlen] == '='))))
+        {
+            if (overwrite)
+            {
+                free(__env[i], stdlibPage);
+                __env[i] = ep;
+            }
+            else
+            {
+                free(ep, stdlibPage);
+            }
+            return 0;
+        }
+    }
+    /*
+     * Wasn't existing variable.  Fit into slot.
+     */
+    for (i = 0; i < __nenv - 1; i++)
+    {
+        if (__env[i] == (char *)0)
+        {
+            __env[i] = ep;
+            return 0;
+        }
+    }
+
+    return true;
+}
+
 int unsetenv(const char *var)
 {
     char **ep = __env;

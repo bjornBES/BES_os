@@ -1,12 +1,14 @@
 export CFLAGS = -Wall -Werror -I /usr/local/i686-elf/include -I ./ -I $(SOURCE_DIR)/src/libs -Wno-error=unused-variable -Wno-error=unused-function -Wno-error=unused-label -Wno-error=deprecated
 # the -Wno-error=unused-variable flag is temp
 export ASMFLAGS =
+export CBLFLAGS = -std=cobol2002 -Wall -Werror -fsign=ASCII -I /usr/local/i686-elf/include -I ./ -I $(SOURCE_DIR)/src/libs -static
 export CC = gcc
 export CXX = g++
 export LD = gcc
 export ASM = nasm
 export LINKFLAGS = -static
 export LIBS = src/libs
+export CBL = cobc
 
 export imageType = disk
 export imageFS = fat32

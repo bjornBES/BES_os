@@ -2535,7 +2535,7 @@ again:
     {
         f->flag_operation = 0;
         /* Get current file position */
-        f->record_off = lseek(f->fd, (off_t)0, SEEK_CUR);
+        f->record_off = lseek(f->fd, 0, SEEK_CUR);
     }
 
     if (unlikely(f->record_min != f->record_max))
@@ -2675,7 +2675,7 @@ sequential_write(cob_file *f, const int opt)
     {
         f->flag_operation = 1;
         /* Get current file position */
-        f->record_off = lseek(f->fd, (off_t)0, SEEK_CUR);
+        f->record_off = lseek(f->fd, 0, SEEK_CUR);
     }
 
     /* WRITE AFTER */
@@ -2740,7 +2740,7 @@ sequential_rewrite(cob_file *f, const int opt)
 #endif
     f->flag_operation = 1;
 #if 1 /* old operation, going backwards */
-    if (lseek(f->fd, -(off_t)f->record->size, SEEK_CUR) == (off_t)-1)
+    if (lseek(f->fd, -f->record->size, SEEK_CUR) == -1)
     {
 #else /* new one 4x, from the known file position */
     if (lseek(f->fd, f->record_off, SEEK_CUR) == (off_t)-1)
@@ -2906,7 +2906,7 @@ again:
             {
                 /* If record is too long, then simulate end
                  * so balance becomes the next record read */
-                off_t k = 1;
+                int k = 1;
                 n = getc(fp);
                 if (n == '\r')
                 {
@@ -3171,7 +3171,7 @@ lineseq_rewrite(cob_file *f, const int opt)
     fd_t fp = (fd_t)f->file;
     const size_t size = f->record->size;
     size_t psize, slotlen;
-    off_t curroff;
+    int curroff;
 
     COB_UNUSED(opt);
 #if 0 /* pipes are GC4+ only feature */
@@ -3213,7 +3213,7 @@ lineseq_rewrite(cob_file *f, const int opt)
         return COB_STATUS_44_RECORD_OVERFLOW;
     }
 
-    if (fseek(fp, (off_t)f->record_off, SEEK_SET) != 0)
+    if (fseek(fp, f->record_off, SEEK_SET) != 0)
     {
         return COB_STATUS_30_PERMANENT_ERROR;
     }
@@ -3302,7 +3302,7 @@ lineseq_rewrite(cob_file *f, const int opt)
 static int
 relative_start(cob_file *f, const int cond, cob_field *k)
 {
-    off_t off;
+    int off;
     size_t relsize;
     int kindex;
     int ksindex;
@@ -3400,7 +3400,7 @@ relative_start(cob_file *f, const int cond, cob_field *k)
         {
             break;
         }
-        off = (off_t)kindex * relsize;
+        off = kindex * relsize;
         if (off >= st.st_size)
         {
             if (kcond == COB_LT || kcond == COB_LE)
@@ -3410,7 +3410,7 @@ relative_start(cob_file *f, const int cond, cob_field *k)
             }
             break;
         }
-        if (lseek(f->fd, off, SEEK_SET) == (off_t)-1)
+        if (lseek(f->fd, off, SEEK_SET) == -1)
         {
             break;
         }
@@ -3445,8 +3445,7 @@ relative_start(cob_file *f, const int cond, cob_field *k)
 static int
 relative_read(cob_file *f, cob_field *k, const int read_opts)
 {
-    off_t off;
-    size_t relsize;
+    int off;
     int relnum;
 #ifdef WITH_SEQRA_EXTFH
     int extfh_ret;
@@ -3463,7 +3462,7 @@ relative_read(cob_file *f, cob_field *k, const int read_opts)
     if (unlikely(f->flag_operation != 0))
     {
         f->flag_operation = 0;
-        lseek(f->fd, (off_t)0, SEEK_CUR);
+        lseek(f->fd, 0, SEEK_CUR);
     }
 
     relnum = cob_get_int(k) - 1;
@@ -3471,9 +3470,9 @@ relative_read(cob_file *f, cob_field *k, const int read_opts)
     {
         return COB_STATUS_23_KEY_NOT_EXISTS;
     }
-    relsize = f->record_max + sizeof(f->record->size);
-    off = (off_t)relnum * relsize;
-    if (lseek(f->fd, off, SEEK_SET) == (off_t)-1 ||
+    size_t relsize = f->record_max + sizeof(f->record->size);
+    off = relnum * relsize;
+    if (lseek(f->fd, off, SEEK_SET) == -1 ||
         read(f->fd, &f->record->size, sizeof(f->record->size)) != sizeof(f->record->size))
     {
         return COB_STATUS_23_KEY_NOT_EXISTS;
@@ -3495,8 +3494,8 @@ relative_read(cob_file *f, cob_field *k, const int read_opts)
 static int
 relative_read_next(cob_file *f, const int read_opts)
 {
-    off_t curroff;
-    off_t relsize;
+    int curroff;
+    int relsize;
     int relnum;
     int bytesread;
     cob_u32_t moveback;
@@ -3515,10 +3514,10 @@ relative_read_next(cob_file *f, const int read_opts)
     if (unlikely(f->flag_operation != 0))
     {
         f->flag_operation = 0;
-        lseek(f->fd, (off_t)0, SEEK_CUR);
+        lseek(f->fd, 0, SEEK_CUR);
     }
 
-    relsize = ((off_t)f->record_max) + sizeof(f->record->size);
+    relsize = (f->record_max) + sizeof(f->record->size);
     if (fstat(f->fd, &st) != 0 || st.st_size == 0)
     {
         return COB_STATUS_10_END_OF_FILE;
@@ -3530,13 +3529,13 @@ relative_read_next(cob_file *f, const int read_opts)
     }
     /* LCOV_EXCL_STOP */
 
-    curroff = lseek(f->fd, (off_t)0, SEEK_CUR);
+    curroff = lseek(f->fd, 0, SEEK_CUR);
     moveback = 0;
 
     switch (read_opts & COB_READ_MASK)
     {
     case COB_READ_FIRST:
-        curroff = lseek(f->fd, (off_t)0, SEEK_SET);
+        curroff = lseek(f->fd, 0, SEEK_SET);
         break;
     case COB_READ_LAST:
         curroff = st.st_size - relsize;
@@ -3618,7 +3617,7 @@ relative_read_next(cob_file *f, const int read_opts)
         }
         else
         {
-            curroff = lseek(f->fd, (off_t)f->record_max, SEEK_CUR);
+            curroff = lseek(f->fd, f->record_max, SEEK_CUR);
         }
     }
     return COB_STATUS_10_END_OF_FILE;
@@ -3627,7 +3626,7 @@ relative_read_next(cob_file *f, const int read_opts)
 static int
 relative_write(cob_file *f, const int opt)
 {
-    off_t off;
+    int off;
     size_t size;
     size_t relsize;
     int i;
@@ -3647,7 +3646,7 @@ relative_write(cob_file *f, const int opt)
     if (unlikely(f->flag_operation == 0))
     {
         f->flag_operation = 1;
-        lseek(f->fd, (off_t)0, SEEK_CUR);
+        lseek(f->fd, 0, SEEK_CUR);
     }
 
     relsize = f->record_max + sizeof(f->record->size);
@@ -3658,8 +3657,8 @@ relative_write(cob_file *f, const int opt)
         {
             return COB_STATUS_24_KEY_BOUNDARY;
         }
-        off = ((off_t)relsize * kindex);
-        if (lseek(f->fd, off, SEEK_SET) == (off_t)-1)
+        off = (relsize * kindex);
+        if (lseek(f->fd, off, SEEK_SET) == -1)
         {
             return COB_STATUS_24_KEY_BOUNDARY;
         }
@@ -3673,7 +3672,7 @@ relative_write(cob_file *f, const int opt)
     }
     else
     {
-        off = lseek(f->fd, (off_t)0, SEEK_CUR);
+        off = lseek(f->fd, 0, SEEK_CUR);
     }
     /* reset position after read;
        TODO: add a test case (when disabled: internal tests pass,
@@ -3700,8 +3699,11 @@ relative_write(cob_file *f, const int opt)
 static int
 relative_rewrite(cob_file *f, const int opt)
 {
-    off_t off;
+    int off;
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
     size_t relsize;
+    #pragma GCC diagnostic pop
     int relnum;
 #ifdef WITH_SEQRA_EXTFH
     int extfh_ret;
@@ -3718,7 +3720,7 @@ relative_rewrite(cob_file *f, const int opt)
     f->flag_operation = 1;
     if (f->access_mode == COB_ACCESS_SEQUENTIAL)
     {
-        lseek(f->fd, -(off_t)f->record_max, SEEK_CUR);
+        lseek(f->fd, -f->record_max, SEEK_CUR);
     }
     else
     {
@@ -3728,34 +3730,38 @@ relative_rewrite(cob_file *f, const int opt)
         {
             return COB_STATUS_24_KEY_BOUNDARY;
         }
-        off = (off_t)relnum * relsize;
-        if (lseek(f->fd, off, SEEK_SET) == (off_t)-1 ||
+        off = relnum * relsize;
+        if (lseek(f->fd, off, SEEK_SET) == -1 ||
             read(f->fd, &f->record->size, sizeof(f->record->size)) != sizeof(f->record->size))
         {
             return COB_STATUS_23_KEY_NOT_EXISTS;
         }
-        lseek(f->fd, (off_t)0, SEEK_CUR);
+        lseek(f->fd, 0, SEEK_CUR);
     }
 
     COB_CHECKED_WRITE(f->fd, f->record->data, f->record_max);
     return COB_STATUS_00_SUCCESS;
 }
 
-static int
-relative_delete(cob_file *f)
+static int relative_delete(cob_file *f)
 {
-    off_t off;
-    size_t relsize;
+    int off;
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+    size_t relsize = 0;
+    #pragma GCC diagnostic pop
     int relnum;
-#ifdef WITH_SEQRA_EXTFH
+    /*
+    #ifdef WITH_SEQRA_EXTFH
     int extfh_ret;
-
+    
     extfh_ret = extfh_relative_delete(f);
     if (extfh_ret != COB_NOT_CONFIGURED)
     {
         return extfh_ret;
     }
-#endif
+    #endif
+    */
 
     f->flag_operation = 1;
     relnum = cob_get_int(f->keys[0].field) - 1;
@@ -3764,8 +3770,8 @@ relative_delete(cob_file *f)
         return COB_STATUS_24_KEY_BOUNDARY;
     }
     relsize = f->record_max + sizeof(f->record->size);
-    off = (off_t)relnum * relsize;
-    if (lseek(f->fd, off, SEEK_SET) == (off_t)-1 || read(f->fd, &f->record->size, sizeof(f->record->size)) != sizeof(f->record->size))
+    off = (int)relnum * relsize;
+    if (lseek(f->fd, off, SEEK_SET) == (int)-1 || read(f->fd, &f->record->size, sizeof(f->record->size)) != sizeof(f->record->size))
     {
         return COB_STATUS_23_KEY_NOT_EXISTS;
     }
@@ -3776,7 +3782,7 @@ relative_delete(cob_file *f)
 
     f->record->size = 0;
     COB_CHECKED_WRITE(f->fd, &f->record->size, sizeof(f->record->size));
-    lseek(f->fd, (off_t)f->record_max, SEEK_CUR);
+    lseek(f->fd, (int)f->record_max, SEEK_CUR);
     return COB_STATUS_00_SUCCESS;
 }
 

@@ -7,6 +7,7 @@
 
 #include <boot/bootparams.h>
 
+#include <libcob.h>
 #include <debug.h>
 #include "stdio.h"
 #include "malloc.h"
@@ -17,6 +18,7 @@
 #include "time.h"
 #include "unistd.h"
 #include "callInt.h"
+#include "CobolCalls.h"
 
 #include "syscall/systemcall.h"
 
@@ -166,6 +168,10 @@ void Update()
         if (cmpCommand("clear", argv[0]) == true)
         {
             VGA_clrscr();
+        }
+        if (cmpCommand("call", argv[0]) == true)
+        {
+            MainKernelInCobol();
         }
         if (cmpCommand("int", argv[0]) == true)
         {
@@ -470,6 +476,8 @@ void KernelStart(BootParams *bootParams)
     log_warn("Main", "This is a warning msg!");
     log_err("Main", "This is an error msg!");
     log_crit("Main", "This is a critical msg!");
+
+    cob_init(0, NULL);
 
     Update();
 

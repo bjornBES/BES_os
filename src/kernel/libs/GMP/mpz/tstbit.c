@@ -48,8 +48,7 @@ see https://www.gnu.org/licenses/.  */
    the limb_index >= abs_size test covers u=0 too.  */
 
 int
-mpz_tstbit (mpz_srcptr u, mp_bitcnt_t bit_index)
-{
+mpz_tstbit (mpz_srcptr u, mp_bitcnt_t bit_index) {
   mp_srcptr      u_ptr      = PTR(u);
   mp_size_t      size       = SIZ(u);
   unsigned       abs_size   = ABS(size);

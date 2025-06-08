@@ -1086,7 +1086,7 @@ typedef struct __cob_fp_128
 
 typedef struct __cob_decimal
 {
-	mpz_t value; /* GMP value definition */
+	mpz_ptr value; /* GMP value definition */
 	int scale;	 /* Decimal scale */
 } cob_decimal;
 #endif

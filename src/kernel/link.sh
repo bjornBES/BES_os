@@ -6,4 +6,4 @@ LINKER="$1"
 shift
 
 # The rest are arguments to pass to the linker
-"$LINKER" "$@" > linkererrors.txt 2>&1
+"$LINKER" "$@" > ./linkererrors.txt 2>&1

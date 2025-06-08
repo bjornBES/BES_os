@@ -19,3 +19,21 @@ void assert(int condition) {
         exit(1);
     }
 }
+
+void __gmp_assert_header (const char *filename, int linenum)
+{
+  if (filename != NULL && filename[0] != '\0')
+    {
+      fprintf (stderr, "%s:", filename);
+      if (linenum != -1)
+        fprintf (stderr, "%d: ", linenum);
+    }
+}
+
+void __gmp_assert_fail (const char *filename, int linenum,
+                   const char *expr)
+{
+  __gmp_assert_header (filename, linenum);
+  fprintf (stderr, "GNU MP assertion failed: %s\n", expr);
+  abort();
+}

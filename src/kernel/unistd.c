@@ -1,5 +1,9 @@
 #include "unistd.h"
 #include "arch/i686/pit.h"
+#include "stdio.h"
+#include "debug.h"
+
+#define MODULE "unistd"
 
 void sleepms(uint32_t ms)
 {
@@ -10,28 +14,21 @@ void sleep(uint32_t sec)
     sleep_sec(sec);
 }
 
-int access(const char* name, int type)
+int fdatasync(int fildes)
 {
-    return true;
+    FUNC_NOT_IMPLEMENTED(MODULE, "fdatasync");
+    return -1; // Placeholder for fdatasync function, should be implemented
 }
 
-int rmdir(const char* name)
+char* getlogin(void)
 {
-    return 0; //?
+    FUNC_NOT_IMPLEMENTED(MODULE, "realpath");
+    return NULL; // Placeholder for realpath function, should be implemented
 }
-int mkdir(const char* name, int mode)
+
+int system(const char* command)
 {
-    return 0; 
-}
-int chdir(const char* name)
-{
-    return 0; //?
-}
-char* getcwd(const char* buf, size_t size)
-{
-    return NULL; //?
-}
-int unlink(const char* name)
-{
-    return 0; //?
+    log_debug(MODULE, "system: command = %s", command);
+    FUNC_NOT_IMPLEMENTED(MODULE, "system");
+    return -1; // Placeholder for system function, should be implemented
 }

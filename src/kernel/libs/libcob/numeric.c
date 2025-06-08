@@ -33,6 +33,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include "debug.h"
 #include "malloc.h"
 
 Page numericPage;
@@ -153,12 +154,12 @@ static cob_decimal cob_d_remainder;
 
 static cob_decimal *cob_decimal_base;
 
-static mpz_struct* cob_mexp;
-static mpz_struct* cob_mpzt;
-static mpz_struct* cob_mpzt2;
-static mpz_struct* cob_mpz_ten34m1;
-static mpz_struct* cob_mpz_ten16m1;
-static mpz_struct* cob_mpze10[COB_MAX_BINARY + 1];
+static mpz_struct *cob_mexp;
+static mpz_struct *cob_mpzt;
+static mpz_struct *cob_mpzt2;
+static mpz_struct *cob_mpz_ten34m1;
+static mpz_struct *cob_mpz_ten16m1;
+static mpz_struct *cob_mpze10[COB_MAX_BINARY + 1];
 
 static mpf_t cob_mpft;
 static mpf_t cob_mpft_get;
@@ -490,7 +491,7 @@ cob_decimal_print(cob_decimal *d, fd_t fp)
 #endif
 
 /* Get power of 10 as mpz_struct* */
-void cob_pow_10(mpz_struct* mexp, unsigned int n)
+void cob_pow_10(mpz_struct *mexp, unsigned int n)
 {
     if (n <= COB_MAX_BINARY)
     {
@@ -540,7 +541,7 @@ cob_pow_10_uli(unsigned int n)
 #endif
 
 /* scale - multiplicate mpz_struct* by power of 10 */
-void cob_mul_by_pow_10(mpz_struct* mexp, unsigned int n)
+void cob_mul_by_pow_10(mpz_struct *mexp, unsigned int n)
 {
 #ifndef PREFER_MPZ_MUL
     if (n < MAX_LI_DIGITS_PLUS_1)
@@ -554,7 +555,7 @@ void cob_mul_by_pow_10(mpz_struct* mexp, unsigned int n)
 }
 
 /* scale - multiplicate mpz_struct* by power of 10 */
-void cob_div_by_pow_10(mpz_struct* mexp, unsigned int n)
+void cob_div_by_pow_10(mpz_struct *mexp, unsigned int n)
 {
 #ifndef PREFER_MPZ_MUL
     if (n < MAX_LI_DIGITS_PLUS_1)
@@ -600,7 +601,7 @@ align_decimal(cob_decimal *d1, cob_decimal *d2)
 /* IEEE 754 floats */
 
 static void
-cob_decimal_adjust(cob_decimal *d, mpz_struct* max_value, int min_exp, int max_exp)
+cob_decimal_adjust(cob_decimal *d, mpz_struct *max_value, int min_exp, int max_exp)
 {
     /* Remove trailing ZEROS */
     int power_of_ten; /* note: old versions have unsigned long, newer a typedef
@@ -4175,9 +4176,9 @@ int cob_cmp_llint(cob_field *f1, const cob_s64_t n)
 #endif
 // #define FLOAT_EQ(x, y, t) (fabs(((x - y) / x)) < t)
 
-/*
 int cob_cmp_float(cob_field *f1, cob_field *f2)
 {
+    /*
     double d1, d2;
     const int f1_type = COB_FIELD_TYPE(f1);
     const int f2_type = COB_FIELD_TYPE(f2);
@@ -4237,8 +4238,11 @@ int cob_cmp_float(cob_field *f1, cob_field *f2)
         return -1;
     }
     return 1;
+    */
+
+    FUNC_NOT_IMPLEMENTED("GMP-numeric", "cob_cmp_float");
+    return -1;
 }
-*/
 
 /* check for non-negative sign, if it is set, then check for nonzero data */
 int packed_is_negative(cob_field *f)

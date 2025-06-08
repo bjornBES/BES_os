@@ -28,6 +28,11 @@ int fgetc(fd_t file);
 int getc(fd_t file);
 #define getchar() fgetc(stdin)
 
+char* fgets(char *s, int size, fd_t stream);
+char* gets(char *s);
+
+int ungetc(int c, fd_t stream);
+
 int fprintf(fd_t file, const char *fmt, ...);
 int vfprintf(fd_t file, const char *fmt, va_list args);
 int printf(const char *fmt, ...);
@@ -62,8 +67,29 @@ int fclose(fd_t stream);
 
 int fflush(fd_t stream);
 
+void clearerr(fd_t stream);
+int feof(fd_t stream);
+int ferror(fd_t stream);
+
+void flockfile(fd_t stream);
+void ftrylockfile(fd_t stream);
+void funlockfile(fd_t stream);
+
+char* realpath(const char *path, char *resolved_path);
+
 int rename(const char *oldname, const char *newname);
 int remove(const char *filename);
+
+int rmdir(const char *path);
+int chdir(const char *path);
+int mkdir(const char *path, int mode);
+
+char *getcwd(const char *buf, size_t size);
+
+int unlink(const char *pathname);
+
+int access(const char *pathname, int mode);
+
 
 #define panic()                                                                \
     {                                                                          \

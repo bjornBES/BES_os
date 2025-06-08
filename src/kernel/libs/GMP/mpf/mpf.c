@@ -1981,8 +1981,8 @@ size_t mpf_out_str(fd_t stream, int base, size_t n_digits, mpf_srcptr op)
   {
     const char *point = GMP_DECIMAL_POINT;
     size_t pointlen = strlen(point);
-    putc('0', stream);
-    fwrite(point, 1, pointlen, stream);
+    fputc('0', stream);
+    fwrite((char*)point, 1, pointlen, stream);
     written += pointlen + 1;
   }
 

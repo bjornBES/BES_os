@@ -72,6 +72,11 @@ void mpn_div_qr_1_invert(struct gmp_div_inverse *inv, mp_limb_t d);
 size_t mpn_limb_get_str(unsigned char *sp, mp_limb_t w, const struct gmp_div_inverse *binv);
 mp_limb_t mpn_div_qr_1_preinv(mp_ptr qp, mp_srcptr np, mp_size_t nn, const struct gmp_div_inverse *inv);
 
+unsigned long int mpz_get_ui(mpz_srcptr u);
+int mpz_sgn (mpz_ptr u);
+
+mp_bitcnt_t mpn_popcount (mp_srcptr p, mp_size_t n);
+unsigned gmp_popcount_limb(mp_limb_t x);
 
 mp_bitcnt_t mpn_common_scan(mp_limb_t limb, mp_size_t i, mp_srcptr up, mp_size_t un, mp_limb_t ux);
 mp_limb_t mpn_invert_3by2 (mp_limb_t, mp_limb_t);

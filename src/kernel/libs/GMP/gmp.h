@@ -37,37 +37,26 @@ extern const char *const gmp_version;
 /**************** Random number routines.  ****************/
 
 /* obsolete */
-#define gmp_randinit __gmp_randinit
 void gmp_randinit(gmp_randstate_t, gmp_randalg_t, ...);
 
-#define gmp_randinit_default __gmp_randinit_default
 void gmp_randinit_default(gmp_randstate_t);
 
-#define gmp_randinit_lc_2exp __gmp_randinit_lc_2exp
 void gmp_randinit_lc_2exp(gmp_randstate_t, mpz_srcptr, unsigned long int, mp_bitcnt_t);
 
-#define gmp_randinit_lc_2exp_size __gmp_randinit_lc_2exp_size
 int gmp_randinit_lc_2exp_size(gmp_randstate_t, mp_bitcnt_t);
 
-#define gmp_randinit_mt __gmp_randinit_mt
 void gmp_randinit_mt(gmp_randstate_t);
 
-#define gmp_randinit_set __gmp_randinit_set
 void gmp_randinit_set(gmp_randstate_t, const __gmp_randstate_struct *);
 
-#define gmp_randseed __gmp_randseed
 void gmp_randseed(gmp_randstate_t, mpz_srcptr);
 
-#define gmp_randseed_ui __gmp_randseed_ui
 void gmp_randseed_ui(gmp_randstate_t, unsigned long int);
 
-#define gmp_randclear __gmp_randclear
 void gmp_randclear(gmp_randstate_t);
 
-#define gmp_urandomb_ui __gmp_urandomb_ui
 unsigned long gmp_urandomb_ui(gmp_randstate_t, unsigned long);
 
-#define gmp_urandomm_ui __gmp_urandomm_ui
 unsigned long gmp_urandomm_ui(gmp_randstate_t, unsigned long);
 
 /**************** Formatted output routines.  ****************/
@@ -77,7 +66,7 @@ int gmp_asprintf(char **, const char *, ...);
 
 #define gmp_fprintf __gmp_fprintf
 #ifdef _GMP_H_HAVE_FILE
-int gmp_fprintf(fd_t , const char *, ...);
+int gmp_fprintf(fd_t, const char *, ...);
 #endif
 
 #define gmp_obstack_printf __gmp_obstack_printf
@@ -106,7 +95,7 @@ int gmp_vasprintf(char **, const char *, va_list);
 
 #define gmp_vfprintf __gmp_vfprintf
 #if defined(_GMP_H_HAVE_FILE) && defined(_GMP_H_HAVE_VA_LIST)
-int gmp_vfprintf(fd_t , const char *, va_list);
+int gmp_vfprintf(fd_t, const char *, va_list);
 #endif
 
 #define gmp_vprintf __gmp_vprintf
@@ -128,7 +117,7 @@ int gmp_vsprintf(char *, const char *, va_list);
 
 #define gmp_fscanf __gmp_fscanf
 #ifdef _GMP_H_HAVE_FILE
-int gmp_fscanf(fd_t , const char *, ...);
+int gmp_fscanf(fd_t, const char *, ...);
 #endif
 
 #define gmp_scanf __gmp_scanf
@@ -139,7 +128,7 @@ int gmp_sscanf(const char *, const char *, ...);
 
 #define gmp_vfscanf __gmp_vfscanf
 #if defined(_GMP_H_HAVE_FILE) && defined(_GMP_H_HAVE_VA_LIST)
-int gmp_vfscanf(fd_t , const char *, va_list);
+int gmp_vfscanf(fd_t, const char *, va_list);
 #endif
 
 #define gmp_vscanf __gmp_vscanf
@@ -154,7 +143,13 @@ int gmp_vsscanf(const char *, const char *, va_list);
 
 /**************** Integer (i.e. Z) routines.  ****************/
 
+mp_limb_t id_to_n(mp_limb_t id);
+mp_limb_t n_to_bit(mp_limb_t n);
+mp_size_t primesieve_size(mp_limb_t n);
+mp_limb_t bit_to_n(mp_limb_t bit);
+
 #define _mpz_realloc __gmpz_realloc
+#define mpz_realloc __gmpz_realloc
 void *_mpz_realloc(mpz_ptr, mp_size_t);
 
 #if __GMP_INLINE_PROTOTYPES || defined(__GMP_FORCE_mpz_abs)
@@ -173,7 +168,7 @@ void mpz_and(mpz_ptr, mpz_srcptr, mpz_srcptr);
 
 void mpz_array_init(mpz_ptr, mp_size_t, mp_size_t);
 
-void mpz_bin_ui(mpz_ptr, mpz_srcptr, unsigned long int);
+void mpz_bin_ui(mpz_ptr, mpz_ptr, unsigned long int);
 
 void mpz_bin_uiui(mpz_ptr, unsigned long int, unsigned long int);
 
@@ -195,7 +190,7 @@ unsigned long int mpz_cdiv_r_ui(mpz_ptr, mpz_srcptr, unsigned long int);
 
 unsigned long int mpz_cdiv_ui(mpz_srcptr, unsigned long int);
 
-void mpz_clear(mpz_ptr);
+void mpz_clear(mpz_srcptr);
 
 void mpz_clears(mpz_ptr, ...);
 
@@ -207,11 +202,9 @@ int mpz_cmp_d(mpz_srcptr, double);
 
 int mpz_sgn(mpz_ptr);
 
-#define _mpz_cmp_si __gmpz_cmp_si
-int _mpz_cmp_si(mpz_ptr, signed long int);
+int _mpz_cmp_si(mpz_srcptr, signed long int);
 
-#define _mpz_cmp_ui __gmpz_cmp_ui
-int _mpz_cmp_ui(mpz_ptr, unsigned long int);
+int _mpz_cmp_ui(mpz_srcptr, unsigned long int);
 
 int mpz_cmpabs(mpz_srcptr, mpz_srcptr);
 
@@ -227,7 +220,7 @@ int mpz_congruent_p(mpz_srcptr, mpz_srcptr, mpz_srcptr);
 
 int mpz_congruent_2exp_p(mpz_srcptr, mpz_srcptr, mp_bitcnt_t);
 
-int mpz_congruent_ui_p(mpz_srcptr, unsigned long, unsigned long);
+int mpz_congruent_ui_p(mpz_ptr, unsigned long, unsigned long);
 
 void mpz_divexact(mpz_ptr, mpz_srcptr, mpz_srcptr);
 
@@ -301,11 +294,9 @@ double mpz_get_d(mpz_srcptr);
 
 double mpz_get_d_2exp(signed long int *, mpz_srcptr);
 
-/* signed */ long int mpz_get_si(mpz_struct *);
+/* signed */ long int mpz_get_si(mpz_srcptr);
 
-char *mpz_get_str(char *, int, mpz_ptr);
-
-unsigned long int mpz_get_ui(mpz_ptr);
+char *mpz_get_str(char *, int, mpz_srcptr);
 
 #if __GMP_INLINE_PROTOTYPES || defined(__GMP_FORCE_mpz_getlimbn)
 mp_limb_t mpz_getlimbn(mpz_srcptr, mp_size_t);
@@ -332,11 +323,11 @@ int mpz_init_set_str(mpz_ptr, const char *, int);
 void mpz_init_set_ui(mpz_ptr, unsigned long int);
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpz_inp_raw(mpz_ptr, fd_t );
+size_t mpz_inp_raw(mpz_ptr, fd_t);
 #endif
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpz_inp_str(mpz_ptr, fd_t , int);
+size_t mpz_inp_str(mpz_ptr, fd_t, int);
 #endif
 
 int mpz_invert(mpz_ptr, mpz_srcptr, mpz_srcptr);
@@ -383,14 +374,14 @@ void mpz_mul_ui(mpz_ptr, mpz_srcptr, unsigned long int);
 void mpz_neg(mpz_ptr, mpz_srcptr);
 #endif
 
-void mpz_nextprime(mpz_ptr, mpz_srcptr);
+void mpz_nextprime(mpz_ptr, mpz_ptr);
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpz_out_raw(fd_t , mpz_srcptr);
+size_t mpz_out_raw(fd_t, mpz_srcptr);
 #endif
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpz_out_str(fd_t , int, mpz_srcptr);
+size_t mpz_out_str(fd_t, int, mpz_srcptr);
 #endif
 
 int mpz_perfect_power_p(mpz_srcptr);
@@ -405,7 +396,7 @@ mp_bitcnt_t mpz_popcount(mpz_srcptr);
 
 // #define mp\w_[\w]+ __gmp\w_[\w]\n
 // #define mpz_[\w]+\s__gmpz_[\w]+
-void mpz_pow_ui(mpz_ptr, mpz_ptr, unsigned long int);
+void mpz_pow_ui(mpz_ptr, mpz_srcptr, unsigned long int);
 
 void mpz_powm(mpz_ptr, mpz_srcptr, mpz_srcptr, mpz_srcptr);
 
@@ -413,7 +404,7 @@ void mpz_powm_sec(mpz_ptr, mpz_srcptr, mpz_srcptr, mpz_srcptr);
 
 void mpz_powm_ui(mpz_ptr, mpz_srcptr, unsigned long int, mpz_srcptr);
 
-int mpz_probab_prime_p(mpz_srcptr, int);
+int mpz_probab_prime_p(mpz_ptr, int);
 
 void mpz_random(mpz_ptr, mp_size_t);
 
@@ -554,7 +545,7 @@ void mpq_init(mpq_ptr);
 void mpq_inits(mpq_ptr, ...);
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpq_inp_str(mpq_ptr, fd_t , int);
+size_t mpq_inp_str(mpq_ptr, fd_t, int);
 #endif
 
 void mpq_inv(mpq_ptr, mpq_srcptr);
@@ -568,7 +559,7 @@ void mpq_neg(mpq_ptr, mpq_srcptr);
 #endif
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpq_out_str(fd_t , int, mpq_srcptr);
+size_t mpq_out_str(fd_t, int, mpq_srcptr);
 #endif
 
 void mpq_set(mpq_ptr, mpq_srcptr);
@@ -671,7 +662,7 @@ int mpf_init_set_str(mpf_ptr, const char *, int);
 void mpf_init_set_ui(mpf_ptr, unsigned long int);
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpf_inp_str(mpf_ptr, fd_t , int);
+size_t mpf_inp_str(mpf_ptr, fd_t, int);
 #endif
 
 int mpf_integer_p(mpf_srcptr);
@@ -685,7 +676,7 @@ void mpf_mul_ui(mpf_ptr, mpf_srcptr, unsigned long int);
 void mpf_neg(mpf_ptr, mpf_srcptr);
 
 #ifdef _GMP_H_HAVE_FILE
-size_t mpf_out_str(fd_t , int, size_t, mpf_srcptr);
+size_t mpf_out_str(fd_t, int, size_t, mpf_srcptr);
 #endif
 
 void mpf_pow_ui(mpf_ptr, mpf_srcptr, unsigned long int);
@@ -760,9 +751,9 @@ int mpn_zero_p(mp_srcptr, mp_size_t);
 
 void mpn_divexact_1(mp_ptr, mp_srcptr, mp_size_t, mp_limb_t);
 
-#define mpn_divexact_by3(dst, src, size) \
-   mpn_divexact_by3c(dst, src, size, __GMP_CAST(mp_limb_t, 0))
-
+/*
+#define mpn_divexact_by3(dst, src, size) mpn_divexact_by3c(dst, src, size, __GMP_CAST(mp_limb_t, 0))
+*/
 mp_limb_t mpn_divexact_by3c(mp_ptr, mp_srcptr, mp_size_t, mp_limb_t);
 
 #define mpn_divmod_1(qp, np, nsize, dlimb) \
@@ -1296,21 +1287,23 @@ mpq_neg(mpq_ptr __gmp_w, mpq_srcptr __gmp_u)
 
 #if defined(__GMP_EXTERN_INLINE) || defined(__GMP_FORCE_mpn_add)
 #if !defined(__GMP_FORCE_mpn_add)
-__GMP_EXTERN_INLINE
+// __GMP_EXTERN_INLINE
 #endif
-mp_limb_t
-mpn_add(mp_ptr __gmp_wp, mp_srcptr __gmp_xp, mp_size_t __gmp_xsize, mp_srcptr __gmp_yp, mp_size_t __gmp_ysize)
+/*
+mp_limb_t mpn_add(mp_ptr __gmp_wp, mp_srcptr __gmp_xp, mp_size_t __gmp_xsize, mp_srcptr __gmp_yp, mp_size_t __gmp_ysize)
 {
    mp_limb_t __gmp_c;
    __GMPN_ADD(__gmp_c, __gmp_wp, __gmp_xp, __gmp_xsize, __gmp_yp, __gmp_ysize);
    return __gmp_c;
 }
+*/
 #endif
 
 #if defined(__GMP_EXTERN_INLINE) || defined(__GMP_FORCE_mpn_add_1)
 #if !defined(__GMP_FORCE_mpn_add_1)
-__GMP_EXTERN_INLINE
+// __GMP_EXTERN_INLINE
 #endif
+/*
 mp_limb_t
 mpn_add_1(mp_ptr __gmp_dst, mp_srcptr __gmp_src, mp_size_t __gmp_size, mp_limb_t __gmp_n)
 {
@@ -1318,40 +1311,46 @@ mpn_add_1(mp_ptr __gmp_dst, mp_srcptr __gmp_src, mp_size_t __gmp_size, mp_limb_t
    __GMPN_ADD_1(__gmp_c, __gmp_dst, __gmp_src, __gmp_size, __gmp_n);
    return __gmp_c;
 }
+*/
 #endif
 
 #if defined(__GMP_EXTERN_INLINE) || defined(__GMP_FORCE_mpn_cmp)
 #if !defined(__GMP_FORCE_mpn_cmp)
-__GMP_EXTERN_INLINE
+//__GMP_EXTERN_INLINE
 #endif
+/*
 int mpn_cmp(mp_srcptr __gmp_xp, mp_srcptr __gmp_yp, mp_size_t __gmp_size)
 {
    int __gmp_result;
    __GMPN_CMP(__gmp_result, __gmp_xp, __gmp_yp, __gmp_size);
    return __gmp_result;
 }
+*/
 #endif
 
 #if defined(__GMP_EXTERN_INLINE) || defined(__GMP_FORCE_mpn_zero_p)
 #if !defined(__GMP_FORCE_mpn_zero_p)
-__GMP_EXTERN_INLINE
+// __GMP_EXTERN_INLINE
 #endif
+/*
 int mpn_zero_p(mp_srcptr __gmp_p, mp_size_t __gmp_n)
 {
-   /* if (__GMP_LIKELY (__gmp_n > 0)) */
+   // if (__GMP_LIKELY (__gmp_n > 0))
    do
    {
       if (__gmp_p[--__gmp_n] != 0)
-         return 0;
+      return 0;
    } while (__gmp_n != 0);
    return 1;
 }
+*/
 #endif
 
 #if defined(__GMP_EXTERN_INLINE) || defined(__GMP_FORCE_mpn_sub)
 #if !defined(__GMP_FORCE_mpn_sub)
-__GMP_EXTERN_INLINE
+// __GMP_EXTERN_INLINE
 #endif
+/*
 mp_limb_t
 mpn_sub(mp_ptr __gmp_wp, mp_srcptr __gmp_xp, mp_size_t __gmp_xsize, mp_srcptr __gmp_yp, mp_size_t __gmp_ysize)
 {
@@ -1359,12 +1358,14 @@ mpn_sub(mp_ptr __gmp_wp, mp_srcptr __gmp_xp, mp_size_t __gmp_xsize, mp_srcptr __
    __GMPN_SUB(__gmp_c, __gmp_wp, __gmp_xp, __gmp_xsize, __gmp_yp, __gmp_ysize);
    return __gmp_c;
 }
+*/
 #endif
 
 #if defined(__GMP_EXTERN_INLINE) || defined(__GMP_FORCE_mpn_sub_1)
 #if !defined(__GMP_FORCE_mpn_sub_1)
-__GMP_EXTERN_INLINE
+// __GMP_EXTERN_INLINE
 #endif
+/*
 mp_limb_t
 mpn_sub_1(mp_ptr __gmp_dst, mp_srcptr __gmp_src, mp_size_t __gmp_size, mp_limb_t __gmp_n)
 {
@@ -1372,30 +1373,13 @@ mpn_sub_1(mp_ptr __gmp_dst, mp_srcptr __gmp_src, mp_size_t __gmp_size, mp_limb_t
    __GMPN_SUB_1(__gmp_c, __gmp_dst, __gmp_src, __gmp_size, __gmp_n);
    return __gmp_c;
 }
+*/
 #endif
 
 #if defined(__GMP_EXTERN_INLINE) || defined(__GMP_FORCE_mpn_neg)
 #if !defined(__GMP_FORCE_mpn_neg)
-__GMP_EXTERN_INLINE
+// __GMP_EXTERN_INLINE
 #endif
-mp_limb_t mpn_neg(mp_ptr __gmp_rp, mp_srcptr __gmp_up, mp_size_t __gmp_n)
-{
-   while (*__gmp_up == 0) /* Low zero limbs are unchanged by negation. */
-   {
-      *__gmp_rp = 0;
-      if (!--__gmp_n) /* All zero */
-         return 0;
-      ++__gmp_up;
-      ++__gmp_rp;
-   }
-
-   *__gmp_rp = (-*__gmp_up) & GMP_NUMB_MASK;
-
-   if (--__gmp_n) /* Higher limbs get complemented. */
-      mpn_com(++__gmp_rp, ++__gmp_up, __gmp_n);
-
-   return 1;
-}
 #endif
 
 /* Allow faster testing for negative, zero, and positive.  */
@@ -1404,7 +1388,7 @@ mp_limb_t mpn_neg(mp_ptr __gmp_rp, mp_srcptr __gmp_up, mp_size_t __gmp_n)
 
 /* When using GCC, optimize certain common comparisons.  */
 #if defined(__GNUC__) && __GNUC__ >= 2
-static inline int my_mpz_cmp_ui(mpz_struct *z, unsigned long int ui)
+static inline int my_mpz_cmp_ui(mpz_ptr z, unsigned long int ui)
 {
    if (__builtin_constant_p(ui) && ui == 0)
       return mpz_sgn(z);

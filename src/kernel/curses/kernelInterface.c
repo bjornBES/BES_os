@@ -133,3 +133,76 @@ int curs_set(int visibility)
 
     return ret_vis;
 }
+
+int napms(int ms)
+{
+    PDC_LOG("napms() - called: ms=%d\n", ms);
+
+    if (!SP)
+        return ERR;
+
+    if (SP->dirty)
+    {
+        int curs_state = SP->visibility;
+        bool leave_state = is_leaveok(curscr);
+
+        SP->dirty = FALSE;
+
+        leaveok(curscr, TRUE);
+
+        wrefresh(curscr);
+
+        leaveok(curscr, leave_state);
+        curs_set(curs_state);
+    }
+
+    if (ms)
+        PDC_napms(ms);
+
+    return OK;
+}
+
+/*
+int ripoffline(int line, int (*init)(WINDOW *, int))
+{
+    PDC_LOG(("ripoffline() - called: line=%d\n", line));
+    
+    if (linesrippedoff < 5 && line && init)
+    {
+        linesripped[(int)linesrippedoff].line = line;
+        linesripped[(int)linesrippedoff++].init = init;
+        
+        return OK;
+    }
+    
+    return ERR;
+}
+*/
+
+int draino(int ms)
+{
+    PDC_LOG(("draino() - called\n"));
+
+    return napms(ms);
+}
+
+int resetterm(void)
+{
+    PDC_LOG(("resetterm() - called\n"));
+
+    return reset_shell_mode();
+}
+
+int fixterm(void)
+{
+    PDC_LOG(("fixterm() - called\n"));
+
+    return reset_prog_mode();
+}
+
+int saveterm(void)
+{
+    PDC_LOG(("saveterm() - called\n"));
+
+    return def_prog_mode();
+}

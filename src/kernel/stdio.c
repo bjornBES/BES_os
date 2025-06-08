@@ -43,6 +43,35 @@ int getc(fd_t file)
     return fgetc(file);
 }
 
+char* fgets(char *s, int size, fd_t stream)
+{
+    if (size <= 0 || s == NULL)
+        return NULL; // Invalid parameters
+
+    int i = 0;
+    while (i < size - 1) // Leave space for null terminator
+    {
+        int c = fgetc(stream);
+        if (c == EOF)
+            break; // End of file or error
+        s[i++] = (char)c;
+        if (c == '\n')
+            break; // Newline character
+    }
+    s[i] = '\0'; // Null-terminate the string
+    return s;
+}
+char* gets(char *s)
+{
+    return fgets(s, 256, VFS_FD_STDIN); // Read from stdin with a default size
+}
+
+int ungetc(int c, fd_t stream)
+{
+    FUNC_NOT_IMPLEMENTED(MODULE, "ungetc");
+    return EOF; // Placeholder for ungetc function, should be implemented
+}
+
 const char g_HexChars[] = "0123456789abcdef";
 
 void fprintf_unsigned(fd_t file, unsigned long long number, int radix)
@@ -312,6 +341,73 @@ int fflush(fd_t stream)
     return 0; // Return 0 on success, as per the standard
 }
 
+void clearerr(fd_t stream)
+{
+    log_debug(MODULE, "clearerr: stream = %d", stream);
+    if (stream < VFS_FD_START || stream >= MAX_FILE_HANDLES)
+    {
+        log_err(MODULE, "clearerr: Invalid file descriptor: %d", stream);
+        return; // Invalid file descriptor
+    }
+    // In this case, we assume that clearing errors is a no-op for the VFS
+    // No action needed as per the standard
+}
+
+int feof(fd_t stream)
+{
+    log_debug(MODULE, "feof: stream = %d", stream);
+    if (stream < VFS_FD_START || stream >= MAX_FILE_HANDLES)
+    {
+        log_err(MODULE, "feof: Invalid file descriptor: %d", stream);
+        return EOF; // Invalid file descriptor
+    }
+    // In this case, we assume that EOF checking is a no-op for the VFS
+    return 0; // Return 0 on success, as per the standard
+}
+
+int ferror(fd_t stream)
+{
+    log_debug(MODULE, "ferror: stream = %d", stream);
+    if (stream < VFS_FD_START || stream >= MAX_FILE_HANDLES)
+    {
+        log_err(MODULE, "ferror: Invalid file descriptor: %d", stream);
+        return EOF; // Invalid file descriptor
+    }
+    // In this case, we assume that error checking is a no-op for the VFS
+    return 0; // Return 0 on success, as per the standard
+}
+
+void flockfile(fd_t stream)
+{
+    log_debug(MODULE, "flockfile: stream = %d", stream);
+    FUNC_NOT_IMPLEMENTED(MODULE, "flockfile");
+    // Placeholder for flockfile function, should be implemented
+    return; // No action needed as per the standard
+}
+
+void ftrylockfile(fd_t stream)
+{
+    log_debug(MODULE, "ftrylockfile: stream = %d", stream);
+    FUNC_NOT_IMPLEMENTED(MODULE, "ftrylockfile");
+    // Placeholder for ftrylockfile function, should be implemented
+    return; // No action needed as per the standard
+}
+
+void funlockfile(fd_t stream)
+{
+    log_debug(MODULE, "funlockfile: stream = %d", stream);
+    FUNC_NOT_IMPLEMENTED(MODULE, "funlockfile");
+    // Placeholder for funlockfile function, should be implemented
+    return; // No action needed as per the standard
+}
+
+char* realpath(const char *path, char *resolved_path)
+{
+    log_debug(MODULE, "realpath: path = %s", path);
+    FUNC_NOT_IMPLEMENTED(MODULE, "realpath");
+    return NULL; // Placeholder for realpath function, should be implemented
+}
+
 int rename(const char* oldname, const char* newname)
 {
     log_debug(MODULE, "rename: oldname = %s, newname = %s", oldname, newname);
@@ -323,4 +419,45 @@ int remove(const char* filename)
     log_debug(MODULE, "remove: filename = %s", filename);
     FUNC_NOT_IMPLEMENTED(MODULE, "remove");
     return -1; // Placeholder for remove function, should be implemented
+}
+
+int rmdir(const char *path)
+{
+    log_debug(MODULE, "rmdir: path = %s", path);
+    FUNC_NOT_IMPLEMENTED(MODULE, "rmdir");
+    return -1; // Placeholder for rmdir function, should be implemented
+}
+
+int chdir(const char *path)
+{
+    log_debug(MODULE, "chdir: path = %s", path);
+    FUNC_NOT_IMPLEMENTED(MODULE, "chdir");
+    return -1; // Placeholder for chdir function, should be implemented
+}
+int mkdir(const char *name, int mode)
+{
+    log_debug(MODULE, "mkdir: name = %s, mode = %d", name, mode);
+    FUNC_NOT_IMPLEMENTED(MODULE, "mkdir");
+    return -1; // Placeholder for mkdir function, should be implemented
+}
+
+char *getcwd(const char *buf, size_t size)
+{
+    log_debug(MODULE, "getcwd: buf = %p, size = %zu", buf, size);
+    FUNC_NOT_IMPLEMENTED(MODULE, "getcwd");
+    return NULL; // Placeholder for getcwd function, should be implemented
+}
+
+int unlink(const char *pathname)
+{
+    log_debug(MODULE, "unlink: pathname = %s", pathname);
+    FUNC_NOT_IMPLEMENTED(MODULE, "unlink");
+    return -1; // Placeholder for unlink function, should be implemented
+}
+
+int access(const char *pathname, int mode)
+{
+    log_debug(MODULE, "access: pathname = %s, mode = %d", pathname, mode);
+    FUNC_NOT_IMPLEMENTED(MODULE, "access");
+    return -1; // Placeholder for access function, should be implemented
 }

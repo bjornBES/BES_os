@@ -116,7 +116,7 @@
 #define HAVE_ATTRIBUTE_PURE 1
 
 /* Define to 1 if you have the `canonicalize_file_name' function. */
-#define HAVE_CANONICALIZE_FILE_NAME 1
+// #define HAVE_CANONICALIZE_FILE_NAME 1
 
 /* Define to 1 if you have the Mac OS X function
    CFLocaleCopyPreferredLanguages in the CoreFoundation framework. */
@@ -308,10 +308,10 @@
 // #define HAVE_SETLOCALE 1
 
 /* Define to 1 if you have the `sigaction' function. */
-#define HAVE_SIGACTION 1
+// #define HAVE_SIGACTION 1
 
 /* Define to 1 if you have the <signal.h> header file. */
-// #define HAVE_SIGNAL_H 1
+#define HAVE_SIGNAL_H 1
 
 /* Define to 1 if the system has the type `sig_atomic_t'. */
 #define HAVE_SIG_ATOMIC_T 1
@@ -370,6 +370,12 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #define HAVE_UNISTD_H 1
 
+/* Define to 1 if you have the `fork' function. */
+// #define HAVE_FORK 1
+
+/* Define to 1 if you have the `getpid' function. */
+// #define HAVE_GETPID 1
+
 /* ncurses has use_legacy_coding function */
 #define HAVE_USE_LEGACY_CODING 1
 
@@ -410,7 +416,7 @@
 #define PACKAGE_URL "https://www.gnu.org/software/gnucobol/"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "3.2"
+#define PACKAGE_VERSION "3.1.2"
 
 /* Define a patch level (numeric, max. 8 digits) */
 #define PATCH_LEVEL 0

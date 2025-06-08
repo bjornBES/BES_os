@@ -1,4 +1,4 @@
-#include "gmp-impl.h"
+#include "libs/GMP/defaultincs.h"
 
 #include "malloc.h"
 #include "hal/vfs.h"

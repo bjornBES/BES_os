@@ -660,6 +660,39 @@ enum mpz_div_round_mode
     GMP_DIV_TRUNC
 };
 
+unsigned long int mpz_get_ui(mpz_srcptr u)
+{
+  if (GMP_LIMB_BITS < GMP_ULONG_BITS)
+    {
+      int LOCAL_GMP_LIMB_BITS = GMP_LIMB_BITS;
+      unsigned long r = 0;
+      mp_size_t n = GMP_ABS (u->_mp_size);
+      n = GMP_MIN (n, 1 + (mp_size_t) (GMP_ULONG_BITS - 1) / GMP_LIMB_BITS);
+      while (--n >= 0)
+	r = (r << LOCAL_GMP_LIMB_BITS) + u->_mp_d[n];
+      return r;
+    }
+
+  return u->_mp_size == 0 ? 0 : u->_mp_d[0];
+}
+
+int mpz_sgn (mpz_ptr u)
+{
+  return GMP_CMP (u->_mp_size, 0);
+}
+
+mp_bitcnt_t mpn_popcount (mp_srcptr p, mp_size_t n)
+{
+  mp_size_t i;
+  mp_bitcnt_t c;
+
+  for (c = 0, i = 0; i < n; i++)
+    c += gmp_popcount_limb (p[i]);
+
+  return c;
+}
+
+
 int mpz_div_qr(mpz_t q, mpz_t r, const mpz_t n, const mpz_t d, enum mpz_div_round_mode mode)
 {
     mp_size_t ns, ds, nn, dn, qs;

@@ -73,7 +73,7 @@ see https://www.gnu.org/licenses/.
 #define HAVE_CLOCK 1
 
 /* Define to 1 if you have the `clock_gettime' function */
-#define HAVE_CLOCK_GETTIME 1
+// #define HAVE_CLOCK_GETTIME 1
 
 /* Define to 1 if you have the `cputime' function. */
 /* #undef HAVE_CPUTIME */
@@ -137,7 +137,7 @@ see https://www.gnu.org/licenses/.
 /* #undef HAVE_GETSYSINFO */
 
 /* Define to 1 if you have the `gettimeofday' function. */
-#define HAVE_GETTIMEOFDAY 1
+// #define HAVE_GETTIMEOFDAY 1
 
 /* Define to 1 if the compiler accepts gcc style __attribute__ ((visibility))
    and __attribute__ ((alias)) */
@@ -255,13 +255,13 @@ see https://www.gnu.org/licenses/.
 
 /* Define to 1 each of the following for which a native (ie. CPU specific)
     implementation of the corresponding routine exists.  */
-#define HAVE_NATIVE_mpn_add_n 1
+#define HAVE_NATIVE_mpn_add_n 0
 /* #undef HAVE_NATIVE_mpn_add_n_sub_n */
-#define HAVE_NATIVE_mpn_add_nc 1
-#define HAVE_NATIVE_mpn_addaddmul_1msb0 1
-#define HAVE_NATIVE_mpn_addlsh1_n 1
-#define HAVE_NATIVE_mpn_addlsh2_n 1
-#define HAVE_NATIVE_mpn_addlsh_n 1
+#define HAVE_NATIVE_mpn_add_nc 0
+#define HAVE_NATIVE_mpn_addaddmul_1msb0 0
+#define HAVE_NATIVE_mpn_addlsh1_n 0
+#define HAVE_NATIVE_mpn_addlsh2_n 0
+#define HAVE_NATIVE_mpn_addlsh_n 0
 /* #undef HAVE_NATIVE_mpn_addlsh1_nc */
 /* #undef HAVE_NATIVE_mpn_addlsh2_nc */
 #define HAVE_NATIVE_mpn_addlsh_nc 1
@@ -286,8 +286,8 @@ see https://www.gnu.org/licenses/.
 /* #undef HAVE_NATIVE_mpn_addmul_7 */
 /* #undef HAVE_NATIVE_mpn_addmul_8 */
 /* #undef HAVE_NATIVE_mpn_addmul_2s */
-#define HAVE_NATIVE_mpn_and_n 1
-#define HAVE_NATIVE_mpn_andn_n 1
+#define HAVE_NATIVE_mpn_and_n 0
+#define HAVE_NATIVE_mpn_andn_n 0
 #define HAVE_NATIVE_mpn_bdiv_dbm1c 1
 #define HAVE_NATIVE_mpn_bdiv_q_1 1
 #define HAVE_NATIVE_mpn_pi1_bdiv_q_1 1
@@ -308,7 +308,7 @@ see https://www.gnu.org/licenses/.
 #define HAVE_NATIVE_mpn_gcd_22 1
 #define HAVE_NATIVE_mpn_hamdist 1
 #define HAVE_NATIVE_mpn_invert_limb 1
-#define HAVE_NATIVE_mpn_ior_n 1
+#define HAVE_NATIVE_mpn_ior_n 0
 #define HAVE_NATIVE_mpn_iorn_n 1
 #define HAVE_NATIVE_mpn_lshift 1
 #define HAVE_NATIVE_mpn_lshiftc 1
@@ -319,11 +319,11 @@ see https://www.gnu.org/licenses/.
 #define HAVE_NATIVE_mpn_mod_1s_2p 1
 #define HAVE_NATIVE_mpn_mod_1s_4p 1
 #define HAVE_NATIVE_mpn_mod_34lsub1 1
-#define HAVE_NATIVE_mpn_modexact_1_odd 1
+#define HAVE_NATIVE_mpn_modexact_1_odd 0
 #define HAVE_NATIVE_mpn_modexact_1c_odd 1
 #define HAVE_NATIVE_mpn_mul_1 1
-#define HAVE_NATIVE_mpn_mul_1c 1
-#define HAVE_NATIVE_mpn_mul_2 1
+#define HAVE_NATIVE_mpn_mul_1c 0
+#define HAVE_NATIVE_mpn_mul_2 0
 /* #undef HAVE_NATIVE_mpn_mul_3 */
 /* #undef HAVE_NATIVE_mpn_mul_4 */
 /* #undef HAVE_NATIVE_mpn_mul_5 */
@@ -337,25 +337,25 @@ see https://www.gnu.org/licenses/.
 /* #undef HAVE_NATIVE_mpn_preinv_mod_1 */
 #define HAVE_NATIVE_mpn_redc_1 1
 /* #undef HAVE_NATIVE_mpn_redc_2 */
-#define HAVE_NATIVE_mpn_rsblsh1_n 1
-#define HAVE_NATIVE_mpn_rsblsh2_n 1
-#define HAVE_NATIVE_mpn_rsblsh_n 1
+#define HAVE_NATIVE_mpn_rsblsh1_n 0
+#define HAVE_NATIVE_mpn_rsblsh2_n 0
+#define HAVE_NATIVE_mpn_rsblsh_n 0
 /* #undef HAVE_NATIVE_mpn_rsblsh1_nc */
 /* #undef HAVE_NATIVE_mpn_rsblsh2_nc */
 /* #undef HAVE_NATIVE_mpn_rsblsh_nc */
-#define HAVE_NATIVE_mpn_rsh1add_n 1
-#define HAVE_NATIVE_mpn_rsh1add_nc 1
-#define HAVE_NATIVE_mpn_rsh1sub_n 1
-#define HAVE_NATIVE_mpn_rsh1sub_nc 1
-#define HAVE_NATIVE_mpn_rshift 1
+#define HAVE_NATIVE_mpn_rsh1add_n 0
+#define HAVE_NATIVE_mpn_rsh1add_nc 0
+#define HAVE_NATIVE_mpn_rsh1sub_n 0
+#define HAVE_NATIVE_mpn_rsh1sub_nc 0
+#define HAVE_NATIVE_mpn_rshift 0
 /* #undef HAVE_NATIVE_mpn_sbpi1_bdiv_r */
 #define HAVE_NATIVE_mpn_sqr_basecase 1
 /* #undef HAVE_NATIVE_mpn_sqr_diagonal */
-#define HAVE_NATIVE_mpn_sqr_diag_addlsh1 1
-#define HAVE_NATIVE_mpn_sub_n 1
-#define HAVE_NATIVE_mpn_sub_nc 1
-#define HAVE_NATIVE_mpn_sublsh1_n 1
-#define HAVE_NATIVE_mpn_sublsh2_n 1
+#define HAVE_NATIVE_mpn_sqr_diag_addlsh1 0
+#define HAVE_NATIVE_mpn_sub_n 0
+#define HAVE_NATIVE_mpn_sub_nc 0
+#define HAVE_NATIVE_mpn_sublsh1_n 0
+#define HAVE_NATIVE_mpn_sublsh2_n 0
 /* #undef HAVE_NATIVE_mpn_sublsh_n */
 /* #undef HAVE_NATIVE_mpn_sublsh1_nc */
 /* #undef HAVE_NATIVE_mpn_sublsh2_nc */
@@ -372,7 +372,7 @@ see https://www.gnu.org/licenses/.
 /* #undef HAVE_NATIVE_mpn_udiv_qrnnd_r */
 /* #undef HAVE_NATIVE_mpn_umul_ppmm */
 /* #undef HAVE_NATIVE_mpn_umul_ppmm_r */
-#define HAVE_NATIVE_mpn_xor_n 1
+#define HAVE_NATIVE_mpn_xor_n 0
 #define HAVE_NATIVE_mpn_xnor_n 1
 
 /* Define to 1 if you have the `nl_langinfo' function. */
@@ -410,7 +410,7 @@ see https://www.gnu.org/licenses/.
 /* #undef HAVE_READ_REAL_TIME */
 
 /* Define to 1 if you have the `sigaction' function. */
-#define HAVE_SIGACTION 1
+// #define HAVE_SIGACTION 1
 
 /* Define to 1 if you have the `sigaltstack' function. */
 #define HAVE_SIGALTSTACK 1

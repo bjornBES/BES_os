@@ -18,7 +18,7 @@
 
 #define MODULE "PCI"
 
-Page pdevPage;
+Page *pdevPage;
 
 pci_device **pci_devices = 0;
 uint32_t devs = 0;
@@ -162,7 +162,7 @@ void pciScan(void)
             {
                 continue;
             }
-            pci_device *pdev = (pci_device *)malloc(sizeof(pci_device), &pdevPage);
+            pci_device *pdev = (pci_device *)malloc(sizeof(pci_device), pdevPage);
             pciScanDevice(pdev, bus, device, 0);
             /*
             // multifunctional device
@@ -804,7 +804,7 @@ void pci_probe()
                 continue;
             uint16_t device = getDeviceID(bus, slot, 0);
             printf("bus: 0x%x slot: 0x%x vendor: 0x%x device: 0x%x\n", bus, slot, vendor, device);
-            pci_device *pdev = (pci_device *)malloc(sizeof(pci_device), &pdevPage);
+            pci_device *pdev = (pci_device *)malloc(sizeof(pci_device), pdevPage);
             pdev->vendorID = vendor;
             pdev->deviceID = device;
             pdev->function = 0;
@@ -816,6 +816,8 @@ void pci_probe()
 
 void pci_init(uint8_t HWChar)
 {
+    pdevPage = allocate_page();
+    log_warn(MODULE, "pci page id = %i", pdevPage->prosses);
     devs = drivs = 0;
     // pci_devices = (pci_device **)malloc(32 * sizeof(pci_device));
     // pci_drivers = (pci_driver **)malloc(32 * sizeof(pci_driver));

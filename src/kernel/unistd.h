@@ -9,6 +9,9 @@ typedef long int off_t;
 
 #endif
 
+#define ROUNDUP(sz, to)  (((sz)+to-1) & ~(to-1))
+#define ROUNDDOWN(a, to) (((a)) & ~(to-1))
+
 /* Synchronize at least the data part of a file with the underlying
    media.  */
 int fdatasync (int fildes);

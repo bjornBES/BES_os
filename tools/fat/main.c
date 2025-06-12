@@ -3,6 +3,8 @@
 #include "disk.h"
 #include "fat.h"
 
+#define NULL (void*)0
+
 int main(int argc, const char** argv)
 {
     if (argc < 3)

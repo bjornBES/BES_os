@@ -6,7 +6,7 @@
 typedef int fd_t;
 
 #define MAX_PATH_SIZE           256
-#define MAX_FILE_HANDLES        10
+#define MAX_FILE_HANDLES        16
 #define ROOT_DIRECTORY_HANDLE   -1
 #define VFS_FD_START (fd_t) 4 // Start from 4 to avoid stdin, stdout, stderr, debug
 
@@ -17,10 +17,6 @@ typedef int fd_t;
 
 #define VFS_INVALID_FD (fd_t) -1
 
-
-
-int VFS_Write(fd_t file, uint8_t *data, size_t size);
-int VFS_Read(fd_t file, void *buffer, size_t size);
 typedef enum FS
 {
     FS_FATFS,
@@ -57,17 +53,31 @@ typedef struct MountPoint_t
     vfs_node_t *root_node;
 } MountPoint;
 
+typedef struct DirectoryEntry_t
+{
+    char name[MAX_PATH_SIZE];
+    bool IsDirectory;
+    size_t size;
+} DirectoryEntry;
+
+typedef struct DirectoryEntries_t
+{
+    DirectoryEntry* entries;
+    uint32_t entryCount;
+} DirectoryEntries;
+
+int VFS_Write(fd_t file, uint8_t *data, size_t size);
+int VFS_Read(fd_t file, void *buffer, size_t size);
+
 bool VFS_Seek(fd_t file, uint64_t offset);
 int VFS_GetOffset(fd_t file);
 int VFS_GetSize(fd_t file);
 
 fd_t VFS_Open(char* path);
 bool VFS_Close(fd_t file);
-// vfs_node_t *VFS_finddir(fd_t file, void* buffer, uint);
-// vfs_node_t *VFS_readdir(fd_t file, void* buffer, uint);
-
-vfs_node_t *VFS_GetNode(fd_t file);
+bool VFS_Readdir(fd_t file, DirectoryEntries* buffer);
+void VFS_init();
 
 bool MountDevice(device_t *dev, char *loc);
 
-void VFS_init();
+vfs_node_t *VFS_GetNode(fd_t file);

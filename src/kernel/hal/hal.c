@@ -8,7 +8,6 @@
 
 void HAL_Initialize()
 {
-    VGA_clrscr();
     BIOS_Init();
     i686_ISR_Initialize();
     i686_IRQ_Initialize();

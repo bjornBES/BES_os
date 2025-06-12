@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#include "malloc.h"
+
 typedef enum __device_type {
 	DEVICE_UNKNOWN = 0,
 	DEVICE_CHAR = 1,
@@ -27,7 +29,7 @@ typedef struct __fs_t {
 	bool (*probe)(device_t* dev);
 	bool (*read)(char *, uint8_t *, device_t* dev, void *);
 	bool (*read_dir)(char *, uint8_t *, device_t* dev, void *);
-	bool (*find_dir)(char *, device_t* dev, void *);
+	bool (*find_entry)(char *, void*, device_t* dev, void *);
 	bool (*touch)(char *fn, device_t* dev, void *);
 	bool (*writefile)(char *fn, uint8_t *buf, uint32_t len, device_t* dev, void *);
 	bool (*exist)(char *filename, device_t* dev,  void *);
@@ -35,6 +37,9 @@ typedef struct __fs_t {
 	bool (*getRoot)(void*, device_t* dev, void *);
 	bool *priv_data;
 } filesystemInfo_t;
+
+extern Page* devicePage;
+extern Page* privPage;
 
 void initDevice();
 void PrintDeviceOut();

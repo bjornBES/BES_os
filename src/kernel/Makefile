@@ -43,7 +43,7 @@ $(BUILD_DIRKERNEL)/kernel.elf: $(OBJECTS_ASM) $(OBJECTS_C) $(OBJECTS_CBL)
 
 $(BUILD_DIRC)/%.obj: %.c $(HEADERS_C)
 	@mkdir -p $(@D)
-	@$(TARGET_CC) $(TARGET_CFLAGS) -c -o $@ $<
+	@$(TARGET_CC) $(TARGET_CFLAGS) -D__minPages__=$(MIN_NUMBER_PAGES) -c -o $@ $<
 	@echo "--> Compiled: " $<
 
 $(BUILD_DIRASM)/%.obj: %.asm $(HEADERS_ASM)

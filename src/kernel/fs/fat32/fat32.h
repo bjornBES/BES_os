@@ -180,6 +180,11 @@ enum FAT_Attributes
     FAT_ATTRIBUTE_LFN               = FAT_ATTRIBUTE_READ_ONLY | FAT_ATTRIBUTE_HIDDEN | FAT_ATTRIBUTE_SYSTEM | FAT_ATTRIBUTE_VOLUME_ID
 };
 
+/// @brief 
+/// @param shortName is the 8.3 format 
+/// @param name is the a normal format
+void GetName(char* shortName, char *name);
+
 bool FAT_Probe(device_t* dev);
 bool FAT_Mount(device_t *dev, void *priv);
 bool FAT_GetRoot(void* node, device_t* dev, void *priv);

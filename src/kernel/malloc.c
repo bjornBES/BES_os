@@ -164,3 +164,34 @@ void *mallocToPage(size_t size, int pageIndex)
     log_crit(MODULE, "OUT OF MEMORY");
     return NULL; // No pages left
 }
+
+void freeToPage(void* ptr, int pageIndex)
+{
+    Page* page = &pages[pageIndex];
+    if (!ptr)
+    {
+        return;
+    }
+    // log_debug(MODULE, "page addr: %p, page.prosses: %u, page.allocatedBlocks: %u, page.heapBlock: 0x%p", page, page->prosses, page->allocatedBlocks, page->heapBlock);
+    int i = 0;
+    // Find the page this pointer belongs to
+    HeapBlock *current_block = page->heapBlock;
+    // log_debug(MODULE, "%u: current_block: & %p, data %p, next %p, size %u", i, current_block, current_block->data, current_block->nextBlock, current_block->size);
+    // Find the block with the given pointer and free it
+    while (current_block != NULL)
+    {
+        // log_debug(MODULE, "%u: current_block: & %p, data %p, next %p, size %u", i, current_block, current_block->data, current_block->nextBlock, current_block->size);
+        if (current_block->data != 0)
+        {
+            if (current_block->data == ptr)
+            {
+                heap_free(page, ptr);
+                ptr = NULL;
+                return;
+            }
+        }
+        current_block = current_block->nextBlock;
+        i++;
+        continue;
+    }
+}

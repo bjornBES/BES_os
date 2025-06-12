@@ -5,4 +5,4 @@
 #include <stddef.h>
 #include <boot/bootparams.h>
 
-#define NULL ((void *)0)
+// #define NULL ((void *)0)

@@ -4,6 +4,9 @@
 #include "memory.h"
 #include "ctype.h"
 #include <stdlib.h>
+#include <stddef.h>
+
+#define NULL (void*)0
 
 #define SECTOR_SIZE             512
 #define MAX_PATH_SIZE           256

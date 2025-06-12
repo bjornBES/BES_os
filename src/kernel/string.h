@@ -15,6 +15,10 @@ int strncasecmp(const char *a, const char *b, size_t count);
 
 typedef char* string;
 
+size_t strspn(const char* s1, const char* s2);
+size_t strcspn(const char *s1, const char *s2);
+char *strrchr(const char *s, int c);
+
 void itoa(char *buf, uint32_t n, int base);
 void atoi(char* str, int* a);
 size_t atou(const char* str);

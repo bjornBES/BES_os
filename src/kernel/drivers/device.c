@@ -1,19 +1,24 @@
 #include "device.h"
-#include "malloc.h"
 #include "memory.h"
 #include "stdio.h"
 #include "debug.h"
 
 #define MODULE "DEVICE"
 
+#define MAXDECIVES 64
+
 device_t **devices = 0;
 Page* devicesPage;
 uint8_t lastid = 0;
+Page* devicePage;
+Page* privPage;
 
 void initDevice()
 {
-	devices = (device_t **)malloc(64 * sizeof(device_t), devicesPage);
-	memset(devices, 0, 64 * sizeof(device_t));
+	devicePage = GetPage(2);
+	privPage = GetPage(3);
+	devices = (device_t **)malloc(MAXDECIVES * sizeof(device_t), devicesPage);
+	memset(devices, 0, MAXDECIVES * sizeof(device_t));
 	lastid = 0;
 }
 

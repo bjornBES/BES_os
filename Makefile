@@ -50,6 +50,12 @@ $(BUILD_DIR)/tools/fat: always tools/fat/fat.c
 	@mkdir -p $(BUILD_DIR)/tools
 	@$(MAKE) -C tools/fat BUILD_DIR=$(abspath $(BUILD_DIR))
 
+#
+# user
+#
+user:
+	@$(MAKE) -C src/user_programs BUILD_DIR=$(abspath $(BUILD_DIR))
+
 runnow:
 	bash run.sh disk $(BUILD_DIR)/image.img $(BUILD_DIR)/floppyImage.img $(BUILD_DIR)/sataImage.img
 run: $(BUILD_DIR)/image.img
@@ -62,10 +68,10 @@ debug_flags:
 debug: debug_flags clean all
 
 	@echo "running debug"
-	bash debug.sh disk $(BUILD_DIR)/image.img
+	bash debug.sh disk $(BUILD_DIR)/image.img $(BUILD_DIR)/floppyImage.img $(BUILD_DIR)/sataImage.img
 
 debugnow:
-	bash debug.sh disk $(BUILD_DIR)/image.img
+	bash debug.sh disk $(BUILD_DIR)/image.img $(BUILD_DIR)/floppyImage.img $(BUILD_DIR)/sataImage.img
 
 
 load: $(BUILD_DIR)/image.img

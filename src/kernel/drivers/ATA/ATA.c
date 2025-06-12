@@ -260,8 +260,8 @@ void ATA_init()
 	
 	for (size_t i = 0; i < ide_devices_count; i++)
 	{
-		device_t *dev = (device_t *)malloc(sizeof(device_t), ATAPage);
-		ide_private_data *priv = (ide_private_data *)malloc(sizeof(ide_private_data), ATAPage);
+		device_t *dev = (device_t *)malloc(sizeof(device_t), devicePage);
+		ide_private_data *priv = (ide_private_data *)malloc(sizeof(ide_private_data), privPage);
 		if (ide_devices[i].Reserved == 0)
 		{
 			continue; // Skip if the device is not reserved.

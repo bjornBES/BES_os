@@ -14,6 +14,8 @@ from pyfatfs.PyFat import PyFat
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(project_root)
 
+userApps = os.path.abspath(os.path.join(project_root, "src/user_programs"))
+
 from build_scripts.utility import FindIndex, GlobRecursive, IsFileName, ParseSize
 from build_scripts.config import mountMethod
 
@@ -230,6 +232,24 @@ def loadMountFiles(image, files, baseDir):
         os.rmdir(tempdir)
 
 
+def buildApps():
+    print(f"testing build user apps")
+    makePath = Path(f"{project_root}").absolute()
+    subprocess.run(["make", "-C", makePath, "user"], text=True, check=True)
+    
+    userPath = os.path.abspath(os.path.join(project_root, f"build/{arch}_{config}/user"))
+    user_contents = GlobRecursive('*.bin', userPath)
+    
+    for file in user_contents:
+        file_src = file
+        file_rel = os.path.relpath(file_src, userPath)
+        file_dst = os.path.join(f"{root}/bin", file_rel)
+
+        if not os.path.isdir(file_src):
+            print('    ... copying', file_rel)
+            copyFile(file_src, file_dst)
+    
+
 def build_disk(image, floppyImage, sataImage, stage1, stage2, kernel, files, floppyFiles, sataDiskFiles):
     size_sectors = (ParseSize(imageSize) + SECTOR_SIZE - 1) // SECTOR_SIZE
     file_system = imageFS
@@ -311,8 +331,10 @@ arch = sys.argv[4]
 config = sys.argv[5]
 
 filesDir = os.path.join(project_root, "files")
-
 root = os.path.abspath(os.path.join(filesDir, "root"))
+
+buildApps()
+
 root_content = GlobRecursive('*', root)
 
 floppyRoot = os.path.abspath(os.path.join(filesDir, "floppyRoot"))

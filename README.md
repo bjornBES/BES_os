@@ -1,9 +1,4 @@
-# nanobyte_os
-This repo contains the code from the ["Building an OS"](https://www.youtube.com/watch?v=9t-SPC7Tczc&list=PLFjM7v6KGMpiH2G-kT781ByCNC_0pKpPN) tutorial on the ["Nanobyte"](https://www.youtube.com/channel/UCSPIuWADJIMIf9Erf--XAsA) YouTube channel.
-
-This branch contains the code as written in [Part 10 - Hardware interrupts](https://youtu.be/FD48Lx7Rnx0), with some minor bug fixes:
-
-* fixed bochs configuration
+# BES_os
 
 ## Prerequisites
 
@@ -39,16 +34,8 @@ $ sudo dnf install gcc gcc-c++ make bison flex gmp-devel libmpc-devel mpfr-devel
 
 ## Running with qemu
 
-* run `./run.sh`
+* run `make run`
 
-## Debugging with bochs
+## Debugging with gdb
 
-* run `./debug.sh`
-
-**Troubleshooting**: Bochs has proven to be pretty unreliable. Check [this article](https://github.com/nanobyte-dev/nanobyte_os/wiki/Frequent-issues#bochs-doesnt-work) for some troubleshooting tips.
-
-## Links
-
-* [YouTube](https://www.youtube.com/channel/UCSPIuWADJIMIf9Erf--XAsA)
-* [Discord channel](https://discord.gg/RgHc5XrCEw)
-* [Patreon](https://www.patreon.com/nanobyte)
+* run `make debug`

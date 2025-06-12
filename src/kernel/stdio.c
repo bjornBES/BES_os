@@ -292,12 +292,18 @@ int ftell(fd_t stream)
 
 fd_t open(const char* filename, int flags, ...)
 {
+    log_debug(MODULE, "open: filename = %s, flags = %d", filename, flags);
     va_list args;
     va_start(args, flags);
-    log_debug(MODULE, "open: filename = %s, flags = %d", filename, flags);
-    FUNC_NOT_IMPLEMENTED(MODULE, "open");
+
+    if (flags != 0)
+    {
+        FUNC_NOT_IMPLEMENTED(MODULE, "open");
+        return VFS_INVALID_FD;
+    }
+
     va_end(args);
-    return VFS_INVALID_FD; // Placeholder for open function, should be implemented    
+    return VFS_Open((char*)filename);
 }
 
 fd_t fopen(const char* filename, const char* mode)

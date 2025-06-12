@@ -13,7 +13,7 @@
 #include "malloc.h"
 #include "memory.h"
 #include "string.h"
-#include "memory_allocator.h"
+#include "allocator/memory_allocator.h"
 #include "ctype.h"
 #include "time.h"
 #include "unistd.h"
@@ -33,6 +33,8 @@
 
 #include "printfDriver/printf.h"
 
+#include "shellFile.h"
+
 #define MODULE "MAIN"
 
 extern void _init();
@@ -48,260 +50,14 @@ void debug(Registers *regs)
     log_debug(DebugMODULE, "Debug %d Debug", regs->interrupt);
 
     log_debug(DebugMODULE, "  eax=%x  ebx=%x  ecx=%x  edx=%x  esi=%x  edi=%x",
-              regs->eax, regs->ebx, regs->ecx, regs->edx, regs->esi, regs->edi);
+              regs->U32.eax, regs->U32.ebx, regs->U32.ecx, regs->U32.edx, regs->U32.esi, regs->U32.edi);
 
     log_debug(DebugMODULE, "  esp=%x  ebp=%x  eip=%x  eflags=%x  cs=%x  ds=%x  ss=%x",
-              regs->esp, regs->ebp, regs->eip, regs->eflags, regs->cs, regs->ds, regs->ss);
+              regs->esp, regs->U32.ebp, regs->eip, regs->eflags, regs->cs, regs->ds, regs->ss);
 
     log_debug(DebugMODULE, "  interrupt=%x  errorcode=%x", regs->interrupt, regs->error);
 }
 
-void ReadLine(char *buffer)
-{
-    uint8_t bufferIndex = 0;
-    while (true)
-    {
-        char c = KeyboardGetKey();
-        if (c == 0)
-        {
-            continue;
-        }
-        if (c == '\n')
-        {
-            return;
-        }
-        if (c == '\b')
-        {
-            if (bufferIndex > 0)
-            {
-                int x = 0;
-                int y = 0;
-                VGA_getcursor(&x, &y);
-                log_debug("MAIN", "backspace %u (X,Y): (%u, %u)", bufferIndex, x, y);
-                bufferIndex--;
-                x--;
-                VGA_setcursor(x, y);
-                printf(" ");
-                buffer[bufferIndex] = 0;
-                VGA_setcursor(x, y);
-            }
-        }
-        else
-        {
-            buffer[bufferIndex] = c;
-            bufferIndex++;
-            printf("%c", c);
-            // log_debug("MAIN", "char: %c - %u 0x%X", c, (uint8_t)c, (uint8_t)c);
-        }
-    }
-}
-
-bool cmpCommand(char *command, char *buffer)
-{
-    while (*command && *buffer)
-    {
-        if (!(*command == *buffer || toupper(*command) == *buffer))
-        {
-            return false;
-        }
-        command++;
-        buffer++;
-    }
-    return true;
-}
-
-void Update()
-{
-    Page bufferPage;
-    Page commandPage;
-    char *inputBuffer = (char *)malloc(256, &bufferPage);
-    char *command = (char *)malloc(64, &commandPage);
-    char* cmdPath = (char *)malloc(MAX_PATH_SIZE, &commandPage);
-    strcpy(cmdPath, "/ata0");
-    uint32_t bufferSize = 4096;
-    void *buffer = malloc(4096, &bufferPage);
-    VGA_clrscr();
-    printf("BES OS v0.1\n");
-    printf("This operating system is under construction.\n\n");
-    while (true)
-    {
-        printf("%s$", cmdPath);
-        memset(inputBuffer, 0, 256);
-        ReadLine(inputBuffer);
-
-        int count = strcount(inputBuffer, ' ');
-        char *loc = strtok(inputBuffer, " ");
-        char *argv[count + 1];
-
-        putc('\n');
-
-        log_debug("MAIN", "loc = %s, count = %u", loc, count);
-        int argc = 0;
-
-        for (size_t i = 0; i < count + 1; i++)
-        {
-            if (loc == NULL)
-            {
-                log_debug("MAIN", "continue loc = %s", loc);
-                continue;
-            }
-            argc++;
-            argv[i] = loc;
-            log_debug("MAIN", "%u: argv[i] = %s", i, argv[i]);
-            if (i == 0)
-            {
-                command = memcpy(command, loc, sizeof(loc) + 1);
-            }
-            loc = strtok(NULL, " ");
-        }
-
-        if (argv[0][0] == '\0')
-        {
-            continue;
-        }
-
-        log_debug("MAIN", "count = %u", count);
-
-        // Command layout
-        // device/bin/Command.cod [args]
-
-        if (cmpCommand("clear", argv[0]) == true)
-        {
-            VGA_clrscr();
-        }
-        if (cmpCommand("call", argv[0]) == true)
-        {
-            MainKernelInCobol();
-        }
-        if (cmpCommand("int", argv[0]) == true)
-        {
-            if (count < 1)
-            {
-                printf("Usage: int <interrupt>\n");
-            }
-            int interrupt = 0;
-            atoi(argv[1], &interrupt);
-            IntRegisters regs;
-            initregs(&regs);
-            regs.eax = 0x55AA55AA; // just a test value
-            regs.ebx = 0x12345678; // just a test value
-            CallInt(interrupt, &regs);
-        }
-        if (cmpCommand("c-d", argv[0]) == true)
-        {
-            if (count < 1)
-            {
-                printf("Usage: change-device <device>\n");
-            }
-            char* path = argv[1];
-            if (path[0] != '/')
-            {
-                printf("Path must be absolute!\n");
-                continue;
-            }
-            strcpy(cmdPath, path);
-            log_debug("MAIN", "cmdPath = %s", cmdPath);
-            continue;
-        }
-        if (cmpCommand("read-file", argv[0]) == true)
-        {
-            if (count < 1)
-            {
-                printf("Usage: read <file>\n");
-            }
-            char* name = argv[1];
-            char* path = (char *)malloc(MAX_PATH_SIZE, &commandPage);
-            strcat(path, cmdPath);
-            strcat(path, "/");
-            strcat(path, name);
-            fd_t file = VFS_Open(path);
-            VFS_Read(file, buffer, bufferSize);
-            VFS_Close(file);
-            free(path, &commandPage);
-            continue;
-        }
-        if (cmpCommand("read", argv[0]) == true)
-        {
-            if (count < 2)
-            {
-                printf("Usage: read <lbs> <count>\n");
-            }
-            uint32_t lbs = 0;
-            uint32_t sectorcount = 0;
-            atoi(argv[1], (int *)&lbs);
-            atoi(argv[2], (int *)&sectorcount);
-            if (bufferSize < sectorcount * 512)
-            {
-                log_debug("MAIN", "reallocating buffer %u", sectorcount * 512);
-                buffer = realloc(buffer, sectorcount * 512, &bufferPage);
-                bufferSize = sectorcount * 512;
-                memset(buffer, 0, bufferSize);
-            }
-            ATA_read(buffer, lbs, sectorcount, GetDeviceUsingId(32));
-        }
-        if (cmpCommand("hex", argv[0]) == true)
-        {
-            if (count < 1)
-            {
-                printf("Usage: hex <file dis>\n");
-            }
-            fd_t fd = VFS_FD_STDOUT;
-            atoi(argv[1], &fd);
-            uint8_t *u8Buffer = (uint8_t *)buffer;
-            for (uint16_t i = 0; i < bufferSize; i++)
-            {
-                uint8_t word = u8Buffer[i];
-
-                if (i % 16 == 0)
-                {
-                    fprintf(fd, "\n%04X\t", i);
-                }
-                fprintf(fd, "%02X,", word);
-            }
-        }
-        if (cmpCommand("info", argv[0]) == true)
-        {
-            if (count < 1)
-            {
-                printf("Usage: hex <file dis>\n");
-            }
-            fd_t fd = VFS_FD_STDOUT;
-            atoi(argv[1], &fd);
-            fprintf(fd, "\nBufferSize = %u\n", bufferSize);
-        }
-        if (cmpCommand("mount", argv[0]) == true)
-        {
-            if (count < 2)
-            {
-                printf("Usage: mount <device> <loc>\n");
-            }
-            int device = 0;
-            atoi(argv[1], &device);
-            char *loc = argv[2];
-
-            device_t *dev = GetDeviceUsingId(device);
-            if (dev == NULL)
-            {
-                printf("Device %u not found!\n", device);
-                continue;
-            }
-
-            if (MountDevice(dev, loc))
-            {
-                printf("Mounted %s on %s\n", dev->name, loc);
-                log_info("MAIN", "Mounted %s on %s", dev->name, loc);
-            }
-            else
-            {
-                printf("Failed to mount %s on %s\n", dev->name, loc);
-                log_err("MAIN", "Failed to mount %s on %s", dev->name, loc);
-            }
-        }
-    }
-
-    free(command, &commandPage);
-    free(buffer, &bufferPage);
-}
 
 BootParams *params;
 
@@ -362,20 +118,31 @@ void PrintMemoryRegions()
                params->Memory.Regions[i + 1].Type);
     }
 }
-
+#include "arch/i686/idt.h"
+#include "arch/i686/gdt.h"
 void KernelInits()
 {
     _init();
-    HAL_Initialize();
     initSystemCall();
     i686_ISR_RegisterHandler(2, debug);
+    i686_IDT_SetGate(2, debug, i686_GDT_CODE_SEGMENT, IDT_FLAG_RING3 | IDT_FLAG_GATE_32BIT_INT);
+    IDT_Load();
+    log_debug("MAIN", "init memory allocator");
     mm_init();
 
+    log_debug("MAIN", "init devices");
+    initDevice();
+    
+    
+    log_debug("MAIN", "init pit");
     pit_init();
+    log_debug("MAIN", "init keyboard");
     keyboard_init();
+    log_debug("MAIN", "init vga");
     vga_initialize();
     printf("MAIN: VGA_init() done\n");
     printf("MAIN: KernelInits() done\n");
+    log_debug("MAIN", "KernelStart");
 }
 
 void KernelStart(BootParams *bootParams)
@@ -385,6 +152,42 @@ void KernelStart(BootParams *bootParams)
     
     KernelInits();
     printf("KernelStart\n");
+    
+    /*
+    {
+        PressAnyKeyLoop();
+        Page* page = GetPage(0);
+        void* data1 = malloc(1, page);
+        log_err("MAIN", "== ALLOCATED DATA1 ==");
+        printStatus();
+        PressAnyKeyLoop();
+        
+        void* data2 = malloc(2, page);
+        log_err("MAIN", "== ALLOCATED DATA2 ==");
+        printStatus();
+        PressAnyKeyLoop();
+        
+        void* data3 = malloc(4096 + 1, page);
+        log_err("MAIN", "== ALLOCATED DATA3 ==");
+        printStatus();
+        PressAnyKeyLoop();
+        
+        free(data2, page);
+        printStatus();
+        log_err("MAIN", "== FREE DATA2 ==");
+        PressAnyKeyLoop();
+        
+        free(data3, page);
+        printStatus();
+        log_err("MAIN", "== FREE DATA3 ==");
+        PressAnyKeyLoop();
+        
+        free(data1, page);
+        printStatus();
+        log_err("MAIN", "== FREE DATA1 ==");
+        PressAnyKeyLoop();
+    }
+    */
 
     PrintMemoryRegions();
 
@@ -429,12 +232,13 @@ void KernelStart(BootParams *bootParams)
                 ;
             }
         }
-
+        /*
+        
         printStatus();
         ASM_INT2();
         uint8_t *buffer = (uint8_t *)malloc(512, &bufferPage);
         VGA_clrscr();
-
+        
         fd_t file = VFS_Open("/ata0/test.txt");
         vfs_node_t *node = VFS_GetNode(file);
         if (node == NULL)
@@ -446,9 +250,9 @@ void KernelStart(BootParams *bootParams)
             return;
         }
         VFS_Read(file, buffer, 512);
-
+        
         VGA_clrscr();
-
+        
         printf("Data from test.txt\n");
         printf("%s", buffer);
         for (uint16_t i = 0; i < 512; i++)
@@ -464,9 +268,10 @@ void KernelStart(BootParams *bootParams)
         ASM_INT2();
         VFS_Close(file);
         free(buffer, &bufferPage);
+        */
     }
 
-    PressAnyKeyLoop();
+    // PressAnyKeyLoop();
     VGA_clrscr();
 
     printStatus();
@@ -477,9 +282,7 @@ void KernelStart(BootParams *bootParams)
     log_err("Main", "This is an error msg!");
     log_crit("Main", "This is a critical msg!");
 
-    cob_init(0, NULL);
-
-    Update();
+    EnterShell();
 
     // i686_IRQ_RegisterHandler(0, timer);
 

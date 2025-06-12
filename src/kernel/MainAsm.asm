@@ -2,6 +2,7 @@
 [bits 32]
 
 extern KernelStart
+extern HAL_Initialize
 extern stack_top
 
 section .text
@@ -14,8 +15,10 @@ start:
     
     mov eax, dword [esp + 4]
     mov esp, stack_top
-    
     push eax
+    
+    call HAL_Initialize
+    
     mov eax, cr4
     or eax, 0x40
     mov cr4, eax
@@ -27,4 +30,4 @@ start:
     hlt
     jmp $
 
-; times (0x1000 - ($ - start)) db 0
+times (0x1000 - ($ - start)) db 0

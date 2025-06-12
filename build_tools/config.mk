@@ -1,14 +1,15 @@
-export CFLAGS = -Wall -Werror -I /usr/local/i686-elf/include -I ./ -I $(SOURCE_DIR)/src/libs -Wno-error=unused-variable -Wno-error=unused-function -Wno-error=unused-label -Wno-error=deprecated
+export CFLAGS = -Wall -Werror -I ./ -I $(SOURCE_DIR)/src/libs -Wno-error=unused-variable -Wno-error=unused-function -Wno-error=unused-label -Wno-error=deprecated
+# -I /usr/local/i686-elf/include
 # the -Wno-error=unused-variable flag is temp
 export ASMFLAGS =
-export CBLFLAGS = -std=cobol2002 -Wall -Werror -fsign=ASCII -I /usr/local/i686-elf/include -I ./ -I $(SOURCE_DIR)/src/libs -static
+export CBLFLAGS = -std=cobol2002 -Wall -Werror -fsign=ASCII -I ./ -I $(SOURCE_DIR)/src/libs -static
 export CC = gcc
 export CXX = g++
 export LD = gcc
 export ASM = nasm
+export CBL = cobc
 export LINKFLAGS = -static
 export LIBS = src/libs
-export CBL = cobc
 
 export imageType = disk
 export imageFS = fat32
@@ -44,4 +45,8 @@ BINUTILS_URL = https://ftp.gnu.org/gnu/binutils/binutils-$(BINUTILS_VERSION).tar
 GCC_VERSION = 11.2.0
 GCC_URL = https://ftp.gnu.org/gnu/gcc/gcc-$(GCC_VERSION)/gcc-$(GCC_VERSION).tar.xz
 
-export PAGING_ENABLE = 0
+export PAGING_ENABLE = 1
+export MIN_NUMBER_PAGES = 1024
+
+
+export currentProgram =

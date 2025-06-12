@@ -87,7 +87,7 @@ int strcmp(const char *a, const char *b)
     }
     return (*a) - (*b);
 }
-int strcoll ( const char * str1, const char * str2 )
+int strcoll(const char *str1, const char *str2)
 {
     return strcmp(str1, str2);
 }
@@ -126,7 +126,7 @@ int strncasecmp(const char *a, const char *b, size_t count)
 
 int strcmp_debug(const char *a, const char *b)
 {
-    
+
     log_debug("strcmp", "a = %p b = %p", a, b);
     if (a == NULL && b == NULL)
         return 0;
@@ -202,7 +202,7 @@ size_t atou(const char *str)
     return i;
 }
 // internal ASCII string to size_t conversion
-const char* atou_return(const char *str, size_t* result)
+const char *atou_return(const char *str, size_t *result)
 {
     size_t i = 0U;
     while (isdigit(*str))
@@ -226,6 +226,20 @@ uint32_t strcrl(string str, const char what, const char with)
     return i;
 }
 
+char *strrchr(const char *s, int c)
+{ /* find last occurrence of c in char s[] */
+    const char ch = c;
+    const char *sc;
+
+    for (sc = NULL;; ++s)
+    { /* check another char */
+        if (*s == ch)
+            sc = s;
+        if (*s == '\0')
+            return ((char *)sc);
+    }
+}
+
 uint32_t strcount(string str, char c)
 {
     uint32_t count = 0;
@@ -238,6 +252,30 @@ uint32_t strcount(string str, char c)
         }
     }
     return count;
+}
+
+size_t strspn(const char *s1, const char *s2)
+{ /* find index of first s1[i] that matches no s2[] */
+    const char *sc1, *sc2;
+
+    for (sc1 = s1; *sc1 != '\0'; ++sc1)
+        for (sc2 = s2;; ++sc2)
+            if (*sc2 == '\0')
+                return (sc1 - s1);
+            else if (*sc1 == *sc2)
+                break;
+    return (sc1 - s1); /* null doesn't match */
+}
+
+size_t strcspn(const char *s1, const char *s2)
+{ /* find index of first s1[i] that matches any s2[] */
+    const char *sc1, *sc2;
+
+    for (sc1 = s1; *sc1 != '\0'; ++sc1)
+        for (sc2 = s2; *sc2 != '\0'; ++sc2)
+            if (*sc1 == *sc2)
+                return (sc1 - s1);
+    return (sc1 - s1); /* terminating nulls match */
 }
 
 uint32_t str_backspace(string str, char c)
@@ -259,50 +297,23 @@ uint32_t str_backspace(string str, char c)
 static char *strtok_ptr = NULL; // Pointer to the current position in the string
 
 char *strtok(char *str, const char *delim)
-{
-    // If str is NULL, continue from the previous strtok call
-    if (str == NULL)
-    {
-        str = strtok_ptr;
-    }
+{ /* find next token in s1[] delimited by s2[] */
+    char *sbegin, *send;
+    static char *ssave = ""; /* for safety */
 
-    // Skip leading delimiters
-    while (*str && strchr(delim, *str))
-    {
-        str++;
+    sbegin = str ? str : ssave;
+    sbegin += strspn(sbegin, delim);
+    if (*sbegin == '\0')
+    {               /* end of scan */
+        ssave = ""; /* for safety */
+        return (NULL);
     }
-
-    // If we reach the end of the string, return NULL
-    if (*str == '\0')
-    {
-        strtok_ptr = NULL;
-        return NULL;
-    }
-
-    // Find the next delimiter
-    char *token = str;
-
-    // Move the pointer until the next delimiter or end of string
-    while (*str && !strchr(delim, *str))
-    {
-        str++;
-    }
-
-    // If we found a delimiter, null-terminate the token and update strtok_ptr
-    if (*str)
-    {
-        *str = '\0';
-        strtok_ptr = str + 1;
-    }
-    else
-    {
-        // Otherwise, we've reached the end of the string
-        strtok_ptr = NULL;
-    }
-
-    return token;
+    send = sbegin + strcspn(sbegin, delim);
+    if (*send != '\0')
+        *send++ = '\0';
+    ssave = send;
+    return (sbegin);
 }
-
 
 uint32_t str_begins_with(string str, string with)
 {

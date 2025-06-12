@@ -4,6 +4,10 @@
 
 // Define the size of a single page (typically 4KB)
 #define PAGE_SIZE 4096
+
+#define PGROUNDUP(sz)  (((sz)+PAGE_SIZE-1) & ~(PAGE_SIZE-1))
+#define PGROUNDDOWN(a) (((a)) & ~(PAGE_SIZE-1))
+
 typedef struct HeapBlock
 {
     size_t size;
@@ -34,6 +38,7 @@ void free_page(Page*page);
 void dump_memory_status();
 void *heap_alloc(Page *page, size_t size);
 void heap_free(Page *page, void *ptr);
+Page *GetPage(int pageIndex);
 
 // Bitmap management functions
 void set_bit(size_t index);

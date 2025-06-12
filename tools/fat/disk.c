@@ -1,6 +1,8 @@
 #include "disk.h"
 #include <stdio.h>
 
+#define NULL (void*)0
+
 #define SECTOR_SIZE 512
 
 bool DISK_Initialize(DISK* disk, const char* input_file)

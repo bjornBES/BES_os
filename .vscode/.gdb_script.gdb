@@ -1,3 +1,3 @@
     symbol-file /home/bjornbes/projects/bjornbes_os/build/i686_debug/kernel/kernel.elf
     set disassembly-flavor intel
-    target remote | qemu-system-i386 -S -gdb stdio -m 32 -hda /home/bjornbes/projects/bjornbes_os/build/i686_debug/image.img
+    target remote | qemu-system-i386 -S -gdb stdio -m 8g -d guest_errors -netdev user,id=mynet0 -net nic,model=rtl8139,netdev=mynet0 -fda /home/bjornbes/projects/bjornbes_os/build/i686_debug/floppyImage.img -drive file=/home/bjornbes/projects/bjornbes_os/build/i686_debug/image.img,format=raw,id=disk,if=ide -drive file=/home/bjornbes/projects/bjornbes_os/build/i686_debug/sataImage.img,format=raw,id=sata_disk,if=none -device ahci,id=ahci -device ide-hd,drive=sata_disk -device intel-hda -device sb16

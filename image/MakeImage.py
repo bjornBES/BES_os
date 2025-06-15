@@ -3,6 +3,7 @@ import sys
 import re
 import time
 import sh
+import threading
 from decimal import Decimal
 from io import SEEK_CUR, SEEK_SET
 from pathlib import Path
@@ -77,9 +78,10 @@ def GetSectorNumber(file, image, stage1_offset):
     first_data_sector : int = reserved_sectors + fat_size * NumFATs
     return first_data_sector
         
-def generate_image_file(target: str, size_sectors: int):
+def generate_image_file(target, size):
+    print(f"got target as {target}, size as {size}")
     with open(target, 'wb') as fout:
-        fout.write(bytes(size_sectors * SECTOR_SIZE))
+        fout.write(bytes(size * SECTOR_SIZE))
         fout.close()
 
 def find_symbol_in_map_file(map_file: str, symbol: str):
@@ -150,19 +152,17 @@ def install_stage1(target: str, stage1: str, stage2_offset, stage2_size, offset=
             ftarget.write(realStage2_offset.to_bytes(4, byteorder='little'))
             ftarget.write(stage2_size.to_bytes(1, byteorder='little'))
 
-
 def mount_fs(image: str, mount_dir: str, mount_method: str):
     try:
         bashPath = Path(f"{bashScriptsPath}/mountDisk.sh").absolute()
+        print(f"args: bash, {bashPath}, {image}, {mount_dir}, {mount_method}")
         subprocess.run(["bash", bashPath, image, mount_dir, mount_method], text=True, check=True)
         print(f"> Mounted {image} at {mount_dir}")
     except subprocess.CalledProcessError as e:
         print(f"> Error mounting {image}: {e}")
         raise
 
-
 def unmount_fs(mount_dir: str, mount_method):
-    time.sleep(2)
     try:
         bashPath = Path(f"{bashScriptsPath}/umountDisk.sh").absolute()
         subprocess.run(["bash", bashPath, mount_dir, mount_method], text=True, check=True)
@@ -198,9 +198,8 @@ def loadFiles(files, tempdir, baseDir):
         if os.path.isdir(file_src):
             makedirs(file_dst,  True)
         
-    files_sorted = sorted(files, key=lambda x: os.path.getsize(x) if os.path.isfile(x) else 0, reverse=True)
     print(f"> copying files...")
-    for file in files_sorted:
+    for file in files:
         file_src = file
         file_rel = os.path.relpath(file_src, src_root)
         file_dst = os.path.join(tempdir, file_rel)
@@ -231,7 +230,20 @@ def loadMountFiles(image, files, baseDir):
         print("Delete dir")
         os.rmdir(tempdir)
 
+MAX_WORKERS = 8
 
+def generate_image_files(targets):
+    threads = []
+    
+    for targetTuple in targets:
+        target, size = targetTuple
+        t = threading.Thread(target=generate_image_file, args=(target, size))
+        threads.append(t)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+                    
 def buildApps():
     print(f"testing build user apps")
     makePath = Path(f"{project_root}").absolute()
@@ -259,9 +271,13 @@ def build_disk(image, floppyImage, sataImage, stage1, stage2, kernel, files, flo
     stage2_size = Path(stage2).stat().st_size
     stage2_sectors = (stage2_size + SECTOR_SIZE - 1) // SECTOR_SIZE
     stage2_offset = 1
-    generate_image_file(image, size_sectors)
-    generate_image_file(sataImage, size_sectors)
-    generate_image_file(floppyImage, 2880)
+    
+    disks = [ image, sataImage, floppyImage ]
+    sizes = [size_sectors, size_sectors, 2880]
+    arg = [ (image, size_sectors), (sataImage, size_sectors), (floppyImage, 2880)]
+    # [ [tar, size],[tar, size],[tar, size] ]
+    
+    generate_image_files(arg)
     
     # create partition table
     print(f"> creating partition table...")

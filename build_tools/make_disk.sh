@@ -15,6 +15,7 @@ config=$5
 
 pyenv shell 3.14-dev
 
+# python -m cProfile -o outputFile.txt -s time ./image/MakeImage.py $targetDir $imageType $targetFilesystem $imageSize $arch $config
 python ./image/MakeImage.py $targetDir $imageType $targetFilesystem $imageSize $arch $config
 
 echo "Done with all"

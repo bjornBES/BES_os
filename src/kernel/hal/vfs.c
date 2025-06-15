@@ -143,7 +143,6 @@ void systemCall_Read(Registers *regs)
 }
 void systemCall_Write(Registers *regs)
 {
-	log_debug(MODULE, "systemCall_Write: regs = %p", regs);
 	fd_t fd = regs->U32.ebx; // File descriptor is in ebx
 	if (fd < 0 || fd >= MAX_FILE_HANDLES)
 	{
@@ -151,6 +150,7 @@ void systemCall_Write(Registers *regs)
 		regs->U32.eax = -1;
 		return;
 	}
+	log_debug(MODULE, "fd: %u, buffer: 0x%X, count: %u", fd, regs->U32.esi, regs->U32.ecx);
 	regs->U32.eax = VFS_Write(fd, (void *)regs->U32.esi, regs->U32.ecx);
 }
 
@@ -645,6 +645,12 @@ fd_t VFS_Open(char *path)
 
 	return fd;
 }
+void syscall_Open(Registers* regs)
+{
+	char* path = (char*)regs->U32.esi;
+	regs->U32.ebx = VFS_Open(path);
+}
+
 bool VFS_Close(fd_t file)
 {
 	if (file < 0 || file >= MAX_FILE_HANDLES)
@@ -659,6 +665,11 @@ bool VFS_Close(fd_t file)
 	}
 	fd_table[file].opened = false; // Mark the file descriptor as closed
 	return true; // Close operation successful
+}
+
+void syscall_Close(Registers* regs)
+{
+	VFS_Close(regs->U32.ebx);
 }
 
 vfs_node_t *VFS_GetNode(fd_t file)
@@ -698,4 +709,6 @@ void VFS_init()
 
 	registerSyscall(SYSCALL_READ, systemCall_Read);
 	registerSyscall(SYSCALL_WRITE, systemCall_Write);
+	registerSyscall(SYSCALL_OPEN, syscall_Open);
+	registerSyscall(SYSCALL_CLOSE, syscall_Close);
 }

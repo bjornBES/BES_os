@@ -183,6 +183,29 @@ void pciScan(void)
     }
 }
 
+void printPCIDevice(pci_device* pciDevice)
+{
+    log_debug(MODULE, "Device: %u, Vendor: %u", pciDevice->deviceID, pciDevice->vendorID);
+    log_debug(MODULE, "Status: %u, Command: %u", pciDevice->status, pciDevice->command);
+    log_debug(MODULE, "Class: %u, SubClass: %u Prog IF: %u, Revision ID: %u", pciDevice->classID, pciDevice->subclassID, pciDevice->progif, pciDevice->revision);
+    log_debug(MODULE, "CacheLineSize: %u, LatencyTimer: %u HeaderType: %u, BIST: %u", pciDevice->cacheLineSize, pciDevice->latencyTimer, pciDevice->headerType, pciDevice->BIST);
+    
+    if (pciDevice->headerType == 0)
+    {
+        log_debug(MODULE, "BAR0: 0x%08X", pciDevice->header.header0.BAR0);
+        log_debug(MODULE, "BAR1: 0x%08X", pciDevice->header.header0.BAR1);
+        log_debug(MODULE, "BAR2: 0x%08X", pciDevice->header.header0.BAR2);
+        log_debug(MODULE, "BAR3: 0x%08X", pciDevice->header.header0.BAR3);
+        log_debug(MODULE, "BAR4: 0x%08X", pciDevice->header.header0.BAR4);
+        log_debug(MODULE, "BAR5: 0x%08X", pciDevice->header.header0.BAR5);
+        log_debug(MODULE, "CardbusCIS: 0x%08X", pciDevice->header.header0.CardbusCIS);
+        log_debug(MODULE, "SubsystemID: %u, SubsystemVendorID: %u", pciDevice->header.header0.SubsystemID, pciDevice->header.header0.SubsystemVendorID);
+        log_debug(MODULE, "ROMBaseAddress: 0x%08X", pciDevice->header.header0.ROMBaseAddress);
+        log_debug(MODULE, "CapabilitiesPointer: %u", pciDevice->header.header0.CapabilitiesPointer);
+        log_debug(MODULE, "MaxLatency: %u, MinGnt: %u InterruptPin: %u, InterruptLine: %u", pciDevice->header.header0.MaxLatency, pciDevice->header.header0.MinGnt, pciDevice->header.header0.InterruptPin, pciDevice->header.header0.InterruptLine);
+    }
+}
+
 void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t function)
 {
     pciDevice->bus = bus;
@@ -314,10 +337,16 @@ void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t 
     // Display Controller
     else if (pciDevice->classID == 0x03)
     {
+        log_debug(MODULE, "Found Display Controller at Bus %d, Device %d", pciDevice->bus, pciDevice->deviceID);
+        log_debug(MODULE, "Subclass ID: 0x%X", pciDevice->subclassID);
         // VGA
         if (pciDevice->subclassID == 0x0)
         {
             log_debug(MODULE, "VGA controller");
+        }
+        else
+        {
+            printPCIDevice(pciDevice);
         }
     }
 

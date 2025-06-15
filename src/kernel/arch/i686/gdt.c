@@ -61,7 +61,9 @@ void write_tss()
 
 void set_kernel_stack(uint32_t stack)
 { // Used when an interrupt occurs
-    tss_entry.esp0 = stack;
+    uint32_t stack_ptr = 0;
+    __asm__("mov %%esp, %0" : "=r"(stack_ptr));
+    tss_entry.esp0 = stack_ptr;
 }
 
 void i686_GDT_Initialize()

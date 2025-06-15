@@ -33,13 +33,15 @@ static const uint8_t attribute_ctrl[21] = {
 
 vga_mode_t *vga_mode;
 
+void VGAGrap_set_pixel(int x, int y, uint8_t color);
+
 uint32_t getPixelIndex(int x, int y)
 {
     return (y * ScreenWidth) + x;
 }
 uint32_t getPixelOffset(int x, int y)
 {
-    return (y * vga_mode->pitch + x) * (vga_mode->bpp / 8);
+    return (y * vga_mode->width + x) * (vga_mode->bpp / 8);
 }
 
 void VGAGrap_putBpp1(int x, int y, uint8_t color)
@@ -57,7 +59,7 @@ void VGAGrap_putBpp1(int x, int y, uint8_t color)
 }
 void VGAGrap_putBpp4(int x, int y, uint8_t color)
 {
-    uint32_t byte_offset = getPixelOffset(x, y) / 2;
+    uint32_t byte_offset = getPixelOffset(x, y);
     uint8_t old_byte = VGA_Framebuffer[byte_offset];
     if (x % 2 == 0)
     {
@@ -72,7 +74,7 @@ void VGAGrap_putBpp4(int x, int y, uint8_t color)
 }
 void VGAGrap_putBpp8(int x, int y, uint8_t color)
 {
-    uint8_t *buffer = VGA_Framebuffer + getPixelOffset(x, y);
+    uint8_t *buffer = VGA_Framebuffer + getPixelIndex(x, y);
     *buffer = color; // Assume color is an 8-bit palette index
 }
 void VGAGrap_putBpp15(int x, int y, uint8_t red, uint8_t green, uint8_t blue)
@@ -106,6 +108,10 @@ void VGAGrap_put(int x, int y, uint32_t color)
     {
         return;
     }
+
+    VGAGrap_putBpp8(x, y, color);
+    return;
+
     uint8_t blue = color & 0xFF;
     uint8_t green = (color >> 8) & 0xFF;
     uint8_t red = (color >> 16) & 0xFF;
@@ -175,7 +181,7 @@ void VGAGrap_clear(uint32_t color)
     {
         for (int x = 0; x < ScreenWidth; x++)
         {
-            VGAGrap_put(x, y, color);
+            VGAGrap_set_pixel(x, y, color);
         }
     }
 }

@@ -140,6 +140,7 @@ void VGA_clrscr();
 void VGA_setcursor(int x, int y);
 void VGA_getcursor(int *x, int *y);
 void VGA_putc(char c);
+void VGA_putpixel(uint32_t x, uint32_t y, uint32_t color);
 void vga_initialize();
 void VGA_SetMode(uint16_t mode);
 void VGA_SetColor(uint32_t index, uint32_t color);

@@ -29,7 +29,7 @@ $(BUILD_DIR)/stage1.bin: always
 stage2: $(BUILD_DIR)/stage2.bin
 
 $(BUILD_DIR)/stage2.bin: always
-	@$(MAKE) -C src/bootloader/stage2 BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C src/bootloader/stage2 -j 4 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Kernel
@@ -40,7 +40,7 @@ kernel: $(BUILD_DIR)/kernel/kernel.elf # $(BUILD_DIR)/libcore.o
 #	@$(MAKE) -C src/libs/core BUILD_DIR=$(abspath $(BUILD_DIR))
 
 $(BUILD_DIR)/kernel/kernel.elf: always
-	@$(MAKE) -C src/kernel BUILD_DIR=$(abspath $(BUILD_DIR))
+	@$(MAKE) -C src/kernel -j 4 BUILD_DIR=$(abspath $(BUILD_DIR))
 
 #
 # Tools

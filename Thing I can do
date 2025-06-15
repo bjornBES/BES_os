@@ -1,0 +1,13 @@
+
+TODO thing
+
+    - more file systems
+    - process/mulitasking
+    - mounting points
+    - SB16 driver
+    - more PCI drivers
+    - VESA modes to get more pixels more then 640x480
+    - USB things
+
+- graphics driver not just VGA
+  - PCI

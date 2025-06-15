@@ -4,8 +4,8 @@
 
 #define i686_GDT_CODE_SEGMENT 0x08
 #define i686_GDT_DATA_SEGMENT 0x10
-#define i686_GDT_16CODE_SEGMENT 0x18
-#define i686_GDT_16DATA_SEGMENT 0x20
+#define i686_GDT_USER_CODE_SEGMENT 0x18
+#define i686_GDT_USER_DATA_SEGMENT 0x20
 #define i686_GDT_TSS_SEGMENT 0x28
 #define i686_GDT_STACK_SEGMENT 0x30
 
@@ -94,5 +94,7 @@ void GDT_Load();
 void TSS_Load();
 extern uint32_t usermodeFunc;
 void Jump_usermode();
+void retFromUser();
 void GDT_SetEntry(uint16_t index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
 void i686_GDT_Initialize();
+void set_kernel_stack(uint32_t stack);

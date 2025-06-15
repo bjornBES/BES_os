@@ -29,6 +29,7 @@ fi
 
 QEMU_ARGS="${QEMU_ARGS} -device intel-hda"
 QEMU_ARGS="${QEMU_ARGS} -device sb16"
+# QEMU_ARGS="${QEMU_ARGS} -device virtio-gpu-pci"
 
 qemu-system-x86_64 $QEMU_ARGS
 

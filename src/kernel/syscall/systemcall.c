@@ -6,6 +6,8 @@
 #include "arch/i686/bios.h"
 #include "memory.h"
 
+#include "syscall/exit/exit.h"
+
 #include "testcall.h"
 
 SystemCall syscalls[MAX_SYSCALLS] = {0};
@@ -62,5 +64,5 @@ void initSystemCall()
     i686_ISR_RegisterHandler(0x80, syscallHandler);
     
 
-    registerSyscall(SYSCALL_EXIT, testcall); // Register test syscall
+    registerSyscall(SYSCALL_EXIT, systemExit); // Register test syscall
 }

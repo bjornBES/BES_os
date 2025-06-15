@@ -11,6 +11,8 @@ typedef void (*SystemCall)(Registers* regs);
 #define SYSCALL_READ 0
 #define SYSCALL_WRITE 1
 #define SYSCALL_EXIT 2
+#define SYSCALL_OPEN 3
+#define SYSCALL_CLOSE 4
 
 void initregs(IntRegisters *reg);
 void registerSyscall(uint32_t syscallId, SystemCall syscallHandler);

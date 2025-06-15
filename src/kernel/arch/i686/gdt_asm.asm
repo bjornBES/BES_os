@@ -38,14 +38,14 @@ i686_GDT_Load:
 ; C declaration: void flush_tss(void);
 global flush_tss
 flush_tss:
-	mov eax, (5 * 8) | 0 ; fifth 8-byte selector, symbolically OR-ed with 0 to set the RPL (requested privilege level).
-	
     mov ax, (5 * 8) | 0 ; fifth 8-byte selector, symbolically OR-ed with 0 to set the RPL (requested privilege level).
     ltr ax
 	
     ret
 
 extern user_stack_top
+%define KERNEL_CS  (1 * 8)
+%define KERNEL_DS  (2 * 8)
 %define USER_CS  (3 * 8) | 3
 %define USER_DS  (4 * 8) | 3
 %define USER_STACK_TOP user_stack_top  ; example top of user stack (adjust to your memory map)
@@ -60,19 +60,53 @@ Jump_usermode:
     mov es, ax
     mov fs, ax
     mov gs, ax
-    
+
+    mov eax, [esp]
+    mov [retAddress], eax
+    mov [kernelStack], esp
     
     mov eax, USER_STACK_TOP
     push USER_DS
     push eax
+
     pushf
     pop eax
     or eax, 0x200
     push eax
+
     push USER_CS
     push 0x10000
     
     iret
-section .rodata
-str_module:  db "GDT", 0
-str_format:  db "usermodeFunc = 0x%p, USER_CS=0x%p", 0
+    
+global retFromUser
+retFromUser:
+    mov     esp, [kernelStack]
+    push    eax
+    mov     eax,    KERNEL_DS
+    mov     ss,     ax
+    pop     eax
+    jmp     [retAddress]
+
+global setSS
+setSS:
+    push ebp
+    mov ebp, esp
+    push eax
+    mov eax, [ebp + 8]
+    mov ss, eax
+    pop eax
+    pop ebp
+    ret
+
+section .data
+global kernelStack
+kernelStack:
+    dd 0
+
+global retAddress
+retAddress:
+    dd 0
+
+tempEAX:
+    dd 0

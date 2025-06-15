@@ -230,6 +230,11 @@ void VGA_putc(char c)
     VGAText_putc(c);
 }
 
+void VGA_putpixel(uint32_t x, uint32_t y, uint32_t color)
+{
+    VGAGrap_put(x, y, color);
+}
+
 void VGA_SetPalette(uint32_t *palette, size_t count)
 {
     if (count > 256)

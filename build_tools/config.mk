@@ -7,6 +7,7 @@ export CC = gcc
 export CXX = g++
 export LD = gcc
 export ASM = nasm
+export AR = ar
 export CBL = cobc
 export LINKFLAGS = -static
 export LIBS = src/libs
@@ -28,6 +29,7 @@ export TARGET_CFLAGS = $(CFLAGS) -std=c99 -nostdlib -ffreestanding #-O2
 export TARGET_CXXFLAGS = $(CFLAGS) -std=c++17 -fno-exceptions -fno-rtti #-O2
 export TARGET_LINKFLAGS = $(LINKFLAGS) -nostdlib
 
+export TARGET_AR = ${binPath}/$(TARGET)-ar
 export TARGET_CC = ${binPath}/$(TARGET)-gcc
 export TARGET_CXX = ${binPath}/$(TARGET)-g++
 export TARGET_LD = ${binPath}/$(TARGET)-g++

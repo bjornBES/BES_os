@@ -8,6 +8,7 @@
 #include "stdio.h"
 #include "string.h"
 #include "CobolCalls.h"
+#include "task/process.h"
 
 #include "arch/i686/gdt.h"
 
@@ -82,6 +83,7 @@ Page *bufferPage;
 Page *commandPage;
 
 extern char __userProg_start[];
+extern void setSS(uint32_t ss);
 
 void EnterShell()
 {
@@ -144,6 +146,31 @@ void EnterShell()
             if (cmpCommand("clear", argv[1]) == true)
             {
                 VGA_clrscr();
+            }
+            if (cmpCommand("ex", argv[1]) == true)
+            {
+                if (count < 2)
+                {
+                    printf("Usage: int <address> <fd>\n");
+                    continue;
+                }
+
+                fd_t fd = VFS_FD_STDOUT;
+                uint32_t address = 0;
+                atoi(argv[2], (int*)&address);
+                atoi(argv[3], &fd);
+                
+                uint8_t *u8Buffer = (uint8_t *)address;
+                for (uint16_t i = 0; i < bufferSize; i++)
+                {
+                    uint8_t word = u8Buffer[i];
+
+                    if (i % 16 == 0)
+                    {
+                        fprintf(fd, "\n%04X\t", i);
+                    }
+                    fprintf(fd, "%02X,", word);
+                }                
             }
             if (cmpCommand("mem-status", argv[1]) == true)
             {
@@ -331,9 +358,13 @@ void EnterShell()
 
             memcpy(__userProg_start, buffer, bytesRead);
             usermodeFunc = (uint32_t)__userProg_start;
+            makeProcess(usermodeFunc);
             log_debug(MODULE, "bytesRead = %u, usermodeFunc = 0x%p", bytesRead, usermodeFunc);
-            PressAnyKeyLoop();
             Jump_usermode();
+            setSS(i686_GDT_DATA_SEGMENT);
+            log_debug(MODULE, "return back from user");
+            ASM_INT2();
+            continue;
         }
     }
 

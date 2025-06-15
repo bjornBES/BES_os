@@ -58,7 +58,6 @@ void debug(Registers *regs)
     log_debug(DebugMODULE, "  interrupt=%x  errorcode=%x", regs->interrupt, regs->error);
 }
 
-
 BootParams *params;
 
 void CopyParams(BootParams *src)
@@ -125,15 +124,13 @@ void KernelInits()
     _init();
     initSystemCall();
     i686_ISR_RegisterHandler(2, debug);
-    i686_IDT_SetGate(2, debug, i686_GDT_CODE_SEGMENT, IDT_FLAG_RING3 | IDT_FLAG_GATE_32BIT_INT);
     IDT_Load();
     log_debug("MAIN", "init memory allocator");
     mm_init();
 
     log_debug("MAIN", "init devices");
     initDevice();
-    
-    
+
     log_debug("MAIN", "init pit");
     pit_init();
     log_debug("MAIN", "init keyboard");
@@ -149,10 +146,10 @@ void KernelStart(BootParams *bootParams)
 {
     CopyParams(bootParams);
     pre_vga_initialize(params, &params->VESA);
-    
+
     KernelInits();
     printf("KernelStart\n");
-    
+
     /*
     {
         PressAnyKeyLoop();
@@ -161,27 +158,27 @@ void KernelStart(BootParams *bootParams)
         log_err("MAIN", "== ALLOCATED DATA1 ==");
         printStatus();
         PressAnyKeyLoop();
-        
+
         void* data2 = malloc(2, page);
         log_err("MAIN", "== ALLOCATED DATA2 ==");
         printStatus();
         PressAnyKeyLoop();
-        
+
         void* data3 = malloc(4096 + 1, page);
         log_err("MAIN", "== ALLOCATED DATA3 ==");
         printStatus();
         PressAnyKeyLoop();
-        
+
         free(data2, page);
         printStatus();
         log_err("MAIN", "== FREE DATA2 ==");
         PressAnyKeyLoop();
-        
+
         free(data3, page);
         printStatus();
         log_err("MAIN", "== FREE DATA3 ==");
         PressAnyKeyLoop();
-        
+
         free(data1, page);
         printStatus();
         log_err("MAIN", "== FREE DATA1 ==");
@@ -196,20 +193,20 @@ void KernelStart(BootParams *bootParams)
     printStatus();
 
     pciScan();
+    PressAnyKeyLoop();
     printStatus();
     log_info("MAIN", "pciScan done");
     VGA_clrscr();
     printf("12345678901234567890123456789012345678901234567890123456789012345678901234567890\n");
     VGA_setcursor(0, 2);
     printf("00000000011111111112222222222333333333344444444445555555555666666666677777777778\n");
-    
-    
+
     VGA_setcursor(0, 6);
     printf("1234567890123456789012345678901234567890\n");
     printf("0000000001111111111222222222233333333334\n");
     VGA_clrscr();
     // printf("ABC");
-    
+
     VFS_init();
     log_info("MAIN", "VFS done");
     ATA_init();
@@ -233,12 +230,12 @@ void KernelStart(BootParams *bootParams)
             }
         }
         /*
-        
+
         printStatus();
         ASM_INT2();
         uint8_t *buffer = (uint8_t *)malloc(512, &bufferPage);
         VGA_clrscr();
-        
+
         fd_t file = VFS_Open("/ata0/test.txt");
         vfs_node_t *node = VFS_GetNode(file);
         if (node == NULL)
@@ -250,9 +247,9 @@ void KernelStart(BootParams *bootParams)
             return;
         }
         VFS_Read(file, buffer, 512);
-        
+
         VGA_clrscr();
-        
+
         printf("Data from test.txt\n");
         printf("%s", buffer);
         for (uint16_t i = 0; i < 512; i++)
@@ -264,18 +261,34 @@ void KernelStart(BootParams *bootParams)
             }
             fprintf(VFS_FD_DEBUG, "%X,", word);
         }
-        
+
         ASM_INT2();
         VFS_Close(file);
         free(buffer, &bufferPage);
         */
     }
 
-    // PressAnyKeyLoop();
+    /*
+    VGA_SetMode(14);
+    log_debug("MAIN", "back to mode 13");
+    // 14: 0xFD000000 GRAP, COLOR, mm: 4 320x200x8
     VGA_clrscr();
 
-    printStatus();
-    VGA_clrscr();
+    for (size_t i = 0; i < 16; i++)
+    {
+
+    VGA_putpixel(0, i, i % 16);
+}
+PressAnyKeyLoop();
+
+VGA_SetMode(1);
+log_debug("MAIN", "back to mode 1");
+// PressAnyKeyLoop();
+VGA_clrscr();
+
+printStatus();
+VGA_clrscr();
+*/
 
     log_info("Main", "This is an info msg!");
     log_warn("Main", "This is a warning msg!");

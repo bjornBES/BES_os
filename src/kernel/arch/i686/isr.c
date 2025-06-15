@@ -58,6 +58,7 @@ void i686_ISR_Initialize()
 
 void __attribute__((cdecl)) i686_ISR_Handler(Registers* regs)
 {
+    set_kernel_stack(regs->esp);
     // log_debug("ISR", "interrupt here %d", regs->interrupt);
     if (g_ISRHandlers[regs->interrupt] != NULL)
     {

@@ -106,7 +106,7 @@ static uint16_t c = 0;
 uint16_t KeyboardGetKey()
 {
 	uint32_t key = TakeBuffer();
-	if (keyboard_keys_state.shift == keyboard_leds_state.capslock)
+	if (!keyboard_keys_state.shift && !keyboard_leds_state.capslock)
 	{
 		c = keyboard_layout_ptr[key];
 	}

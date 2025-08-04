@@ -249,17 +249,13 @@ def buildApps():
     makePath = Path(f"{project_root}").absolute()
     subprocess.run(["make", "-C", makePath, "user"], text=True, check=True)
     
-    userPath = os.path.abspath(os.path.join(project_root, f"build/{arch}_{config}/user"))
-    user_contents = GlobRecursive('*.bin', userPath)
-    
-    for file in user_contents:
-        file_src = file
-        file_rel = os.path.relpath(file_src, userPath)
-        file_dst = os.path.join(f"{root}/bin", file_rel)
+    bashPath = Path("./image/userProg.py").absolute()
 
-        if not os.path.isdir(file_src):
-            print('    ... copying', file_rel)
-            copyFile(file_src, file_dst)
+    result = subprocess.run(["python3", bashPath, arch, config, root])
+    if result.returncode == 1:
+        print("error in the partitons function")
+        exit(1)
+                
     
 
 def build_disk(image, floppyImage, sataImage, stage1, stage2, kernel, files, floppyFiles, sataDiskFiles):

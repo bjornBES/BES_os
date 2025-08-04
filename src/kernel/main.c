@@ -55,6 +55,9 @@ void debug(Registers *regs)
     log_debug(DebugMODULE, "  esp=%x  ebp=%x  eip=%x  eflags=%x  cs=%x  ds=%x  ss=%x",
               regs->esp, regs->U32.ebp, regs->eip, regs->eflags, regs->cs, regs->ds, regs->ss);
 
+    // log_debug(DebugMODULE, "  es=%x  fs=%x  gs=%x",
+    //           regs->es, regs->fs, regs->gs);
+
     log_debug(DebugMODULE, "  interrupt=%x  errorcode=%x", regs->interrupt, regs->error);
 }
 

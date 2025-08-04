@@ -31,6 +31,13 @@ isr_common:
     xor eax, eax        ; push ds
     mov ax, ds
     push eax
+    
+    ; mov ax, es
+    ; push eax
+    ; mov ax, fs
+    ; push eax
+    ; mov ax, gs
+    ; push eax
 
     mov ax, 0x10        ; use kernel data segment
     mov ds, ax

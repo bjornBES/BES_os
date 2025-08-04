@@ -206,6 +206,8 @@ void ps2_first_channel_handler(Registers *regs)
     // read data
     ps2_first_channel_buffer[ps2_first_channel_buffer_pointer] = i686_inb(PS2_DATA);
 
+    log_debug(MODULE, "ps2_first_channel_handler: data = 0x%X", ps2_first_channel_buffer[ps2_first_channel_buffer_pointer]);
+
     // move pointer
     ps2_first_channel_buffer_pointer++;
     if (ps2_first_channel_buffer_pointer >= 10)
@@ -259,7 +261,7 @@ void ps2_first_channel_handler(Registers *regs)
         // clear variables
         ps2_first_channel_buffer_pointer = 0;
     }
-    i8259_SendEndOfInterrupt(1);
+    i8259_SendEOI(1);
 }
 void ps2_second_channel_handler(Registers *regs)
 {
@@ -335,7 +337,7 @@ void ps2_second_channel_handler(Registers *regs)
         ps2_second_channel_buffer_pointer = 0;
     }
     */
-    i8259_SendEndOfInterrupt(12);
+    i8259_SendEOI(12);
 }
 
 void ps2_init_keyboard()
@@ -655,4 +657,16 @@ void ps2_init_keyboard()
 
     fullyEnabled = true;
     fprintf(VFS_FD_STDOUT, "controller %u channels %u %u", ps2_controller_present, ps2_first_channel_device, ps2_second_channel_device);
+}
+
+void ps2_probe()
+{
+    if (ps2_first_channel_present == DEVICE_PRESENT)
+    {
+        i686_IRQ_RegisterHandler(1, ps2_first_channel_handler);
+    }
+    if (ps2_second_channel_present == DEVICE_PRESENT)
+    {
+        i686_IRQ_RegisterHandler(12, ps2_second_channel_handler);
+    }
 }

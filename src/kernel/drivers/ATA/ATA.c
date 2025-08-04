@@ -143,7 +143,7 @@ void ide_primary_irq(Registers *regs)
 		ide_print_error(ATA_PRIMARY, 2);
 	}
 
-	i8259_SendEndOfInterrupt(ATA_PRIMARY_IRQ);
+	i8259_SendEOI(ATA_PRIMARY_IRQ);
 }
 
 void ide_secondary_irq(Registers *regs)
@@ -155,7 +155,7 @@ void ide_secondary_irq(Registers *regs)
 		ide_print_error(ATA_SECONDARY, 2);
 	}
 
-	i8259_SendEndOfInterrupt(ATA_SECONDARY_IRQ);
+	i8259_SendEOI(ATA_SECONDARY_IRQ);
 }
 
 void ide_poll(uint16_t ioBase)

@@ -71,7 +71,7 @@ uint16_t i8259_GetMask()
 void i8259_Configure(uint8_t offsetPic1, uint8_t offsetPic2, bool autoEoi)
 {
     // Mask everything
-    i8259_SetMask(0xFFFF);
+    // i8259_SetMask(0xFFFF);
 
     // initialization control word 1
     i686_outb(PIC1_COMMAND_PORT, PIC_ICW1_ICW4 | PIC_ICW1_INITIALIZE);
@@ -106,7 +106,7 @@ void i8259_Configure(uint8_t offsetPic1, uint8_t offsetPic2, bool autoEoi)
     i8259_SetMask(0xFFFF);
 }
 
-void i8259_SendEndOfInterrupt(int irq)
+void i8259_SendEOI(int irq)
 {
     if (irq >= 8)
         i686_outb(PIC2_COMMAND_PORT, PIC_CMD_END_OF_INTERRUPT);
@@ -160,7 +160,7 @@ static const PICDriver g_PicDriver = {
     .Probe = &i8259_Probe,
     .Initialize = &i8259_Configure,
     .Disable = &i8259_Disable,
-    .SendEndOfInterrupt = &i8259_SendEndOfInterrupt,
+    .SendEndOfInterrupt = &i8259_SendEOI,
     .Mask = &i8259_Mask,
     .Unmask = &i8259_Unmask,
 };

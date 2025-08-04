@@ -53,6 +53,12 @@ void write_tss()
     __asm__("mov %%esp, %0" : "=r"(stack_ptr));
     tss_entry.ss0 = i686_GDT_DATA_SEGMENT; // Set the kernel stack segment.
     tss_entry.esp0 = stack_ptr;            // Set the kernel stack pointer.
+    tss_entry.cs = i686_GDT_CODE_SEGMENT;
+    tss_entry.ds = i686_GDT_DATA_SEGMENT;
+    tss_entry.es = i686_GDT_DATA_SEGMENT;
+    tss_entry.fs = i686_GDT_DATA_SEGMENT;
+    tss_entry.gs = i686_GDT_DATA_SEGMENT;
+    tss_entry.eax = 0;
 
     GDT_SetEntry(5, (uint32_t)&tss_entry, sizeof(tss_entry_t) - 1, 0x89, 0x00);
 
@@ -71,8 +77,8 @@ void i686_GDT_Initialize()
     GDT_SetEntry(0, 0, 0, 0, 0);                                                                                                                                            // NULL descriptor
     GDT_SetEntry(1, 0, 0xFFFFF, (GDT_ACCESS_PRESENT | GDT_ACCESS_RING0 | GDT_ACCESS_CODE_SEGMENT | GDT_ACCESS_CODE_READABLE), (GDT_FLAG_32BIT | GDT_FLAG_GRANULARITY_4K));  // Kernel pmode 32 bit code segment
     GDT_SetEntry(2, 0, 0xFFFFF, (GDT_ACCESS_PRESENT | GDT_ACCESS_RING0 | GDT_ACCESS_DATA_SEGMENT | GDT_ACCESS_DATA_WRITEABLE), (GDT_FLAG_32BIT | GDT_FLAG_GRANULARITY_4K)); // Kernel pmode 32 bit data segment
-    GDT_SetEntry(3, 0, 0xFFFFF, (GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_CODE_SEGMENT | GDT_ACCESS_CODE_READABLE), (GDT_FLAG_32BIT | GDT_FLAG_GRANULARITY_4K));
-    GDT_SetEntry(4, 0, 0xFFFFF, (GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_DATA_SEGMENT | GDT_ACCESS_DATA_WRITEABLE), (GDT_FLAG_32BIT | GDT_FLAG_GRANULARITY_4K));
+    GDT_SetEntry(3, 0, 512, (GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_CODE_SEGMENT | GDT_ACCESS_CODE_READABLE), (GDT_FLAG_32BIT | GDT_FLAG_GRANULARITY_4K));  // User pmode 32 bit code segment
+    GDT_SetEntry(4, 0, 512, (GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_DATA_SEGMENT | GDT_ACCESS_DATA_WRITEABLE), (GDT_FLAG_32BIT | GDT_FLAG_GRANULARITY_4K)); // User pmode 32 bit data segment
 
     write_tss();
 }

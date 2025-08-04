@@ -4,8 +4,10 @@ section .text
 
 global start
 start:
-;    int     2
-    call print_msg
+    mov     eax,                    0x55AA ; syscall number for sys_exit
+    mov     [gs:0x0100000],         eax
+    mov     [gs:0], eax
+
     mov     eax,        2
     int     0x80
 

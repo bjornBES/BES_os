@@ -80,6 +80,7 @@ typedef struct tss_entry {
     uint32_t es;        // Data segment (not used here)
     uint32_t cs;        // Code segment (not used here)
     uint32_t ss;        // Stack segment (not used here)
+    uint32_t ds;        // Data segment (not used here)
     uint32_t fs;        // Additional segment (not used here)
     uint32_t gs;        // Additional segment (not used here)
     uint32_t ldt;       // Local descriptor table (not used here)
@@ -93,7 +94,7 @@ void flush_tss();
 void GDT_Load();
 void TSS_Load();
 extern uint32_t usermodeFunc;
-void Jump_usermode();
+void Jump_usermode(uint32_t usermodeFunc);
 void retFromUser();
 void GDT_SetEntry(uint16_t index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
 void i686_GDT_Initialize();

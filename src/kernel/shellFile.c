@@ -11,9 +11,12 @@
 #include "task/process.h"
 
 #include "arch/i686/gdt.h"
+#include "arch/i686/idt.h"
+#include "arch/i686/bios.h"
 
 #include "drivers/VGA/vga.h"
 #include "drivers/Keyboard/keyboard.h"
+#include "drivers/PS2/8042_controller.h"
 
 #include "syscall/systemcall.h"
 
@@ -84,6 +87,7 @@ Page *commandPage;
 
 extern char __userProg_start[];
 extern void setSS(uint32_t ss);
+extern uint32_t kernelStack;
 
 void EnterShell()
 {
@@ -157,9 +161,9 @@ void EnterShell()
 
                 fd_t fd = VFS_FD_STDOUT;
                 uint32_t address = 0;
-                atoi(argv[2], (int*)&address);
+                atoi(argv[2], (int *)&address);
                 atoi(argv[3], &fd);
-                
+
                 uint8_t *u8Buffer = (uint8_t *)address;
                 for (uint16_t i = 0; i < bufferSize; i++)
                 {
@@ -170,7 +174,7 @@ void EnterShell()
                         fprintf(fd, "\n%04X\t", i);
                     }
                     fprintf(fd, "%02X,", word);
-                }                
+                }
             }
             if (cmpCommand("mem-status", argv[1]) == true)
             {
@@ -356,14 +360,65 @@ void EnterShell()
 
             VFS_Close(binDirFD);
 
-            memcpy(__userProg_start, buffer, bytesRead);
+            if (cmpCommand("CEXE", buffer))
+            {
+                log_debug(MODULE, "using the cexe header at %p", buffer);
+                CexeProgramHeader_t *cexeHeader = (CexeProgramHeader_t *)buffer;
+
+                // Header fields
+                fprintf(VFS_FD_DEBUG, "== Cexe Header ==\n");
+                fprintf(VFS_FD_DEBUG, "Magic: %4s\n", cexeHeader->header.Header.magic);
+                fprintf(VFS_FD_DEBUG, "Version: %u\n", cexeHeader->header.Header.version);
+                fprintf(VFS_FD_DEBUG, "Program Length: %u\n", cexeHeader->header.Header.programLength);
+                fprintf(VFS_FD_DEBUG, "Physical Offset: %u\n", cexeHeader->header.Header.physOffset);
+                fprintf(VFS_FD_DEBUG, "\n");
+
+                // Section entries
+                for (int i = 0; i < 4; ++i)
+                {
+                    CexeSectionEntry_t entry = cexeHeader->entries[i];
+                    fprintf(VFS_FD_DEBUG, "== Section Entry %d ==\n", i);
+                    fprintf(VFS_FD_DEBUG, "Ident: %2s\n", entry.section.ident);
+                    fprintf(VFS_FD_DEBUG, "Flags: 0x%02X\n", entry.section.flags);
+                    fprintf(VFS_FD_DEBUG, "Offset: 0x%08x%08x\n", entry.section.offset.u32Offset[1], entry.section.offset.u32Offset[0]);
+                    fprintf(VFS_FD_DEBUG, "Size: %u\n", entry.section.size);
+                }
+
+                uint32_t programSize = cexeHeader->header.Header.programLength;
+                CexeSectionEntry_t *textSection = &cexeHeader->entries[0];
+                uint8_t *code = buffer + textSection->section.offset.u32Offset[0] + 0x60;
+                log_info(MODULE, "programSize = %u, code = 0x%p", programSize, code);
+                memcpy(__userProg_start, code, programSize);
+            }
+            else
+            {
+                log_debug(MODULE, "flat binary");
+                memcpy(__userProg_start, buffer, bytesRead);
+            }
             usermodeFunc = (uint32_t)__userProg_start;
+            __asm__("pusha");
+            __asm__("mov %%esp, %0" : "=r"(kernelStack));
             makeProcess(usermodeFunc);
             log_debug(MODULE, "bytesRead = %u, usermodeFunc = 0x%p", bytesRead, usermodeFunc);
-            Jump_usermode();
+            printf("Starting usermode program at 0x%p\n", (void *)usermodeFunc);
+            Jump_usermode(usermodeFunc);
+            // __asm__("mov %%esi, %0" : : "r"(kernelStack));
             setSS(i686_GDT_DATA_SEGMENT);
             log_debug(MODULE, "return back from user");
             ASM_INT2();
+
+            IDT_Load();
+
+            ps2_probe();
+
+            fprintf(VFS_FD_DEBUG, "Back in kernel mode\n");
+            uint32_t data;
+            __asm__("mov %%gs:0x0100000, %0" : "=r"(data));
+            fprintf(VFS_FD_DEBUG, "at [0x0100000] = %x\n", data);
+            __asm__("mov %%gs:0x0, %0" : "=r"(data));
+            fprintf(VFS_FD_DEBUG, "at [0] = %x\n", data);
+
+
             continue;
         }
     }

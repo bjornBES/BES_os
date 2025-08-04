@@ -38,3 +38,5 @@ uint8_t ps2_first_channel_wait_for_response(void);
 void ps2_write_second_channel(uint8_t data);
 uint8_t ps2_second_channel_wait_for_ack(void);
 uint8_t ps2_second_channel_wait_for_response(void);
+
+void ps2_probe();

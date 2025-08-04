@@ -55,7 +55,7 @@ void timer_handler(Registers *r)
         // log_debug("TIMER", "One second has passed\n");
         // printf("One second has passed\n");
     }
-    i8259_SendEndOfInterrupt(0);
+    i8259_SendEOI(0);
 }
 
 void timer_wait(int ticks)

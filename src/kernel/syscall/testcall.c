@@ -11,5 +11,8 @@ void testcall(Registers* regs)
         log_crit("testcall", "  interrupt=%x  errorcode=%x", regs->interrupt, regs->error);
 
     log_debug("testcall", "Going into a loop in the kernel");
-    __asm__ ("jmp [retFromUser]");
+    for (;;)
+    {
+        ;
+    }
 }

@@ -3,7 +3,7 @@
 section .text
 
 global start
-start:
+start:  
     mov     eax,        3               ; System call 3 (open)
     mov     esi,        path            ; Setting the path
     int     0x80                        ; syscall
@@ -49,6 +49,10 @@ start:
 .exitWithMsg:
     call    printMsg                    ; call to print a msg
 exit:
+    mov     eax,                    0x55AA ; syscall number for sys_exit
+    mov     [gs:0x0100000],         eax
+    mov     [gs:0], eax
+    
     mov     eax,        2               ; System call 2 (exit)
     int     0x80                        ; syscall
     

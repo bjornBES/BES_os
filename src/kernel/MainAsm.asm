@@ -30,4 +30,4 @@ start:
     hlt
     jmp $
 
-times (0x1000 - ($ - start)) db 0
+; times (0x1000 - ($ - start)) db 0

@@ -51,10 +51,13 @@ extern user_stack_top
 %define USER_STACK_TOP user_stack_top  ; example top of user stack (adjust to your memory map)
 extern usermodeFunc
 ;
-; void Jump_usermode();
+; void Jump_usermode(uint32_t usermodeFunc);
 ;
 global Jump_usermode
 Jump_usermode:
+    mov [EBPTemp], ebp
+    mov ebp, esp
+    
     mov ax, USER_DS
     mov ds, ax
     mov es, ax
@@ -63,7 +66,6 @@ Jump_usermode:
 
     mov eax, [esp]
     mov [retAddress], eax
-    mov [kernelStack], esp
     
     mov eax, USER_STACK_TOP
     push USER_DS
@@ -73,19 +75,19 @@ Jump_usermode:
     pop eax
     or eax, 0x200
     push eax
+    mov eax, [ebp + 8]  ; usermodeFunc
 
     push USER_CS
     push 0x10000
     
     iret
     
-global retFromUser
-retFromUser:
+global retToKernel
+retToKernel:
     mov     esp, [kernelStack]
-    push    eax
-    mov     eax,    KERNEL_DS
-    mov     ss,     ax
-    pop     eax
+    popa
+    mov     esp, [kernelStack]
+    mov     ebp, [EBPTemp]
     jmp     [retAddress]
 
 global setSS
@@ -100,6 +102,9 @@ setSS:
     ret
 
 section .data
+EBPTemp:
+    dd 0
+
 global kernelStack
 kernelStack:
     dd 0

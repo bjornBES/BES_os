@@ -13,6 +13,8 @@ from pyfatfs.PyFat import PyFat
 from decimal import Decimal
 from glob import glob
 
+from config import arch, config
+
 # CONFIG
 
 bashScriptsPath = "scripts/image"
@@ -32,9 +34,7 @@ userApps = os.path.abspath(os.path.join(project_root, "src/user_programs"))
 sectionOffset : int = HeaderSize
 binOffset : int = 0
 
-arch = sys.argv[1]
-config = sys.argv[2]
-root = sys.argv[3]
+root = sys.argv[1]
 
 def GlobRecursive(pattern, node='.'):
     src = Path(node)
@@ -109,10 +109,8 @@ def buildFiles():
         rodataSize = find_symbol_in_map_file(mapfile, "__rodata_end") - rodataOffset - phys
         bssOffset = find_symbol_in_map_file(mapfile, "__bss_start") - phys
         bssSize = find_symbol_in_map_file(mapfile, "__bss_end") - bssOffset - phys
-    
         
         print(f"text = {hex(textOffset)}, data = {hex(dataOffset)} rodata = {hex(rodataOffset)} bss = {hex(bssOffset)}")
-
         
         if not os.path.isdir(file_src):
             print('    ... copying', file_rel)

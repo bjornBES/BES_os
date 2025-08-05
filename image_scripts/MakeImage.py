@@ -18,17 +18,11 @@ sys.path.append(project_root)
 userApps = os.path.abspath(os.path.join(project_root, "src/user_programs"))
 
 from scripts.utility import FindIndex, GlobRecursive, IsFileName, ParseSize
-from config import mountMethod
+from config import mountMethod, config, arch, imageType, imageFS, imageSize
 
 SECTOR_SIZE = 512
 
 bashScriptsPath = "scripts/image"
-
-imageType = ""
-imageFS = ""
-imageSize = ""
-arch = ""
-config = ""
 
 BASEDIR = ""
 FLOPPYBASEDIR = ""
@@ -94,7 +88,7 @@ def find_symbol_in_map_file(map_file: str, symbol: str):
     return None
 
 def create_partition_table(target: str, align_start: int):
-    bashPath = Path("./image/partitons.py").absolute()
+    bashPath = Path("image_scripts/partitons.py").absolute()
 
     result = subprocess.run(["python3", bashPath, target])
     if result.returncode == 1:
@@ -233,6 +227,9 @@ def loadMountFiles(image, files, baseDir):
 MAX_WORKERS = 8
 
 def generate_image_files(targets):
+    filesPath = os.path.join(project_root, "files")
+    if not os.path.exists(filesPath):
+        os.mkdir(filesPath)
     threads = []
     
     for targetTuple in targets:
@@ -249,9 +246,9 @@ def buildApps():
     makePath = Path(f"{project_root}").absolute()
     subprocess.run(["make", "-C", makePath, "user"], text=True, check=True)
     
-    bashPath = Path("./imageScripts/userProg.py").absolute()
+    bashPath = Path(os.path.join(os.path.dirname(__file__), "userProg.py")).absolute()
 
-    result = subprocess.run(["python3", bashPath, arch, config, root])
+    result = subprocess.run(["python3", bashPath, root])
     if result.returncode == 1:
         print("error in the partitons function")
         exit(1)
@@ -336,14 +333,19 @@ def build_disk(image, floppyImage, sataImage, stage1, stage2, kernel, files, flo
             mcopy(floppyImage, file_src, file_dst)
     
 
-imageType = sys.argv[1]
-imageFS = sys.argv[2]
-imageSize = sys.argv[3]
-arch = sys.argv[4]
-config = sys.argv[5]
-
 filesDir = os.path.join(project_root, "files")
 root = os.path.abspath(os.path.join(filesDir, "root"))
+
+if not os.path.exists(filesDir):
+    os.mkdir(filesDir)
+if not os.path.exists(root):
+    os.mkdir(root)
+buildsPath = os.path.join(project_root, "builds")
+archPath = os.path.join(buildsPath, f"{arch}_{config}")
+if not os.path.exists(buildsPath):
+    os.mkdir(buildsPath)
+if not os.path.exists(archPath):
+    os.mkdir(archPath)
 
 buildApps()
 

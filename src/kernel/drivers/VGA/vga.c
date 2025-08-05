@@ -4,13 +4,12 @@
 #include "vga_text.h"
 #include "debug.h"
 
-#include "malloc.h"
+#include "memory.h"
 #include "arch/i686/bios.h"
 
 #define MODULE "VGA"
 
 extern char VGAModesAddr;
-Page *VGAModePage;
 vga_mode_t *vga_modes;
 uint16_t VGA_currentMode;
 uint8_t *VGA_Framebuffer;

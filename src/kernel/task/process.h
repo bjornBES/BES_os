@@ -12,6 +12,7 @@ typedef struct process
     Registers *regs;
     uint32_t processAddress;
     Page* memoryPage;
+    uint32_t stack;
     uint8_t* code;
     uint8_t* data;
     uint8_t* roData;
@@ -19,5 +20,6 @@ typedef struct process
 
 extern process_t* Process[MAX_PROCESS];
 
-void makeProcess(uint32_t address);
+process_t* makeProcess(uint32_t address, uint32_t userStack);
+void runProcess(process_t* process);
 void killProcess(int id);

@@ -4,11 +4,14 @@
 #include "isr.h"
 #include "irq.h"
 #include "i8259.h"
+#include "debug.h"
 
 int timer_ticks = 0;
 
 #define MILISECOND_PER_PIT_TICK 2
 #define SECOUND_PER_PIT_TICK 1000 / MILISECOND_PER_PIT_TICK
+
+#define MODULE "PIT"
 
 uint32_t read_pit_count(void)
 {
@@ -81,8 +84,15 @@ void sleep_sec(int sec)
 
 void pit_init()
 {
-    set_pit(500);
-    timer_ticks = 0;
+    log_debug(MODULE, "before PIT handler registered");
     i686_IRQ_RegisterHandler(0, timer_handler);
+    log_debug(MODULE, "PIT handler registered");
     // i686_ISR_RegisterHandler(32, timer_handler);
+
+    log_debug(MODULE, "Initializing PIT");
+    set_pit(500);
+    log_debug(MODULE, "PIT set to 500Hz");
+    timer_ticks = 0;
+    
+
 }

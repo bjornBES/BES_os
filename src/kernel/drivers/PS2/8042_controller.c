@@ -5,7 +5,7 @@
 #include "arch/i686/i8259.h"
 #include "arch/i686/pit.h"
 
-#include "malloc.h"
+#include "memory.h"
 #include "stdio.h"
 #include "debug.h"
 #include "memory.h"

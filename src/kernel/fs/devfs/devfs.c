@@ -5,7 +5,6 @@
 #include "hal/vfs.h"
 #include "hal/hal.h"
 #include "memory.h"
-#include "malloc.h"
 
 #include "devfs.h"
 

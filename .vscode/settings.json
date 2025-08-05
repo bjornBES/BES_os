@@ -133,7 +133,8 @@
         "string_i686.h": "c",
         "exit.h": "c",
         "process.h": "c",
-        "bios.h": "c"
+        "bios.h": "c",
+        "cpuid.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

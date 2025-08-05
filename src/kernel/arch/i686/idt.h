@@ -33,6 +33,7 @@ typedef struct
     IDTEntry* Ptr;
 } __attribute__((packed)) IDTDescriptor;
 
+void IDT_Dump();
 void IDT_Load();
 void i686_IDT_Initialize();
 void i686_IDT_DisableGate(int interrupt);

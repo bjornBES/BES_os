@@ -1,4 +1,5 @@
 #include "idt.h"
+#include "debug.h"
 #include <stdint.h>
 #include <util/binary.h>
 
@@ -33,4 +34,25 @@ void IDT_Load()
 
 void i686_IDT_Initialize()
 {
+}
+
+void IDT_Dump()
+{
+    for (int i = 0; i < 256; i++)
+    {
+        uint32_t base = ((uint32_t)g_IDT[i].BaseHigh << 16) | g_IDT[i].BaseLow;
+        uint16_t sel  = g_IDT[i].SegmentSelector;
+        uint8_t  flg  = g_IDT[i].Flags;
+
+        // Only show entries that are present
+        if (flg & 0x80)
+        {
+            log_info("IDT", "Vec %3d: base=0x%08X sel=0x%04X flags=0x%02X",
+                     i, base, sel, flg);
+        }
+        else
+        {
+            log_info("IDT", "Vec %3d: NOT PRESENT", i);
+        }
+    }
 }

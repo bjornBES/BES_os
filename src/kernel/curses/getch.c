@@ -67,10 +67,10 @@ static void _copy(void)
         return;
 
 #ifdef PDC_WIDE
-    wtmp = malloc((len + 1) * sizeof(wchar_t), &cursesPage);
+    wtmp = malloc((len + 1) * sizeof(wchar_t));
     len *= 4;
 #endif
-    tmp = malloc(len + 1, &cursesPage);
+    tmp = malloc(len + 1);
 
     for (j = y_start, pos = 0; j <= y_end; j++)
     {
@@ -91,9 +91,9 @@ static void _copy(void)
 #endif
 
     PDC_setclipboard(tmp, pos);
-    free(tmp, &cursesPage);
+    free(tmp);
 #ifdef PDC_WIDE
-    free(wtmp, &cursesPage);
+    free(wtmp);
 #endif
 }
 
@@ -120,7 +120,7 @@ static int _paste(void)
     newmax = len + SP->c_ungind;
     if (newmax > SP->c_ungmax)
     {
-        SP->c_ungch = realloc(SP->c_ungch, newmax * sizeof(int), &cursesPage);
+        SP->c_ungch = realloc(SP->c_ungch, newmax * sizeof(int));
         if (!SP->c_ungch)
             return -1;
         SP->c_ungmax = newmax;

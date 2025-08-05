@@ -12,7 +12,7 @@
 #include "memory.h"
 #include "stdio.h"
 #include "debug.h"
-#include "malloc.h"
+#include "memory.h"
 #include "unistd.h"
 
 #include "drivers/ide/ide_controller.h"
@@ -39,9 +39,6 @@
 
 #define ATA_MasterDrive 0xA0
 #define ATA_SlaveDirve 0xB0
-
-Page *ATAPageIdentify;
-Page *ATAPage;
 
 uint8_t ATA_CheakStatus(uint8_t flag)
 {
@@ -260,8 +257,9 @@ void ATA_init()
 	
 	for (size_t i = 0; i < ide_devices_count; i++)
 	{
-		device_t *dev = (device_t *)malloc(sizeof(device_t), devicePage);
-		ide_private_data *priv = (ide_private_data *)malloc(sizeof(ide_private_data), privPage);
+		device_t *dev = (device_t *)malloc(sizeof(device_t));
+		log_debug(MODULE, "dev is at %p", dev);
+		ide_private_data *priv = (ide_private_data *)malloc(sizeof(ide_private_data));
 		if (ide_devices[i].Reserved == 0)
 		{
 			continue; // Skip if the device is not reserved.

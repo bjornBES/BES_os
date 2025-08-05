@@ -94,7 +94,7 @@ void flush_tss();
 void GDT_Load();
 void TSS_Load();
 extern uint32_t usermodeFunc;
-void Jump_usermode(uint32_t usermodeFunc);
+void Jump_usermode(uint32_t usermodeFunc, uint32_t userStack);
 void retFromUser();
 void GDT_SetEntry(uint16_t index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
 void i686_GDT_Initialize();

@@ -7,6 +7,7 @@ SECTIONS
     . = phys;
     .userProg           : { __userProg_start = .;   *(.userProg)}
     . = 0x00100000;
+    .KernelStart = .;
     .text               : { __text_start = .;       *(.text)    }
     .data               : { __data_start = .;       *(.data)    }
     .rodata             : { __rodata_start = .;     *(.rodata)  }
@@ -15,6 +16,7 @@ SECTIONS
     { 
         __bss_start = .;        *(.bss)     
     }
+    /* Kernel Stack */
     stack_bottom = .;
     stack_bottom = ALIGN(4096);
     . += 16384;
@@ -29,12 +31,13 @@ SECTIONS
     VGAModesAddr = ALIGN(4096);  /* Align VGAModesAddr to the next 4KB boundary */
     . += 8192;
 
+    /* User Stack */
     user_stack_bottom = .;
     user_stack_bottom = ALIGN(4096);
-    . += 16384;
+    . += 8192;
     user_stack_top = .;
     user_stack_top = ALIGN(4096);
-    
+
     __end = .;
     __end = ALIGN(4096);  /* Align __end to the next 4KB boundary */
 }

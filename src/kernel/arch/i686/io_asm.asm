@@ -1,113 +1,113 @@
 
+;;
+;; void  ASMCALL i686_outb(uint16_t port, uint8_t value);
+;;
+;global i686_outb
+;i686_outb:
+;    [bits 32]
+;    push ebp
+;    mov ebp, esp
+;    push edx
+;    push eax
+;    xor edx, edx
+;    mov dx, [ebp + 8]
+;    xor eax, eax
+;    mov al, [ebp + 12]
+;    out dx, al
+;    pop eax
+;    pop edx
+;    pop ebp
+;    ret
 ;
-; void  ASMCALL i686_outb(uint16_t port, uint8_t value);
+;;
+;; uint8_t ASMCALL i686_inb(uint16_t port);
+;;
+;global i686_inb
+;i686_inb:
+;    [bits 32]
+;    push ebp
+;    mov ebp, esp
+;    push edx
+;    xor edx, edx
+;    mov dx, [ebp + 8]
+;    xor eax, eax
+;    in al, dx
+;    pop edx
+;    pop ebp
+;    ret
 ;
-global i686_outb
-i686_outb:
-    [bits 32]
-    push ebp
-    mov ebp, esp
-    push edx
-    push eax
-    xor edx, edx
-    mov dx, [ebp + 8]
-    xor eax, eax
-    mov al, [ebp + 12]
-    out dx, al
-    pop eax
-    pop edx
-    pop ebp
-    ret
-
+;;
+;; void ASMCALL i686_outw(uint16_t port, uint16_t value);
+;;
+;global i686_outw
+;i686_outw:
+;    [bits 32]
+;    push ebp
+;    mov ebp, esp
+;    push edx
+;    push eax
+;    xor edx, edx
+;    mov dx, [ebp + 8]
+;    xor eax, eax
+;    mov ax, [ebp + 12]
+;    out dx, ax
+;    pop eax
+;    pop edx
+;    pop ebp
+;    ret
 ;
-; uint8_t ASMCALL i686_inb(uint16_t port);
+;;
+;; uint16_t ASMCALL i686_inw(uint16_t port);
+;;
+;global i686_inw
+;i686_inw:
+;    [bits 32]
+;    push ebp
+;    mov ebp, esp
+;    push edx
+;    xor edx, edx
+;    mov dx, [ebp + 8]
+;    xor eax, eax
+;    in ax, dx
+;    pop edx
+;    pop ebp
+;    ret
 ;
-global i686_inb
-i686_inb:
-    [bits 32]
-    push ebp
-    mov ebp, esp
-    push edx
-    xor edx, edx
-    mov dx, [ebp + 8]
-    xor eax, eax
-    in al, dx
-    pop edx
-    pop ebp
-    ret
-
+;;
+;; void ASMCALL i686_outd(uint16_t port, uint32_t value);
+;;
+;global i686_outd
+;i686_outd:
+;    [bits 32]
+;    push ebp
+;    mov ebp, esp
+;    push edx
+;    push eax
+;    xor edx, edx
+;    mov dx, [ebp + 8]
+;    mov eax, [ebp + 12]
+;    out dx, eax
+;    pop eax
+;    pop edx
+;    pop ebp
+;    ret
 ;
-; void ASMCALL i686_outw(uint16_t port, uint16_t value);
+;;
+;; uint32_t ASMCALL i686_ind(uint16_t port);
+;;
+;global i686_ind
+;i686_ind:
+;    [bits 32]
+;    push ebp
+;    mov ebp, esp
+;    push edx
+;    xor edx, edx
+;    mov dx, [ebp + 8]
+;    in eax, dx
+;    pop edx
+;    pop ebp
+;    ret
 ;
-global i686_outw
-i686_outw:
-    [bits 32]
-    push ebp
-    mov ebp, esp
-    push edx
-    push eax
-    xor edx, edx
-    mov dx, [ebp + 8]
-    xor eax, eax
-    mov ax, [ebp + 12]
-    out dx, ax
-    pop eax
-    pop edx
-    pop ebp
-    ret
-
-;
-; uint16_t ASMCALL i686_inw(uint16_t port);
-;
-global i686_inw
-i686_inw:
-    [bits 32]
-    push ebp
-    mov ebp, esp
-    push edx
-    xor edx, edx
-    mov dx, [ebp + 8]
-    xor eax, eax
-    in ax, dx
-    pop edx
-    pop ebp
-    ret
-
-;
-; void ASMCALL i686_outd(uint16_t port, uint32_t value);
-;
-global i686_outd
-i686_outd:
-    [bits 32]
-    push ebp
-    mov ebp, esp
-    push edx
-    push eax
-    xor edx, edx
-    mov dx, [ebp + 8]
-    mov eax, [ebp + 12]
-    out dx, eax
-    pop eax
-    pop edx
-    pop ebp
-    ret
-
-;
-; uint32_t ASMCALL i686_ind(uint16_t port);
-;
-global i686_ind
-i686_ind:
-    [bits 32]
-    push ebp
-    mov ebp, esp
-    push edx
-    xor edx, edx
-    mov dx, [ebp + 8]
-    in eax, dx
-    pop edx
-    pop ebp
-    ret
-
 ;
 ; void ASMCALL i686_SetStack(uint32_t address);
 ;

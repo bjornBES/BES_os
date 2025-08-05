@@ -5,7 +5,6 @@
 #include "stdio.h"
 #include "string.h"
 #include "memory.h"
-#include "malloc.h"
 
 #define CURRENT_YEAR 2023 // Change this each year!
 char *weekday_map[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
@@ -86,9 +85,9 @@ void rtc_write_datetime(datetime *dt)
  * Only support the format: "day hour:minute"
  * For example, "Sat 6:32"
  * */
-char *datetime_to_str(datetime *dt, Page* page)
+char *datetime_to_str(datetime *dt)
 {
-    char *ret = calloc(15, 1, page);
+    char *ret = calloc(15, 1);
     char day[4];
     char hour[3];
     char min[3];
@@ -112,9 +111,9 @@ char *datetime_to_str(datetime *dt, Page* page)
     return ret;
 }
 
-char *get_current_datetime_str(Page* page)
+char *get_current_datetime_str()
 {
-    return datetime_to_str(&current_datetime, page);
+    return datetime_to_str(&current_datetime);
 }
 
 /*

@@ -24,6 +24,8 @@ uint32_t usermodeFunc = 0x00010000;
 tss_entry_t tss_entry;
 GDTEntry g_GDT[NUM_DESCRIPTORS];
 GDTDescriptor g_GDTDescriptor = {sizeof(g_GDT) - 1, g_GDT};
+extern uint8_t stack_top;
+extern uint8_t user_stack_top;
 
 void GDT_SetEntry(uint16_t index, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags)
 {
@@ -49,10 +51,9 @@ void write_tss()
     // Ensure the TSS is initially zero'd.
     memset(&tss_entry, 0, sizeof(tss_entry_t));
     
-    uint32_t stack_ptr = 0;
-    __asm__("mov %%esp, %0" : "=r"(stack_ptr));
-    tss_entry.ss0 = i686_GDT_DATA_SEGMENT; // Set the kernel stack segment.
-    tss_entry.esp0 = stack_ptr;            // Set the kernel stack pointer.
+    tss_entry.ss0 = i686_GDT_DATA_SEGMENT;  // Set the kernel stack segment.
+    tss_entry.esp0 = (uint32_t)&stack_top;  // Set the kernel stack pointer.
+    
     tss_entry.cs = i686_GDT_CODE_SEGMENT;
     tss_entry.ds = i686_GDT_DATA_SEGMENT;
     tss_entry.es = i686_GDT_DATA_SEGMENT;
@@ -66,10 +67,8 @@ void write_tss()
 }
 
 void set_kernel_stack(uint32_t stack)
-{ // Used when an interrupt occurs
-    uint32_t stack_ptr = 0;
-    __asm__("mov %%esp, %0" : "=r"(stack_ptr));
-    tss_entry.esp0 = stack_ptr;
+{
+    tss_entry.esp0 = stack;
 }
 
 void i686_GDT_Initialize()
@@ -77,8 +76,8 @@ void i686_GDT_Initialize()
     GDT_SetEntry(0, 0, 0, 0, 0);                                                                                                                                            // NULL descriptor
     GDT_SetEntry(1, 0, 0xFFFFF, (GDT_ACCESS_PRESENT | GDT_ACCESS_RING0 | GDT_ACCESS_CODE_SEGMENT | GDT_ACCESS_CODE_READABLE), (GDT_FLAG_32BIT | GDT_FLAG_GRANULARITY_4K));  // Kernel pmode 32 bit code segment
     GDT_SetEntry(2, 0, 0xFFFFF, (GDT_ACCESS_PRESENT | GDT_ACCESS_RING0 | GDT_ACCESS_DATA_SEGMENT | GDT_ACCESS_DATA_WRITEABLE), (GDT_FLAG_32BIT | GDT_FLAG_GRANULARITY_4K)); // Kernel pmode 32 bit data segment
-    GDT_SetEntry(3, 0, 512, (GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_CODE_SEGMENT | GDT_ACCESS_CODE_READABLE), (GDT_FLAG_32BIT | GDT_FLAG_GRANULARITY_4K));  // User pmode 32 bit code segment
-    GDT_SetEntry(4, 0, 512, (GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_DATA_SEGMENT | GDT_ACCESS_DATA_WRITEABLE), (GDT_FLAG_32BIT | GDT_FLAG_GRANULARITY_4K)); // User pmode 32 bit data segment
+    GDT_SetEntry(3, 0, 0xFFFFF, (GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_CODE_SEGMENT | GDT_ACCESS_CODE_READABLE), (GDT_FLAG_32BIT | GDT_FLAG_GRANULARITY_4K));  // User pmode 32 bit code segment
+    GDT_SetEntry(4, 0, 0xFFFFF, (GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_DATA_SEGMENT | GDT_ACCESS_DATA_WRITEABLE), (GDT_FLAG_32BIT | GDT_FLAG_GRANULARITY_4K)); // User pmode 32 bit data segment
 
     write_tss();
 }

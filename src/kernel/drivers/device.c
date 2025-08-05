@@ -8,18 +8,17 @@
 #define MAXDECIVES 64
 
 device_t **devices = 0;
-Page* devicesPage;
 uint8_t lastid = 0;
-Page* devicePage;
-Page* privPage;
 
 void initDevice()
 {
-	devicePage = GetPage(2);
-	privPage = GetPage(3);
-	devices = (device_t **)malloc(MAXDECIVES * sizeof(device_t), devicesPage);
+	log_debug(MODULE, "initDevice");
+	devices = (device_t **)malloc(MAXDECIVES * sizeof(device_t));
+	log_debug(MODULE, "devices allocated at %p", devices);
 	memset(devices, 0, MAXDECIVES * sizeof(device_t));
+	log_debug(MODULE, "devices cleared");
 	lastid = 0;
+	log_debug(MODULE, "initDevice done");
 }
 
 void PrintDeviceOut()

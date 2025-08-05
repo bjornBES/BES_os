@@ -4,7 +4,7 @@
 #include "string.h"
 #include "hal/hal.h"
 #include "memory.h"
-#include "malloc.h"
+
 #include "proc.h"
 #include "drivers/pci/pci.h"
 /*

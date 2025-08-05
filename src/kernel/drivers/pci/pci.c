@@ -5,7 +5,6 @@
 #include "debug.h"
 #include "hal/hal.h"
 #include "memory.h"
-#include "malloc.h"
 #include "arch/i686/io.h"
 #include "arch/i686/i8259.h"
 #include "drivers/ide/ide_controller.h"
@@ -17,8 +16,6 @@
 #include "pci.h"
 
 #define MODULE "PCI"
-
-Page *pdevPage;
 
 pci_device **pci_devices = 0;
 uint32_t devs = 0;
@@ -162,8 +159,15 @@ void pciScan(void)
             {
                 continue;
             }
-            pci_device *pdev = (pci_device *)malloc(sizeof(pci_device), pdevPage);
-            pciScanDevice(pdev, bus, device, 0);
+            pci_device *pdev = (pci_device *)malloc(sizeof(pci_device));
+            if (pciScanDevice(pdev, bus, device, 0))
+            {
+                add_pci_device(pdev);
+            }
+            else
+            {
+                free(pdev);
+            }
             /*
             // multifunctional device
             if ((pciReadDword(bus, device, 0, 0x0C) & 0x00800000) == 0x00800000)
@@ -206,7 +210,7 @@ void printPCIDevice(pci_device* pciDevice)
     }
 }
 
-void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t function)
+bool pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t function)
 {
     pciDevice->bus = bus;
     pciDevice->slot = slot;
@@ -233,7 +237,7 @@ void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t 
     uint32_t fullDeviceId = pciReadDword(bus, slot, function, 0);
     if (fullDeviceId == 0xFFFFFFFF)
     {
-        return; // no device
+        return false; // no device
     }
 
     uint32_t headerBuffer[12];
@@ -296,6 +300,7 @@ void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t 
             ide_initialize(bar0, bar1, bar2, bar3, bar4);
             log_debug(MODULE, "IDE controller initialized: 0x%X, 0x%X, 0x%X, 0x%X, 0x%X", bar0, bar1, bar2, bar3, bar4);
             printf(MODULE, "IDE controller initialized: 0x%X, 0x%X, 0x%X, 0x%X, 0x%X\n", bar0, bar1, bar2, bar3, bar4);
+            return true;
         }
 
         // FDD
@@ -304,6 +309,7 @@ void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t 
             log_debug(MODULE, "FDD controller");
             pciEnableIOBusmastering(bus, slot, function);
             pciDisableInterrupts(bus, slot, function);
+            return true;
         }
 
         // SATA controller
@@ -320,6 +326,7 @@ void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t 
                 AHCI_init(mmioBase);
 
                 number_of_storage_controllers++;
+                return true;
             }
         }
     }
@@ -331,6 +338,7 @@ void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t 
         if (pciDevice->subclassID == 0x0)
         {
             log_debug(MODULE, "Ethernet Controller");
+            return true;
         }
     }
 
@@ -343,6 +351,7 @@ void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t 
         if (pciDevice->subclassID == 0x0)
         {
             log_debug(MODULE, "VGA controller");
+            return true;
         }
         else
         {
@@ -357,6 +366,7 @@ void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t 
         if (pciDevice->subclassID == 0x3)
         {
             log_debug(MODULE, "Audio Device");
+            return true;
         }
     }
 
@@ -367,18 +377,21 @@ void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t 
         if (pciDevice->subclassID == 0x0)
         {
             log_debug(MODULE, "Host Bridge");
+            return true;
         }
 
         // ISA
         if (pciDevice->subclassID == 0x1)
         {
             log_debug(MODULE, "ISA Bridge");
+            return true;
         }
 
         // Other
         if (pciDevice->subclassID == 0x80)
         {
             log_debug(MODULE, "Other");
+            return true;
         }
     }
 
@@ -439,7 +452,7 @@ void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t 
         log_debug(MODULE, "Subclass ID: 0x%X", subclassID);
     }
     */
-
+    return false;
     /*
 
     // save device to array
@@ -824,16 +837,17 @@ void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t slot, uint32_t 
 
 void pci_probe()
 {
+    /*
     for (uint32_t bus = 0; bus < 256; bus++)
     {
         for (uint32_t slot = 0; slot < 32; slot++)
         {
             uint16_t vendor = (uint16_t)(getVendorID(bus, slot, 0));
             if (vendor == 0xffff)
-                continue;
+            continue;
             uint16_t device = getDeviceID(bus, slot, 0);
             printf("bus: 0x%x slot: 0x%x vendor: 0x%x device: 0x%x\n", bus, slot, vendor, device);
-            pci_device *pdev = (pci_device *)malloc(sizeof(pci_device), pdevPage);
+            pci_device *pdev = (pci_device *)malloc(sizeof(pci_device));
             pdev->vendorID = vendor;
             pdev->deviceID = device;
             pdev->function = 0;
@@ -841,12 +855,11 @@ void pci_probe()
             add_pci_device(pdev);
         }
     }
+    */
 }
 
 void pci_init(uint8_t HWChar)
 {
-    pdevPage = allocate_page();
-    log_warn(MODULE, "pci page id = %i", pdevPage->prosses);
     devs = drivs = 0;
     // pci_devices = (pci_device **)malloc(32 * sizeof(pci_device));
     // pci_drivers = (pci_driver **)malloc(32 * sizeof(pci_driver));

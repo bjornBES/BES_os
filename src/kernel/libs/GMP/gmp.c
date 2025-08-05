@@ -1,15 +1,10 @@
 #include "libs/GMP/defaultincs.h"
 
-#include "malloc.h"
+#include "memory.h"
 #include "hal/vfs.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "printfDriver/printf.h"
-
-/* Local Veriables */
-
-Page gmpPage;
-
 
 /* Default allocation functions.  In case of failure to allocate/reallocate
 an error message is written to stderr and the program aborts.  */
@@ -26,7 +21,7 @@ gmp_default_allocate(size_t size)
     size_t req_size = size;
     size += 2 * GMP_LIMB_BYTES;
 #endif
-    ret = malloc(size, &gmpPage);
+    ret = malloc(size);
     if (ret == 0)
     {
         fprintf(VFS_FD_STDERR, "GNU MP: Cannot allocate memory (size=%lu)\n", (long)size);
@@ -74,7 +69,7 @@ gmp_default_reallocate(void *oldptr, size_t old_size, size_t new_size)
     new_size += 2 * GMP_LIMB_BYTES;
 #endif
 
-    ret = realloc(oldptr, new_size, &gmpPage);
+    ret = realloc(oldptr, new_size);
     if (ret == 0)
     {
         fprintf(VFS_FD_STDERR, "GNU MP: Cannot reallocate memory (old_size=%lu new_size=%lu)\n", (long)old_size, (long)new_size);
@@ -116,5 +111,5 @@ void gmp_default_free(void *blk_ptr, size_t blk_size)
         blk_ptr = p - 1;
     }
 #endif
-    free(blk_ptr, &gmpPage);
+    free(blk_ptr);
 }

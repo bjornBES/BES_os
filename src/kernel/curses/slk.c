@@ -53,7 +53,7 @@ int slk_init(int fmt)
 
     label_fmt = fmt;
 
-    slk = calloc(labels, sizeof(struct SLK), &cursesPage);
+    slk = calloc(labels, sizeof(struct SLK));
 
     if (!slk)
         labels = 0;
@@ -472,7 +472,7 @@ void PDC_slk_free(void)
             SP->slk_winptr = (WINDOW *)NULL;
         }
 
-        free(slk, &cursesPage);
+        free(slk);
         slk = (struct SLK *)NULL;
 
         label_length = 0;

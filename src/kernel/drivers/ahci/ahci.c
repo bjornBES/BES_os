@@ -7,7 +7,6 @@
 #include "arch/i686/i8259.h"
 
 #include "memory.h"
-#include "malloc.h"
 
 #define MODULE "AHCI"
 
@@ -46,7 +45,6 @@ typedef struct
 	void *unused[28]; // Even out the data size to 256 bytes
 } ahci_port;
 
-Page *ahciPages;
 ahci_port *ports;
 int num_ports;
 
@@ -125,13 +123,13 @@ void initialize_port(ahci_port *aport)
 	while ((port->cmd & HBA_CMD_FR) || (port->cmd & HBA_CMD_CR))
 		;
 
-	void *mapped_clb = malloc(PAGE_SIZE, ahciPages);
+	void *mapped_clb = malloc(4096);
 	memset(mapped_clb, 0, 4096);
 	port->clb = (uint32_t)mapped_clb;
 	port->clbu = 0;
 	aport->clb = mapped_clb;
 
-	void *mapped_fb = malloc(PAGE_SIZE, ahciPages);
+	void *mapped_fb = malloc(4096);
 	memset(mapped_fb, 0, 4096);
 	port->fb = (uint32_t)mapped_fb;
 	port->fbu = 0;
@@ -142,7 +140,7 @@ void initialize_port(ahci_port *aport)
 	for (uint8_t i = 0; i < 32; i++)
 	{
 		cmdheader[i].prdtl = 1;
-		void *ctba_buf = calloc(1, PAGE_SIZE, ahciPages);
+		void *ctba_buf = calloc(1, 4096);
 		aport->ctba[i] = ctba_buf;
 		cmdheader[i].ctba = (uint32_t)ctba_buf;
 		cmdheader[i].ctbau = 0;
@@ -285,13 +283,11 @@ uint32_t ahci_read_sectors(void *buf, uint64_t start_sector, uint32_t count, dev
 uint16_t AHCI_DeviceIndex;
 void AHCI_init(uint32_t bar5)
 {
-	ahciPages = allocate_page();
-	ports = (ahci_port *)malloc(sizeof(ahci_port) * 4, ahciPages);
-	device_t *dev = (device_t *)malloc(sizeof(device_t), devicePage);
-	ide_private_data *priv = (ide_private_data *)malloc(sizeof(ide_private_data), privPage);
+	ports = (ahci_port *)malloc(sizeof(ahci_port) * 4);
+	device_t *dev = (device_t *)malloc(sizeof(device_t));
+	ide_private_data *priv = (ide_private_data *)malloc(sizeof(ide_private_data));
 
 	dev->priv = priv;
-	log_crit(MODULE, "ahciPages: %i", ahciPages->prosses);
 	
 	InitAbar((HBAData *)bar5, dev);
 

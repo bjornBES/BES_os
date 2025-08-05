@@ -5,14 +5,12 @@
 
 #define ASM_INT2() __asm__ __volatile__("int $0x02" : : : "memory")
 
-void  ASMCALL i686_outb(uint16_t port, uint8_t value);
-uint8_t ASMCALL i686_inb(uint16_t port);
-
-void ASMCALL i686_outw(uint16_t port, uint16_t value);
-uint16_t ASMCALL i686_inw(uint16_t port);
-
-void ASMCALL i686_outd(uint16_t port, uint32_t value);
-uint32_t ASMCALL i686_ind(uint16_t port);
+void i686_outb(uint16_t port, uint8_t value);
+uint8_t i686_inb(uint16_t port);
+void i686_outw(uint16_t port, uint16_t value);
+uint16_t i686_inw(uint16_t port);
+void i686_outd(uint16_t port, uint32_t value);
+uint32_t i686_ind(uint16_t port);
 
 #define OUTB(port, value) i686_outb(port, value)
 #define INB(port) i686_inb(port)

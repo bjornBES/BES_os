@@ -1,6 +1,6 @@
 #include "curspriv.h"
 #include <stdlib.h>
-#include "malloc.h"
+#include "memory.h"
 
 WINDOW *PDC_makenew(int nlines, int ncols, int begy, int begx)
 {
@@ -10,35 +10,35 @@ WINDOW *PDC_makenew(int nlines, int ncols, int begy, int begx)
 
     /* allocate the window structure itself */
 
-    win = calloc(1, sizeof(WINDOW), &cursesPage);
+    win = calloc(1, sizeof(WINDOW));
     if (!win)
         return win;
 
     /* allocate the line pointer array */
 
-    win->_y = malloc(nlines * sizeof(chtype *), &cursesPage);
+    win->_y = malloc(nlines * sizeof(chtype *));
     if (!win->_y)
     {
-        free(win, &cursesPage);
+        free(win);
         return (WINDOW *)NULL;
     }
 
     /* allocate the minchng and maxchng arrays */
 
-    win->_firstch = malloc(nlines * sizeof(int), &cursesPage);
+    win->_firstch = malloc(nlines * sizeof(int));
     if (!win->_firstch)
     {
-        free(win->_y, &cursesPage);
-        free(win, &cursesPage);
+        free(win->_y);
+        free(win);
         return (WINDOW *)NULL;
     }
 
-    win->_lastch = malloc(nlines * sizeof(int), &cursesPage);
+    win->_lastch = malloc(nlines * sizeof(int));
     if (!win->_lastch)
     {
-        free(win->_firstch, &cursesPage);
-        free(win->_y, &cursesPage);
-        free(win, &cursesPage);
+        free(win->_firstch);
+        free(win->_y);
+        free(win);
         return (WINDOW *)NULL;
     }
 
@@ -83,18 +83,18 @@ WINDOW *PDC_makelines(WINDOW *win)
 
     for (i = 0; i < nlines; i++)
     {
-        win->_y[i] = malloc(ncols * sizeof(chtype), &cursesPage);
+        win->_y[i] = malloc(ncols * sizeof(chtype));
         if (!win->_y[i])
         {
             /* if error, free all the data */
 
             for (j = 0; j < i; j++)
-                free(win->_y[j], &cursesPage);
+                free(win->_y[j]);
 
-            free(win->_firstch, &cursesPage);
-            free(win->_lastch, &cursesPage);
-            free(win->_y, &cursesPage);
-            free(win, &cursesPage);
+            free(win->_firstch);
+            free(win->_lastch);
+            free(win->_y);
+            free(win);
 
             return (WINDOW *)NULL;
         }
@@ -151,12 +151,12 @@ int delwin(WINDOW *win)
     if (!(win->_flags & (_SUBWIN|_SUBPAD)))
         for (i = 0; i < win->_maxy && win->_y[i]; i++)
             if (win->_y[i])
-                free(win->_y[i], &cursesPage);
+                free(win->_y[i]);
 
-    free(win->_firstch, &cursesPage);
-    free(win->_lastch, &cursesPage);
-    free(win->_y, &cursesPage);
-    free(win, &cursesPage);
+    free(win->_firstch);
+    free(win->_lastch);
+    free(win->_y);
+    free(win);
 
     return OK;
 }
@@ -382,7 +382,7 @@ WINDOW *resize_window(WINDOW *win, int nlines, int ncols)
 
         for (i = 0; i < win->_maxy && win->_y[i]; i++)
             if (win->_y[i])
-                free(win->_y[i], &cursesPage);
+                free(win->_y[i]);
     }
 
     new->_flags = win->_flags;
@@ -404,12 +404,12 @@ WINDOW *resize_window(WINDOW *win, int nlines, int ncols)
     new->_curx = save_curx;
     new->_cury = save_cury;
 
-    free(win->_firstch, &cursesPage);
-    free(win->_lastch, &cursesPage);
-    free(win->_y, &cursesPage);
+    free(win->_firstch);
+    free(win->_lastch);
+    free(win->_y);
 
     *win = *new;
-    free(new, &cursesPage);
+    free(new);
 
     return win;
 }

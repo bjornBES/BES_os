@@ -9,7 +9,7 @@ section .text
 
 global start
 start:
-    
+    cli
     mov ax, 0x10
     mov ss, ax
     

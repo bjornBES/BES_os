@@ -1,13 +1,12 @@
 #include "stdlib.h"
 #include <stdint.h>
 #include "string.h"
-#include "malloc.h"
+#include "memory.h"
 #include "stdio.h"
 #include "array_size.h"
 
 char *__env[31];
 static const int __nenv = ARRAY_SIZE(__env);
-Page *stdlibPage;
 
 void qsort_internal(void *base,
                     size_t num,
@@ -93,7 +92,7 @@ int setenv(const char *var, const char *val)
 
     varlen = strlen(var);
     vallen = strlen(val);
-    ep = malloc(varlen + vallen + 2, stdlibPage);
+    ep = malloc(varlen + vallen + 2);
 
     if (!ep)
     {
@@ -106,7 +105,7 @@ int setenv(const char *var, const char *val)
     {
         if (__env[i] && ((strncmp(__env[i], var, varlen) == 0) && ((__env[i][varlen] == '\0') || (__env[i][varlen] == '='))))
         {
-            free(__env[i], stdlibPage);
+            free(__env[i]);
             __env[i] = ep;
             return 0;
         }
@@ -134,7 +133,7 @@ int setenvOW(const char* var, const char* val, int overwrite)
 
     varlen = strlen(var);
     vallen = strlen(val);
-    ep = malloc(varlen + vallen + 2, stdlibPage);
+    ep = malloc(varlen + vallen + 2);
 
     if (!ep)
     {
@@ -149,12 +148,12 @@ int setenvOW(const char* var, const char* val, int overwrite)
         {
             if (overwrite)
             {
-                free(__env[i], stdlibPage);
+                free(__env[i]);
                 __env[i] = ep;
             }
             else
             {
-                free(ep, stdlibPage);
+                free(ep);
             }
             return 0;
         }
@@ -189,7 +188,7 @@ int unsetenv(const char *var)
 
         if ((strncmp(var, e, matchlen) == 0) && ((e[matchlen] == '\0') || (e[matchlen] == '=')))
         {
-            free(__env[i], stdlibPage);
+            free(__env[i]);
         }
     }
     return 0;

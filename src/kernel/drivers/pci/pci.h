@@ -162,5 +162,5 @@ void pciDisableInterrupts(uint32_t bus, uint32_t device, uint32_t function);
 uint32_t getStorageBAR(uint32_t bus, uint32_t device, uint32_t function, uint8_t barIndex);
 
 void pciScan(void);
-void pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t device, uint32_t function);
+bool pciScanDevice(pci_device *pciDevice, uint32_t bus, uint32_t device, uint32_t function);
 uint8_t *get_pci_vendor_string(uint32_t vendor_id);

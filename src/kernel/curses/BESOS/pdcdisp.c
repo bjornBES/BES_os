@@ -1,6 +1,6 @@
 #include "pdcBESOS.h"
 #include "stdlib.h"
-#include "malloc.h"
+#include "memory.h"
 #include "drivers/VGA/vga.h"
 
 chtype acs_map[128] =

@@ -1,6 +1,6 @@
 #include "curspriv.h"
 #include "stdlib.h"
-#include "malloc.h"
+#include "memory.h"
 
 int wclrtoeol(WINDOW *win)
 {

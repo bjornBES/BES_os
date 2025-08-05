@@ -3,7 +3,6 @@
 #include <libcob.h>
 
 #include "debug.h"
-#include "malloc.h"
 #include "memory.h"
 #include "stdio.h"
 #include "string.h"
@@ -27,6 +26,7 @@
 #include "ctype.h"
 
 #define MODULE "SHELL"
+extern uint8_t user_stack_top;
 
 void ReadLine(char *buffer)
 {
@@ -82,23 +82,18 @@ bool cmpCommand(char *command, char *buffer)
     return true;
 }
 
-Page *bufferPage;
-Page *commandPage;
-
 extern char __userProg_start[];
 extern void setSS(uint32_t ss);
 extern uint32_t kernelStack;
 
 void EnterShell()
 {
-    bufferPage = allocate_page();
-    commandPage = allocate_page();
-    char *inputBuffer = (char *)malloc(256, bufferPage);
-    char *command = (char *)malloc(64, commandPage);
-    char *cmdPath = (char *)malloc(MAX_PATH_SIZE, commandPage);
+    char *inputBuffer = (char *)malloc(256);
+    char *command = (char *)malloc(64);
+    char *cmdPath = (char *)malloc(MAX_PATH_SIZE);
     strcpy(cmdPath, "/ata0");
     uint32_t bufferSize = 4096;
-    void *buffer = malloc(4096, bufferPage);
+    void *buffer = malloc(4096);
     VGA_clrscr();
     printf("BES OS v0.1\n");
     printf("This operating system is under construction.\n\n");
@@ -178,7 +173,7 @@ void EnterShell()
             }
             if (cmpCommand("mem-status", argv[1]) == true)
             {
-                printStatus();
+                mmPrintStatus();
             }
             if (cmpCommand("call", argv[1]) == true)
             {
@@ -222,14 +217,14 @@ void EnterShell()
                     printf("Usage: read <file>\n");
                 }
                 char *name = argv[2];
-                char *path = (char *)malloc(MAX_PATH_SIZE, commandPage);
+                char *path = (char *)malloc(MAX_PATH_SIZE);
                 strcat(path, cmdPath);
                 strcat(path, "/");
                 strcat(path, name);
                 fd_t file = VFS_Open(path);
                 VFS_Read(file, buffer, bufferSize);
                 VFS_Close(file);
-                free(path, commandPage);
+                free(path);
                 continue;
             }
             if (cmpCommand("read", argv[1]) == true)
@@ -245,7 +240,7 @@ void EnterShell()
                 if (bufferSize < sectorcount * 512)
                 {
                     log_debug("MAIN", "reallocating buffer %u", sectorcount * 512);
-                    buffer = realloc(buffer, sectorcount * 512, bufferPage);
+                    buffer = realloc(buffer, sectorcount * 512);
                     bufferSize = sectorcount * 512;
                     memset(buffer, 0, bufferSize);
                 }
@@ -312,10 +307,10 @@ void EnterShell()
         }
         else
         {
-            char *path = (char *)malloc(MAX_PATH_SIZE, commandPage);
-            char *binpath = (char *)malloc(MAX_PATH_SIZE, commandPage);
+            char *path = (char *)malloc(MAX_PATH_SIZE);
+            char *binpath = (char *)malloc(MAX_PATH_SIZE);
 
-            char *fileName = (char *)malloc(MAX_PATH_SIZE, commandPage);
+            char *fileName = (char *)malloc(MAX_PATH_SIZE);
             fileName = strtok(argv[0], "/");
             log_debug(MODULE, "CHECK: fileName = %s, path = %s", fileName, path);
             if (strcount(fileName, '.') == 0)
@@ -330,7 +325,7 @@ void EnterShell()
             sprintf(binpath, "%s/bin", cmdPath);
             fd_t binDirFD = open(binpath, 0);
             DirectoryEntries binDir;
-            binDir.entries = calloc(sizeof(DirectoryEntry), 12, commandPage);
+            binDir.entries = calloc(sizeof(DirectoryEntry), 12);
             VFS_Readdir(binDirFD, &binDir);
             uint32_t bytesRead;
             for (size_t i = 0; i < binDir.entryCount; i++)
@@ -346,7 +341,7 @@ void EnterShell()
                     bytesRead = 0;
 
                     uint32_t sector = size / 512;
-                    buffer = realloc(buffer, (sector * 2) * 512, bufferPage);
+                    buffer = realloc(buffer, (sector * 2) * 512);
                     bufferSize = (sector * 2) * 512;
 
                     while (bytesRead < size)
@@ -398,10 +393,10 @@ void EnterShell()
             usermodeFunc = (uint32_t)__userProg_start;
             __asm__("pusha");
             __asm__("mov %%esp, %0" : "=r"(kernelStack));
-            makeProcess(usermodeFunc);
+            process_t* process = makeProcess(usermodeFunc, (uint32_t)(&user_stack_top));
             log_debug(MODULE, "bytesRead = %u, usermodeFunc = 0x%p", bytesRead, usermodeFunc);
             printf("Starting usermode program at 0x%p\n", (void *)usermodeFunc);
-            Jump_usermode(usermodeFunc);
+            runProcess(process);
             // __asm__("mov %%esi, %0" : : "r"(kernelStack));
             setSS(i686_GDT_DATA_SEGMENT);
             log_debug(MODULE, "return back from user");
@@ -423,6 +418,6 @@ void EnterShell()
         }
     }
 
-    free(command, commandPage);
-    free(buffer, bufferPage);
+    free(command);
+    free(buffer);
 }

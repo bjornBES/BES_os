@@ -1,6 +1,5 @@
 #include "vfs.h"
 #include "string.h"
-#include "malloc.h"
 #include "memory.h"
 #include "fs/devfs/devfs.h"
 // #include "fs/ext2/ext2.h"
@@ -30,11 +29,7 @@ typedef struct
 
 file_descriptor_t *fd_table;
 
-Page *mountPointsPage;
 MountPoint **mountPoints = 0;
-Page **mPages;
-Page *mPagesPage;
-Page *fdTablePage;
 int lastMountId = 0;
 
 vfs_node_t *vfs_root;
@@ -206,7 +201,7 @@ vfs_node_t *vfs_findDir(vfs_node_t *current, char *token)
 		log_crit(MODULE, "entry not found %s", token);
 	}
 
-	vfs_node_t *node = malloc(sizeof(vfs_node_t), mPages[current->mountingPointId]);
+	vfs_node_t *node = malloc(sizeof(vfs_node_t));
 
 	node->inode = current->inode + 1;
 	node->size = entry.size; // Size is not defined for directories
@@ -220,7 +215,6 @@ vfs_node_t *vfs_findDir(vfs_node_t *current, char *token)
 
 vfs_node_t *vfs_resolve_path(const char *path)
 {
-	Page tempNodePage;
 	if (!path || path[0] != '/')
 	{
 		log_err(MODULE, "Invalid path: %s", path ? path : "(null)");
@@ -304,8 +298,7 @@ vfs_node_t *vfs_resolve_path(const char *path)
 int __find_mount(char *filename, int *adjust)
 {
 	log_debug(MODULE, "filename %s string length %u", filename, strlen(filename) + 1);
-	Page origPage;
-	char *orig = (char *)calloc(1, strlen(filename) + 1, &origPage);
+	char *orig = (char *)calloc(1, strlen(filename) + 1);
 	memcpy(orig, filename, strlen(filename) + 1);
 	if (orig[strlen(orig)] == '/')
 	{
@@ -324,7 +317,7 @@ int __find_mount(char *filename, int *adjust)
 				/*
 				 */
 				log_debug(MODULE, "returning %s (%d) i=%d orig=%s adjust=%d\n", mountPoints[i]->dev->name, mountPoints[i]->dev->id, i, orig, *adjust);
-				free(orig, &origPage);
+				free(orig);
 				return i;
 			}
 		}
@@ -332,7 +325,7 @@ int __find_mount(char *filename, int *adjust)
 			break;
 		str_backspace(orig, '/');
 	}
-	free(orig, &origPage);
+	free(orig);
 	return false;
 }
 
@@ -421,15 +414,15 @@ bool MountDevice(device_t *dev, char *loc)
 		log_debug(MODULE, "FAT32 probed successly");
 		if (FAT_Mount(dev, dev->fs->priv_data))
 		{
-			MountPoint *m = (MountPoint *)malloc(sizeof(MountPoint), mPages[lastMountId]);
+			MountPoint *m = (MountPoint *)malloc(sizeof(MountPoint));
 			m->loc = loc;
 			m->dev = dev;
-			m->root_node = (vfs_node_t *)malloc(sizeof(vfs_node_t), mPages[lastMountId]);
+			m->root_node = (vfs_node_t *)malloc(sizeof(vfs_node_t));
 
 			if (FAT_GetRoot(m->root_node, dev, dev->fs->priv_data) == false)
 			{
 				log_crit(MODULE, "FAT_GetRoot failed for %s", loc);
-				free(m, mPages[lastMountId]);
+				free(m);
 				return false;
 			}
 
@@ -469,8 +462,8 @@ bool UmountDevice(char* loc)
 	{
 		if (mountPoints[i] && strcmp(mountPoints[i]->loc, loc) == 0)
 		{
-			free(mountPoints[i]->root_node, mPages[i]);
-			free(mountPoints[i], mPages[i]);
+			free(mountPoints[i]->root_node);
+			free(mountPoints[i]);
 			mountPoints[i] = NULL;
 			return true;
 		}
@@ -621,7 +614,7 @@ if (!fatDir.entries)
 
 fd_t VFS_Open(char *path)
 {
-	vfs_node_t *node = (vfs_node_t *)malloc(sizeof(vfs_node_t), fdTablePage);
+	vfs_node_t *node = (vfs_node_t *)malloc(sizeof(vfs_node_t));
 	node = vfs_resolve_path(path);
 
 	fd_t fileDescriptorIndex = vfs_findFileDiscriptor();
@@ -690,14 +683,9 @@ vfs_node_t *VFS_GetNode(fd_t file)
 
 void VFS_init()
 {
-	mountPointsPage = allocate_page();
-	mPagesPage = allocate_page();
-	fdTablePage = allocate_page();
-
 	printf("Loading VFS\n");
-	mountPoints = (MountPoint **)malloc(sizeof(MountPoint) * MAX_MOUNTS, mountPointsPage);
-	mPages = (Page **)malloc(sizeof(Page) * MAX_MOUNTS, mPagesPage);
-	fd_table = (file_descriptor_t *)malloc(sizeof(file_descriptor_t) * MAX_FILE_HANDLES + VFS_FD_START, fdTablePage);
+	mountPoints = (MountPoint **)malloc(sizeof(MountPoint) * MAX_MOUNTS);
+	fd_table = (file_descriptor_t *)malloc(sizeof(file_descriptor_t) * MAX_FILE_HANDLES + VFS_FD_START);
 	fd_table[0].node = NULL; // stdin
 	fd_table[0].offset = 0;	 // stdin
 	fd_table[1].node = NULL; // stdout

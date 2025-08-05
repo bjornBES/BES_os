@@ -27,7 +27,7 @@ WINDOW *initscr(void)
     if (SP && SP->alive)
         return NULL;
 
-    SP = calloc(1, sizeof(SCREEN), &cursesPage);
+    SP = calloc(1, sizeof(SCREEN));
     if (!SP)
         return NULL;
 
@@ -128,7 +128,7 @@ WINDOW *initscr(void)
     else
         curscr->_clear = TRUE;
 
-    SP->atrtab = calloc(PDC_COLOR_PAIRS, sizeof(PDC_PAIR), &cursesPage);
+    SP->atrtab = calloc(PDC_COLOR_PAIRS, sizeof(PDC_PAIR));
     if (!SP->atrtab)
         return NULL;
     PDC_init_atrtab();  /* set up default colors */
@@ -145,13 +145,13 @@ WINDOW *initscr(void)
 
     sprintf(ttytype, "pdcurses|PDCurses for %s", PDC_sysname());
 
-    SP->c_buffer = malloc(_INBUFSIZ * sizeof(int), &cursesPage);
+    SP->c_buffer = malloc(_INBUFSIZ * sizeof(int));
     if (!SP->c_buffer)
         return NULL;
     SP->c_pindex = 0;
     SP->c_gindex = 1;
 
-    SP->c_ungch = malloc(NUNGETCH * sizeof(int), &cursesPage);
+    SP->c_ungch = malloc(NUNGETCH * sizeof(int));
     if (!SP->c_ungch)
         return NULL;
     SP->c_ungind = 0;
@@ -204,9 +204,9 @@ void delscreen(SCREEN *sp)
     if (!SP || sp != SP)
         return;
 
-    free(SP->c_ungch, &cursesPage);
-    free(SP->c_buffer, &cursesPage);
-    free(SP->atrtab, &cursesPage);
+    free(SP->c_ungch);
+    free(SP->c_buffer);
+    free(SP->atrtab);
 
     PDC_slk_free();     /* free the soft label keys, if needed */
 
@@ -221,7 +221,7 @@ void delscreen(SCREEN *sp)
 
     PDC_scr_free();
 
-    free(SP, &cursesPage);
+    free(SP);
     SP = (SCREEN *)NULL;
 }
 

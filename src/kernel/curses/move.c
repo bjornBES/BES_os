@@ -1,6 +1,6 @@
 #include "curspriv.h"
 #include "stdlib.h"
-#include "malloc.h"
+#include "memory.h"
 
 int move(int y, int x)
 {

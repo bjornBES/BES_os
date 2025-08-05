@@ -1,6 +1,6 @@
 #include "time.h"
 #include "drivers/CMOS.h"
-#include "malloc.h"
+#include "memory.h"
 
 int daylight;
 long int timezone;

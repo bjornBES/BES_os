@@ -1,7 +1,7 @@
 /* PDCurses */
 
 #include "pdcBESOS.h"
-#include "malloc.h"
+#include "memory.h"
 #include "drivers/VGA/vga.h"
 
 #include <stdlib.h>
@@ -199,7 +199,7 @@ void PDC_scr_close(void)
         (void *)saved_screen, (saved_lines * saved_cols * 2));
 # endif
 #endif
-        free(saved_screen, &cursesPage);
+        free(saved_screen);
         saved_screen = NULL;
     }
 
@@ -258,7 +258,7 @@ int PDC_scr_open(void)
         saved_lines = ScreenWidth;
         saved_cols = ScreenHeight;
 
-        saved_screen = malloc(saved_lines * saved_cols * 2, &cursesPage);
+        saved_screen = malloc(saved_lines * saved_cols * 2);
 
         if (!saved_screen)
         {

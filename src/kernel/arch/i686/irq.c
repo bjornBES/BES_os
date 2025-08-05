@@ -58,11 +58,9 @@ void i686_IRQ_Initialize()
     for (int i = 0; i < 16; i++)
         i686_ISR_RegisterHandler(PIC_REMAP_OFFSET + i, i686_IRQ_Handler);
 
-    // enable interrupts
-    i686_EnableInterrupts();
-
-    // g_Driver->Unmask(0);
-    // g_Driver->Unmask(1);
+        
+    i686_outb(0x21, 0xFF);
+    i686_outb(0xA1, 0xFF);
 }
 
 void i686_IRQ_RegisterHandler(int irq, IRQHandler handler)
@@ -72,14 +70,19 @@ void i686_IRQ_RegisterHandler(int irq, IRQHandler handler)
     {
         return;
     }
+    log_debug(MODULE, "Registering IRQ handler for IRQ %d", irq);
+    log_debug(MODULE, "g_IRQHandlers: %p", g_IRQHandlers);
+
     g_IRQHandlers[irq] = handler;
     // unmask interrupt
     if (irq < 8)
     {
-        i686_outb(0x21, (i686_inb(0x21) & ~(1 << irq)));
+        uint8_t data = i686_inb(0x21) & ~(1 << irq);
+        i686_outb(0x21, data);
     }
     else
     {
-        i686_outb(0xA1, (i686_inb(0xA1) & ~(1 << (irq - 8))));
+        uint8_t data = i686_inb(0xA1) & ~(1 << (irq - 8));
+        i686_outb(0xA1, data);
     }
 }

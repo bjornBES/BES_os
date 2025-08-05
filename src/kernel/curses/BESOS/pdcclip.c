@@ -18,7 +18,7 @@ int PDC_getclipboard(char **contents, long *length)
         return PDC_CLIP_EMPTY;
 
     len = strlen(pdc_DOS_clipboard);
-    *contents = malloc(len + 1, &cursesPage);
+    *contents = malloc(len + 1);
     if (!*contents)
         return PDC_CLIP_MEMORY_ERROR;
 
@@ -34,13 +34,13 @@ int PDC_setclipboard(const char *contents, long length)
 
     if (pdc_DOS_clipboard)
     {
-        free(pdc_DOS_clipboard, &cursesPage);
+        free(pdc_DOS_clipboard);
         pdc_DOS_clipboard = NULL;
     }
 
     if (contents)
     {
-        pdc_DOS_clipboard = malloc(length + 1, &cursesPage);
+        pdc_DOS_clipboard = malloc(length + 1);
         if (!pdc_DOS_clipboard)
             return PDC_CLIP_MEMORY_ERROR;
 
@@ -69,7 +69,7 @@ int PDC_freeclipboard(char *contents)
         if (strlen(contents) >= strlen("PDCURSES"))
             strcpy(contents, "PDCURSES");
 
-        free(contents, &cursesPage);
+        free(contents);
     }
 
     return PDC_CLIP_SUCCESS;
@@ -81,7 +81,7 @@ int PDC_clearclipboard(void)
 
     if (pdc_DOS_clipboard)
     {
-        free(pdc_DOS_clipboard, &cursesPage);
+        free(pdc_DOS_clipboard);
         pdc_DOS_clipboard = NULL;
     }
 

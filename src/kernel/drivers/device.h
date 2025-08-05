@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#include "malloc.h"
+#include "memory.h"
 
 typedef enum __device_type {
 	DEVICE_UNKNOWN = 0,
@@ -37,9 +37,6 @@ typedef struct __fs_t {
 	bool (*getRoot)(void*, device_t* dev, void *);
 	bool *priv_data;
 } filesystemInfo_t;
-
-extern Page* devicePage;
-extern Page* privPage;
 
 void initDevice();
 void PrintDeviceOut();

@@ -3,7 +3,6 @@
 #include <stdarg.h>
 #include <hal/vfs.h>
 
-
 static __attribute__((unused)) fd_t const stdin = (fd_t)VFS_FD_STDIN;
 static __attribute__((unused)) fd_t const stdout = (fd_t)VFS_FD_STDOUT;
 static __attribute__((unused)) fd_t const stderr = (fd_t)VFS_FD_STDERR;
@@ -28,8 +27,8 @@ int fgetc(fd_t file);
 int getc(fd_t file);
 #define getchar() fgetc(stdin)
 
-char* fgets(char *s, int size, fd_t stream);
-char* gets(char *s);
+char *fgets(char *s, int size, fd_t stream);
+char *gets(char *s);
 
 int ungetc(int c, fd_t stream);
 
@@ -75,7 +74,7 @@ void flockfile(fd_t stream);
 void ftrylockfile(fd_t stream);
 void funlockfile(fd_t stream);
 
-char* realpath(const char *path, char *resolved_path);
+char *realpath(const char *path, char *resolved_path);
 
 int rename(const char *oldname, const char *newname);
 int remove(const char *filename);
@@ -90,10 +89,16 @@ int unlink(const char *pathname);
 
 int access(const char *pathname, int mode);
 
-
 #define panic()                                                                \
     {                                                                          \
         printf("***KERNEL PANIC*** in %s at line %d\r\n", __FILE__, __LINE__); \
         for (;;)                                                               \
             ;                                                                  \
+    }
+
+#define panicMSG(str, ...)                                                                         \
+    {                                                                                              \
+        printf("***KERNEL PANIC*** in %s at line %d\r\n%s", __FILE__, __LINE__, str, __VA_ARGS__); \
+        for (;;)                                                                                   \
+            ;                                                                                      \
     }

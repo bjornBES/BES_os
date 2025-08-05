@@ -6,7 +6,7 @@
 #include "arch/i686/pit.h"
 
 #include "debug.h"
-#include "malloc.h"
+#include "memory.h"
 #include "stdio.h"
 
 #define MODULE "IDE"

@@ -34,9 +34,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include "debug.h"
-#include "malloc.h"
-
-Page numericPage;
+#include "memory.h"
 
 #include <math.h>
 #ifdef HAVE_FINITE_IEEEFP_H
@@ -274,7 +272,7 @@ void cob_gmp_free(void *ptr)
     mp_get_memory_functions(NULL, NULL, &freefunc);
     freefunc(ptr, strlen((char *)ptr) + 1);
 #else
-    free(ptr, &numericPage);
+    free(ptr);
 #endif
 }
 

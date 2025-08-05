@@ -6,7 +6,7 @@
 #include "string.h"
 #include "ctype.h"
 #include "string.h"
-#include "malloc.h"
+#include "memory.h"
 
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
@@ -151,8 +151,6 @@ int opterr = 1;
 #define optopt cob_optopt
 int optopt = '?';
 
-Page cobGetOptPage;
-
 /* Exchange two adjacent subsequences of ARGV.
    One subsequence is elements [first_nonopt,last_nonopt)
    which contains all the non-options that have been skipped so far.
@@ -287,7 +285,7 @@ process_long_option (const int argc, char * const *argv, const char *optstring,
 		      {
 			/* note: we explicit don't want to use cob_malloc here as
 			         that halts if the memory is not available */
-			if ((ambig_set = calloc ((size_t)1, n_options, &cobGetOptPage)) == NULL)
+			if ((ambig_set = calloc ((size_t)1, n_options)) == NULL)
 			  /* Fall back to simpler error message.  */
 			  ambig_fallback = 1;
 			else
@@ -329,7 +327,7 @@ process_long_option (const int argc, char * const *argv, const char *optstring,
 		}
 	    }
 	  if (ambig_malloced)
-	    free (ambig_set, &cobGetOptPage);	/* no cob_malloc, no cob_free */
+	    free (ambig_set);	/* no cob_malloc, no cob_free */
 	  nextchar += strlen (nextchar);
 	  optind++;
 	  optopt = 0;

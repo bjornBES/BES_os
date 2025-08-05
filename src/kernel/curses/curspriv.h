@@ -10,7 +10,7 @@
 #include "math.h"
 #include "stdio.h"
 #include "hal/vfs.h"
-#include "malloc.h"
+#include "memory.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,8 +39,6 @@ typedef struct           /* structure for ripped off lines */
 #define _DLCHAR    0x15  /* Delete Line char (^U) */
 
 /*----------------------------------------------------------------------*/
-
-extern Page cursesPage;
 
 /* Platform implementation functions */
 

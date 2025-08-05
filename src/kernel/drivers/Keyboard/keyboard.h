@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#include "malloc.h"
+#include "memory.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -112,7 +112,6 @@ typedef struct keyboard_leds_t
 
 extern keyboardLEDs keyboard_leds_state;
 extern keyboardKeys keyboard_keys_state;
-extern Page *keycachePage;
 
 void keyboard_update_keys_state();
 void keyboard_init();

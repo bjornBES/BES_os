@@ -34,7 +34,7 @@
 #include <types.h>
 #include <stat.h>
 #include <errno.h>
-#include "malloc.h"
+#include "memory.h"
 
 #include <math.h>
 #ifdef HAVE_FINITE_IEEEFP_H
@@ -322,8 +322,6 @@ static const unsigned char	*sort_collate = NULL;
 
 static const char		*cob_source_file = NULL;
 static unsigned int		cob_source_line = 0;
-
-Page libcobPage;
 
 #ifdef	HAVE_DESIGNATED_INITS
 char *cob_statement_name[STMT_MAX_ENTRY] = {
@@ -2401,7 +2399,7 @@ cob_malloc (const size_t size)
 {
 	void	*mptr;
 
-	mptr = calloc ((size_t)1, size, &libcobPage);
+	mptr = calloc ((size_t)1, size);
 	/* LCOV_EXCL_START */
 	if (unlikely (!mptr)) {
 		cob_fatal_error (COB_FERROR_MEMORY);
@@ -2425,10 +2423,10 @@ cob_realloc (void * optr, const size_t osize, const size_t nsize)
 		return optr;
 	} 
 	if (unlikely (osize > nsize)) {		/* Reducing size */
-		return realloc (optr, nsize, &libcobPage);
+		return realloc (optr, nsize);
 	}
 
-	mptr = calloc ((size_t)1, nsize, &libcobPage);	/* New memory, past old is cleared */
+	mptr = calloc ((size_t)1, nsize);	/* New memory, past old is cleared */
 	/* LCOV_EXCL_START */
 	if (unlikely (!mptr)) {
 		cob_fatal_error (COB_FERROR_MEMORY);
@@ -2449,7 +2447,7 @@ cob_free (void * mptr)
 	}
 	/* LCOV_EXCL_STOP */
 #endif
-	free (mptr, &libcobPage);
+	free (mptr);
 
 }
 
@@ -2458,7 +2456,7 @@ cob_fast_malloc (const size_t size)
 {
 	void	*mptr;
 
-	mptr = malloc (size, &libcobPage);
+	mptr = malloc (size);
 	/* LCOV_EXCL_START */
 	if (unlikely (!mptr)) {
 		cob_fatal_error (COB_FERROR_MEMORY);
@@ -5782,9 +5780,9 @@ cob_allocate (unsigned char **dataptr, cob_field *retptr,
 		if (initialize
 		 && initialize->data[0] == 0
 		 && COB_FIELD_TYPE (initialize) == COB_TYPE_ALPHANUMERIC_ALL) {
-			mptr = calloc (1, memsize, &libcobPage);
+			mptr = calloc (1, memsize);
 		} else {
-			mptr = malloc (memsize, &libcobPage);
+			mptr = malloc (memsize);
 		}
 		if (!mptr) {
 			cob_set_exception (COB_EC_STORAGE_NOT_AVAIL);

@@ -1,7 +1,6 @@
 
 #include "keyboard.h"
 
-#include "malloc.h"
 #include "memory.h"
 
 #include "stdio.h"
@@ -65,8 +64,6 @@ int16_t WritePointer;
 
 keyboardLEDs keyboard_leds_state;
 keyboardKeys keyboard_keys_state;
-
-Page *keycachePage;
 
 #define MODULE "KEYBOARD"
 
@@ -166,7 +163,7 @@ void keyboard_process_code(uint32_t key)
 
 void keyboard_init()
 {
-	keycache = (uint32_t *)malloc(CACHE_SIZE, keycachePage);
+	keycache = (uint32_t *)malloc(CACHE_SIZE);
 	memset(keycache, 0, CACHE_SIZE);
 	ReadPointer = 0;
 	WritePointer = 0;
@@ -186,5 +183,5 @@ void keyboard_init()
 	printf("Keyboard: %s\n", "before PS2_init_keyboard");
 	ps2_init_keyboard();
 	printf("Keyboard: %s\n", "after PS2_init_keyboard");
-	printStatus();
+	mmPrintStatus();
 }

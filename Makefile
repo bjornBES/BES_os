@@ -1,10 +1,10 @@
-include build_tools/config.mk
+include scripts/config.mk
 
 .PHONY: all floppy_image bootloader kernel clean always tools_fat debug
 
 all: floppy_image tools_fat
 
-include build_tools/toolchain.mk
+include scripts/toolchain.mk
 
 #
 # Floppy image
@@ -12,7 +12,7 @@ include build_tools/toolchain.mk
 floppy_image: $(BUILD_DIR)/image.img
 
 $(BUILD_DIR)/image.img: bootloader kernel
-	@bash ./build_tools/make_disk.sh $(imageType) $(imageFS) $(imageSize) $(arch) $(config)
+	@bash ./scripts/make_disk.sh $(imageType) $(imageFS) $(imageSize) $(arch) $(config)
 
 	@echo "--> Created: " $(floppyOutput)
 

@@ -17,8 +17,8 @@ sys.path.append(project_root)
 
 userApps = os.path.abspath(os.path.join(project_root, "src/user_programs"))
 
-from build_scripts.utility import FindIndex, GlobRecursive, IsFileName, ParseSize
-from build_scripts.config import mountMethod
+from scripts.utility import FindIndex, GlobRecursive, IsFileName, ParseSize
+from config import mountMethod
 
 SECTOR_SIZE = 512
 
@@ -249,7 +249,7 @@ def buildApps():
     makePath = Path(f"{project_root}").absolute()
     subprocess.run(["make", "-C", makePath, "user"], text=True, check=True)
     
-    bashPath = Path("./image/userProg.py").absolute()
+    bashPath = Path("./imageScripts/userProg.py").absolute()
 
     result = subprocess.run(["python3", bashPath, arch, config, root])
     if result.returncode == 1:

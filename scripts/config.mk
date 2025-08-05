@@ -1,3 +1,7 @@
+include build_scripts/config.env
+
+export $(shell sed 's/=.*//' build_scripts/config.env)
+
 export CFLAGS = -Wall -Werror -I ./ -I $(SOURCE_DIR)/src/libs -Wno-error=unused-variable -Wno-error=unused-function -Wno-error=unused-label -Wno-error=deprecated
 # -I /usr/local/i686-elf/include
 # the -Wno-error=unused-variable flag is temp

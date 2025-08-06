@@ -33,15 +33,13 @@ uint16_t i686_inw(uint16_t port)
 
 void i686_outd(uint16_t port, uint32_t value)
 {
-    i686_outw(port, value & 0xFFFF);
-    i686_outw(port, (value >> 16) & 0xFFFF);
+    __asm__ ("outl %0, %1" : : "a"(value), "Nd"(port));
 }
 
 uint32_t i686_ind(uint16_t port)
 {
     uint32_t value;
-    value = i686_inw(port);
-    value |= (i686_inw(port) << 16);
+    __asm__ ("inl %1, %0" : "=a"(value) : "Nd"(port));
     return value;
 }
 

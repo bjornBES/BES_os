@@ -14,3 +14,4 @@ typedef struct {
 } __attribute__((packed)) VbeInfoBlock;
 
 void Detect_VESA(VESAInfo* vesaInfo);
+void SetVESAMode(int mode);

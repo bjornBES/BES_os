@@ -391,6 +391,7 @@ x86_GetVESAEntry:
     cmp al, 0x4F
     jne .VESANotSupported
 
+    xor eax, eax
     mov al, 1
     jmp .Endif
     
@@ -416,6 +417,55 @@ x86_GetVESAEntry:
     pop ebp
     ret
 
+;
+; int __attribute__((cdecl)) x86_SetVESAMode(uint16_t mode);
+;
+global x86_SetVESAMode
+x86_SetVESAMode:
+
+    ; make new call frame
+    push ebp             ; save old call frame
+    mov ebp, esp          ; initialize new call frame
+
+    x86_EnterRealMode
+
+    ; save modified regs
+    push ebx
+    push edi
+    mov ax, es
+    push ax
+    
+    xor edi,    edi
+    mov es,     di
+    
+    mov bx,     [bp + 8]        ; Get the mode
+    mov ax,     0x4F02          ; set SET SuperVGA VIDEO MODE
+    int 0x10                    ; int
+    
+    cmp ah,     0x4F            ; successful and function supported
+    je .success
+    ; VESA Not Supported
+    ; xor ax, ax              ; false
+    jmp .End
+.success:
+    ;; mov al, 0x01
+.End:
+    
+    ; restore regs
+    pop bx
+    mov es, bx
+    pop ebx
+    pop ebx
+
+    push eax
+
+    x86_EnterProtectedMode
+
+    pop eax
+
+    mov esp, ebp
+    pop ebp
+    ret
 
 ;
 ; bool __attribute__((cdecl)) x86_PCIInitCheck(uint8_t* PCIchar, uint8_t* protectedModeEntry, uint16_t* PCIInterfaceLevel, uint8_t* lastPCIBus);
@@ -446,6 +496,7 @@ x86_PCIInitCheck:
     LinearToSegOffset [bp + 20], es, esi, si        ; getting the lastPCIBus address
     mov [es:si], edi                                ; lastPCIBus = null
     
+    xor edi, edi
     mov ax, 0xB101
     int 0x1A                                        ; calling the INSTALLATION CHECK function
 

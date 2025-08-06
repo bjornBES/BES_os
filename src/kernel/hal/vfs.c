@@ -11,6 +11,7 @@
 #include "syscall/systemcall.h"
 
 #include <drivers/VGA/vga.h>
+#include <drivers/Keyboard/keyboard.h>
 #include <arch/i686/e9.h>
 #include <arch/i686/isr.h>
 #include <stdio.h>
@@ -376,7 +377,7 @@ int VFS_Read(fd_t file, void *buffer, size_t size)
 	switch (file)
 	{
 	case VFS_FD_STDIN:
-		return 0;
+		return KeyboardGetKey();
 	case VFS_FD_STDOUT:
 	case VFS_FD_STDERR:
 		return 0;

@@ -4,6 +4,7 @@
             "name": "GCC",
             "includePath": [
                 "${workspaceFolder}/src/libs",
+                "${workspaceFolder}/src/user_programs/stdlib",
                 "${workspaceFolder}/src/kernel",
                 "${workspaceFolder}/toolchain/gcc-build-11.2.0/gcc/include/"
             ],

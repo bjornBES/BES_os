@@ -16,14 +16,8 @@ export CBL = cobc
 export LINKFLAGS = -static
 export LIBS = src/libs
 
-export imageType = disk
-export imageFS = fat32
-export imageSize = 250m
-
 export floppyOutput = $(BUILD_DIR)/image.img
-export config = debug
 
-export arch = i686
 export TARGET = ${arch}-elf
 binPath = $(TOOLCHAIN_DIR)/$(TARGET)/bin
 export TARGET_ASM = nasm
@@ -53,6 +47,3 @@ GCC_URL = https://ftp.gnu.org/gnu/gcc/gcc-$(GCC_VERSION)/gcc-$(GCC_VERSION).tar.
 
 export PAGING_ENABLE = 1
 export MIN_NUMBER_PAGES = 1024
-
-
-export currentProgram =

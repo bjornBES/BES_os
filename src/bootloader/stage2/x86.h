@@ -25,6 +25,7 @@ bool ASMCALL x86_VESASupported(void* result);
 bool ASMCALL x86_GetVESAEntry(uint16_t mode, void* result);
 bool ASMCALL x86_PCIInitCheck(uint8_t* PCIchar, uint8_t* protectedModeEntry, uint16_t* PCIInterfaceLevel, uint8_t* lastPCIBus);
 void ASMCALL SetVGAMode(uint8_t mode);
+int ASMCALL x86_SetVESAMode(uint16_t mode);
 
 typedef struct 
 {

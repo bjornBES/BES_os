@@ -59,7 +59,6 @@ void write_tss()
     tss_entry.es = i686_GDT_DATA_SEGMENT;
     tss_entry.fs = i686_GDT_DATA_SEGMENT;
     tss_entry.gs = i686_GDT_DATA_SEGMENT;
-    tss_entry.eax = 0;
 
     GDT_SetEntry(5, (uint32_t)&tss_entry, sizeof(tss_entry_t) - 1, 0x89, 0x00);
 

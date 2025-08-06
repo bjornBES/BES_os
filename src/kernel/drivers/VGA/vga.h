@@ -125,7 +125,7 @@ typedef struct {
 
 uint8_t VGAExternalRegisterSelect(uint16_t regOffset, uint8_t data, bool read);
 uint16_t ReadRegister(uint16_t regSelect, uint16_t regOffset);
-void WriteRegister(uint16_t regSelect, uint16_t regOffset, uint8_t data);
+void WriteRegister(RegisterSelect regSelect, uint16_t regOffset, uint8_t data);
 
 extern vga_mode_t *vga_modes;
 extern uint16_t VGA_currentMode;

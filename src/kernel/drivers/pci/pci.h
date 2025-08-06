@@ -149,7 +149,7 @@ typedef struct __pci_driver {
 
 uint32_t pciReadDword(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset);
 void pciWriteDword(uint32_t bus, uint32_t device, uint32_t function, uint32_t offset, uint32_t value);
-void pci_init(uint8_t HWChar);
+void pci_init(PCIInfo* pciInfo);
 
 uint32_t pciReadBarType(uint32_t bus, uint32_t device, uint32_t function, uint32_t bar);
 uint16_t pciReadIOBar(uint32_t bus, uint32_t device, uint32_t function, uint32_t bar);

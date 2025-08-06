@@ -68,3 +68,66 @@ SYS_Write:
 
     pop     ebp
     ret
+
+;
+; void SYS_Read(char* buffer, int count)
+;
+global SYS_Read
+SYS_Read:
+    push    ebp
+    mov     ebp,            esp
+
+    push    esi
+    push    ecx
+    push    ebx
+
+    mov     esi,            [ebp + 12]
+    mov     ecx,            [ebp + 8]
+    mov     ebx,            1
+    xor     eax,            eax
+    int     0x80
+
+    pop     ebx
+    pop     ecx
+    pop     esi
+
+    pop     ebp
+    ret
+
+;
+; char* SYS_Map(size_t size)
+;
+global SYS_Map
+SYS_Map:
+    push    ebp
+    mov     ebp,            esp
+
+    push    ecx
+
+    mov     ecx,            [ebp + 8]
+    mov     ax,             50
+    int     0x80
+
+    pop     ecx
+
+    pop     ebp
+    ret
+
+;
+; int SYS_UnMap(void* address)
+;
+global SYS_UnMap
+SYS_UnMap:
+    push    ebp
+    mov     ebp,            esp
+
+    push    ebx
+
+    mov     ebx,            [ebp + 8]
+    mov     ax,             51
+    int     0x80
+
+    pop     ebx
+
+    pop     ebp
+    ret

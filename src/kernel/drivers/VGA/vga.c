@@ -106,7 +106,7 @@ uint16_t ReadRegister(uint16_t regSelect, uint16_t regOffset)
 
     return 0;
 }
-void WriteRegister(uint16_t regSelect, uint16_t regOffset, uint8_t data)
+void WriteRegister(RegisterSelect regSelect, uint16_t regOffset, uint8_t data)
 {
     switch (regSelect)
     {
@@ -297,6 +297,8 @@ void VGA_SetMode(uint16_t mode)
 
 void vga_initialize()
 {
+    WriteRegister(Graphics_Registers, GR_Miscellaneous_Graphics_Register, 0);
+
     VGA_SetMode(2);
 }
 

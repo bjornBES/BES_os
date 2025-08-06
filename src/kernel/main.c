@@ -166,61 +166,27 @@ void KernelStart(BootParams *bootParams)
     KernelInits();
     printf("KernelStart\n");
 
-    /*
-    {
-        PressAnyKeyLoop();
-        Page* page = GetPage(0);
-        void* data1 = malloc(1, page);
-        log_err("MAIN", "== ALLOCATED DATA1 ==");
-        mmPrintStatus();
-        PressAnyKeyLoop();
-
-        void* data2 = malloc(2, page);
-        log_err("MAIN", "== ALLOCATED DATA2 ==");
-        mmPrintStatus();
-        PressAnyKeyLoop();
-
-        void* data3 = malloc(4096 + 1, page);
-        log_err("MAIN", "== ALLOCATED DATA3 ==");
-        mmPrintStatus();
-        PressAnyKeyLoop();
-
-        free(data2, page);
-        mmPrintStatus();
-        log_err("MAIN", "== FREE DATA2 ==");
-        PressAnyKeyLoop();
-
-        free(data3, page);
-        mmPrintStatus();
-        log_err("MAIN", "== FREE DATA3 ==");
-        PressAnyKeyLoop();
-
-        free(data1, page);
-        mmPrintStatus();
-        log_err("MAIN", "== FREE DATA1 ==");
-        PressAnyKeyLoop();
-    }
-    */
-
     PrintMemoryRegions();
 
     VGA_clrscr();
     _log_debug("Init pci devices");
-    pci_init(params->PCI.PCIHWCharacteristics);
+    pci_init(&params->PCI);
     mmPrintStatus();
     
-    i686_DisableInterrupts();
     _log_debug("Scan pci devicess");
     pciScan();
-    i686_EnableInterrupts();
     PressAnyKeyLoop();
+    
     mmPrintStatus();
     log_info("MAIN", "pciScan done");
+    
+    // VGA_SetMode(17);
     VGA_clrscr();
+    
     printf("12345678901234567890123456789012345678901234567890123456789012345678901234567890\n");
     VGA_setcursor(0, 2);
     printf("00000000011111111112222222222333333333344444444445555555555666666666677777777778\n");
-
+    
     VGA_setcursor(0, 6);
     printf("1234567890123456789012345678901234567890\n");
     printf("0000000001111111111222222222233333333334\n");

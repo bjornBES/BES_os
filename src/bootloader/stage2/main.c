@@ -55,7 +55,8 @@ void __attribute__((cdecl)) start(uint16_t bootDrive, void* partition)
         printf("ELF read failed, booting halted!\n");
         goto end;
     }
-    // SetVGAMode(0);
+    SetVGAMode(0x30);
+    // SetVESAMode(103);
     // g_BootParams.CurrentMode = 0;
     /*
     uint8_t* kernel = (uint8_t*)kernelEntry - 0xb50;
